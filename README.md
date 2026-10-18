@@ -39,23 +39,20 @@ docs/adr/         architecture decision records
 
 ## Run locally
 
-Requirements: [uv](https://docs.astral.sh/uv/), Node 22 with pnpm, and Docker (for the database, from Phase 1).
+Requirements: [uv](https://docs.astral.sh/uv/), Node 22 with pnpm, and Docker.
 
 ```sh
-# API — runs on the free built-in "test" model, no keys needed
-cd api
-uv sync
-uv run uvicorn app.main:app --reload --port 8000
+./scripts/dev.sh
+```
 
-# Ask a question
+This starts Postgres and DynamoDB Local in Docker, the API on http://localhost:8000 and the site on http://localhost:5173 (which proxies `/api` to the API). Ctrl-C stops the API and the site; `docker compose down` stops the databases.
+
+The API runs on the free built-in `"test"` model, so no keys are needed. Ask it a question:
+
+```sh
 curl -N -X POST localhost:8000/api/chat \
   -H 'content-type: application/json' \
   -d '{"question": "Which technologies does Eliyahu work with daily?"}'
-
-# Web
-cd web
-pnpm install
-pnpm dev   # http://localhost:3000
 ```
 
 To use a real model, copy `api/.env.example` to `api/.env` and set `GOOGLE_API_KEY`.

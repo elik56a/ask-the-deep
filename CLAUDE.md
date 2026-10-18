@@ -19,7 +19,7 @@ uv run uvicorn app.main:app --reload --port 8000
 
 # web/
 pnpm exec biome check --write . && pnpm exec tsc --noEmit
-pnpm dev            # http://localhost:3000
+pnpm dev            # http://localhost:5173
 pnpm gen:events     # regenerate src/lib/events.gen.ts after changing api/app/events.py
 ```
 
