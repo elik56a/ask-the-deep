@@ -8,13 +8,19 @@ import pytest
 os.environ["KNOWLEDGE_DIR"] = str(Path(__file__).parent / "fixtures" / "knowledge")
 os.environ["LLM_MODEL"] = "test"
 os.environ["EMBEDDING_MODEL"] = "test"
-
+# DynamoDB Local only: dummy credentials so tests can never reach real AWS.
+os.environ["AWS_ACCESS_KEY_ID"] = "local"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "local"
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+from mypy_boto3_dynamodb.service_resource import Table
 from psycopg_pool import AsyncConnectionPool
 
 from app.config import Settings
+from app.control.counters import counters_table, create_table
 from app.rag.db import AsyncConn, Conn, Pool, configure_connection, connect
 
 SETTINGS = Settings()
+DYNAMODB_LOCAL = "http://localhost:8001"
 
 
 @pytest.fixture
@@ -44,3 +50,16 @@ async def pool(schema: str) -> AsyncIterator[Pool]:
         configure=configure_connection,
     ) as connection_pool:
         yield connection_pool
+
+
+@pytest.fixture
+def counters() -> Iterator[Table]:
+    """A throwaway counters table in DynamoDB Local."""
+    settings = Settings(
+        dynamodb_table=f"test-{uuid4().hex[:8]}", dynamodb_endpoint=DYNAMODB_LOCAL
+    )
+    create_table(settings)
+    table = counters_table(settings)
+    assert table is not None
+    yield table
+    table.delete()

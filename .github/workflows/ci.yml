@@ -33,6 +33,10 @@ jobs:
           --health-cmd "pg_isready -U portfolio"
           --health-interval 2s
           --health-retries 15
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8001:8000
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0

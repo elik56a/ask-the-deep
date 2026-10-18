@@ -1,12 +1,16 @@
 import json
 
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
-from app.main import app, get_github, get_retriever
+from app.config import Settings, get_settings
+from app.control.rate_limit import NoRateLimit
+from app.main import app, get_github, get_limiter, get_retriever
 from tests.fakes import StubRetriever, fake_github
 
 app.dependency_overrides[get_retriever] = lambda: StubRetriever([])
 app.dependency_overrides[get_github] = fake_github
+app.dependency_overrides[get_limiter] = NoRateLimit
 client = TestClient(app)
 
 
@@ -38,3 +42,14 @@ def test_health() -> None:
         "status": "ok",
         "corpus_version": "stub-version",
     }
+
+
+def test_refuses_requests_that_skip_cloudfront() -> None:
+    secret = Settings(origin_verify_secret=SecretStr("s3cret"))
+    app.dependency_overrides[get_settings] = lambda: secret
+    try:
+        assert client.get("/api/health").status_code == 403
+        allowed = client.get("/api/health", headers={"x-origin-verify": "s3cret"})
+        assert allowed.status_code == 200
+    finally:
+        del app.dependency_overrides[get_settings]

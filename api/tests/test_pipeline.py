@@ -31,12 +31,13 @@ async def _run(
     retriever: StubRetriever = RELEVANT,
     model: FunctionModel | None = None,
     history: list[PastMessage] | None = None,
+    within_rate_limit: bool = True,
 ) -> list[StreamEvent]:
     with agent.override(model=model or scripted(SEARCH, ANSWER)):
         return [
             e
             async for e in run_pipeline(
-                question, SETTINGS, retriever, fake_github(), history
+                question, SETTINGS, retriever, fake_github(), history, within_rate_limit
             )
         ]
 
@@ -124,4 +125,13 @@ async def test_blocks_a_conversation_history_over_the_cap() -> None:
     events = await _run("Where?", history=history)
     checks = events[1].event.model_dump()["checks"]
     assert {"name": "history_size", "passed": False} in checks
+    assert events[-1].event.model_dump()["outcome"] == "blocked"
+
+
+async def test_rate_limited_visitor_is_blocked_before_the_agent() -> None:
+    events = await _run("Where?", within_rate_limit=False)
+    _assert_well_formed(events)
+    error = events[2].event.model_dump()
+    assert error["code"] == "rate_limited"
+    assert "tool.called" not in _types(events)
     assert events[-1].event.model_dump()["outcome"] == "blocked"

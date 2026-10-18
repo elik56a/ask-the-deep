@@ -26,6 +26,7 @@ class Settings(BaseSettings):
         "postgresql://portfolio:portfolio@localhost:5432/portfolio"
     )
     dynamodb_table: str | None = None
+    dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
     rules_version: str = "v2"
     # Placeholder for the naive P0 retriever; calibrated from evals in P1.11.
@@ -56,6 +57,10 @@ class Settings(BaseSettings):
     langfuse_secret_key: SecretStr | None = None
     langfuse_host: str = "https://cloud.langfuse.com"
     allowed_origins: list[str] = ["http://localhost:5173"]
+    # Salt for hashing visitor IPs. Production reads the real one from SSM.
+    ip_hash_salt: SecretStr = SecretStr("local-dev-salt")
+    # Set in production: requests without CloudFront's secret header are refused.
+    origin_verify_secret: SecretStr | None = None
 
     @property
     def llm_provider_and_name(self) -> tuple[str, str]:

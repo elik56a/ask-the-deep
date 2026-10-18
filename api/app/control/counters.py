@@ -1,0 +1,55 @@
+"""Counters in DynamoDB, shared by the rate limit and (next) the daily budget.
+
+Each counter is one item keyed by `pk`. Its `expires_at` timestamp lets
+DynamoDB delete it on its own (TTL), so nothing needs cleaning up.
+"""
+
+import asyncio
+from typing import TYPE_CHECKING
+
+import boto3
+
+from app.config import Settings, get_settings
+
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb.service_resource import Table
+
+
+def counters_table(settings: Settings) -> "Table | None":
+    """The counters table, or None without DYNAMODB_TABLE (tests, offline dev)."""
+    if not settings.dynamodb_table:
+        return None
+    dynamodb = boto3.resource("dynamodb", endpoint_url=settings.dynamodb_endpoint)
+    return dynamodb.Table(settings.dynamodb_table)
+
+
+async def increment(table: "Table", pk: str, expires_at: int) -> int:
+    """Add 1 to a counter and return the new value, in one atomic update."""
+    response = await asyncio.to_thread(
+        table.update_item,
+        Key={"pk": pk},
+        UpdateExpression="ADD hits :one SET expires_at = :expires_at",
+        ExpressionAttributeValues={":one": 1, ":expires_at": expires_at},
+        ReturnValues="UPDATED_NEW",
+    )
+    return int(str(response["Attributes"]["hits"]))
+
+
+def create_table(settings: Settings) -> None:
+    """Create the table in DynamoDB Local (Terraform creates it on AWS)."""
+    table = counters_table(settings)
+    if table is None:
+        raise SystemExit("Set DYNAMODB_TABLE first")
+    client = table.meta.client
+    if settings.dynamodb_table in client.list_tables()["TableNames"]:
+        return
+    client.create_table(
+        TableName=table.name,
+        KeySchema=[{"AttributeName": "pk", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "pk", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+
+
+if __name__ == "__main__":
+    create_table(get_settings())

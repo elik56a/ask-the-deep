@@ -37,6 +37,12 @@ _NO_INFORMATION = {
 }
 _GENERATION_FAILED = "Something went wrong while writing the answer. Please try again."
 _EXCERPT_CHARS = 200
+_RATE_LIMITED = ErrorEvent(
+    code="rate_limited", message="Too many questions. Please wait a minute."
+)
+_INPUT_REJECTED = ErrorEvent(
+    code="input_rejected", message="The question or conversation is empty or too long."
+)
 
 
 def _language(text: str) -> str:
@@ -44,9 +50,13 @@ def _language(text: str) -> str:
 
 
 def _guardrails(
-    question: str, history: list[PastMessage], settings: Settings
+    question: str,
+    history: list[PastMessage],
+    settings: Settings,
+    within_rate_limit: bool,
 ) -> list[GuardrailCheck]:
     return [
+        GuardrailCheck(name="rate_limit", passed=within_rate_limit),
         GuardrailCheck(name="not_empty", passed=bool(question.strip())),
         GuardrailCheck(
             name="input_length", passed=len(question) <= settings.max_input_chars
@@ -88,6 +98,7 @@ async def run_pipeline(
     retriever: Retriever,
     github: GitHubActivity,
     history: list[PastMessage] | None = None,
+    within_rate_limit: bool = True,
 ) -> AsyncIterator[StreamEvent]:
     """Answer one question, yielding an event after every step.
 
@@ -103,15 +114,10 @@ async def run_pipeline(
     )
 
     history = history or []
-    checks = _guardrails(question, history, settings)
+    checks = _guardrails(question, history, settings, within_rate_limit)
     yield em.emit(GuardrailsChecked(checks=checks))
     if not all(c.passed for c in checks):
-        yield em.emit(
-            ErrorEvent(
-                code="input_rejected",
-                message="The question or conversation is empty or too long.",
-            )
-        )
+        yield em.emit(_RATE_LIMITED if not within_rate_limit else _INPUT_REJECTED)
         yield em.emit(RequestFinished(outcome="blocked"))
         return
 
