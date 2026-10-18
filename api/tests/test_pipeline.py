@@ -40,13 +40,14 @@ async def _run(
     model: FunctionModel | None = None,
     history: list[PastMessage] | None = None,
     services: Services | None = None,
+    session_id: str | None = "session-1",
 ) -> list[StreamEvent]:
     services = services or make_services(retriever)
     with agent.override(model=model or scripted(SEARCH, ANSWER)):
         return [
             e
             async for e in run_pipeline(
-                question, SETTINGS, services, "visitor", history
+                question, SETTINGS, services, "visitor", session_id, history
             )
         ]
 
@@ -161,3 +162,17 @@ async def test_records_what_each_answer_cost() -> None:
         e.event.model_dump() for e in events if e.event.type == "usage.reported"
     )
     assert budget.spent == [("visitor", usage["cost_usd"])]
+
+
+async def test_visitor_without_a_session_must_pass_the_human_check() -> None:
+    events = await _run("Where?", session_id=None)
+    assert events[2].event.model_dump()["code"] == "human_check_required"
+    assert "tool.called" not in _types(events)
+
+
+async def test_each_session_has_its_own_rate_limit() -> None:
+    per_session = make_services(
+        RELEVANT, limiter=FakeLimiter(allow=True, block_prefix="session-")
+    )
+    events = await _run("Where?", services=per_session)
+    assert events[2].event.model_dump()["code"] == "rate_limited"

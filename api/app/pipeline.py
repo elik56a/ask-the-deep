@@ -41,6 +41,10 @@ _NO_INFORMATION = {
 }
 _GENERATION_FAILED = "Something went wrong while writing the answer. Please try again."
 _EXCERPT_CHARS = 200
+_NOT_VERIFIED = ErrorEvent(
+    code="human_check_required",
+    message="Please confirm you're human, then ask again.",
+)
 _RATE_LIMITED = ErrorEvent(
     code="rate_limited", message="Too many questions. Please wait a minute."
 )
@@ -67,16 +71,31 @@ def _language(text: str) -> str:
     return "he" if _HEBREW.search(text) else "en"
 
 
-def _guardrails(
-    question: str,
-    history: list[PastMessage],
-    settings: Settings,
-    within_rate_limit: bool,
-    within_budget: bool,
+async def _controls(
+    services: Services, visitor: str, session_id: str | None
+) -> list[GuardrailCheck]:
+    """Human check, rate limit (per IP and per session) and spend caps."""
+    session_key = f"session-{session_id}" if session_id else None
+    ip_ok, session_ok, budget_ok = await asyncio.gather(
+        services.limiter.allow(visitor),
+        services.limiter.allow(session_key) if session_key else _true(),
+        services.budget.allows(visitor),
+    )
+    return [
+        GuardrailCheck(name="human_check", passed=session_id is not None),
+        GuardrailCheck(name="rate_limit", passed=ip_ok and session_ok),
+        GuardrailCheck(name="budget", passed=budget_ok),
+    ]
+
+
+async def _true() -> bool:
+    return True
+
+
+def _input_checks(
+    question: str, history: list[PastMessage], settings: Settings
 ) -> list[GuardrailCheck]:
     return [
-        GuardrailCheck(name="rate_limit", passed=within_rate_limit),
-        GuardrailCheck(name="budget", passed=within_budget),
         GuardrailCheck(name="not_empty", passed=bool(question.strip())),
         GuardrailCheck(
             name="input_length", passed=len(question) <= settings.max_input_chars
@@ -114,6 +133,8 @@ def _decision(answer: Answer | None, deps: AgentDeps) -> DecisionMade:
 
 def _blocked_reason(checks: list[GuardrailCheck]) -> ErrorEvent:
     failed = {c.name for c in checks if not c.passed}
+    if "human_check" in failed:
+        return _NOT_VERIFIED
     if "rate_limit" in failed:
         return _RATE_LIMITED
     if "budget" in failed:
@@ -126,13 +147,16 @@ async def run_pipeline(
     settings: Settings,
     services: Services,
     visitor: str,
+    session_id: str | None,
     history: list[PastMessage] | None = None,
 ) -> AsyncIterator[StreamEvent]:
     """Answer one question, yielding an event after every step.
 
-    `visitor` is the hashed IP, used for the rate limit and spend caps. If the
-    agent gives no valid answer within its limits, the visitor gets "I don't
-    have that information" instead of a guess.
+    `visitor` is the hashed IP, used for the rate limit and spend caps.
+    `session_id` comes from a valid session token (None means the visitor
+    hasn't passed the human check). If the agent gives no valid answer within
+    its limits, the visitor gets "I don't have that information" instead of a
+    guess.
     """
     em = Emitter(uuid4().hex)
     provider, model = settings.llm_provider_and_name
@@ -143,10 +167,8 @@ async def run_pipeline(
     )
 
     history = history or []
-    within_rate_limit, within_budget = await asyncio.gather(
-        services.limiter.allow(visitor), services.budget.allows(visitor)
-    )
-    checks = _guardrails(question, history, settings, within_rate_limit, within_budget)
+    checks = await _controls(services, visitor, session_id)
+    checks += _input_checks(question, history, settings)
     yield em.emit(GuardrailsChecked(checks=checks))
     if not all(c.passed for c in checks):
         yield em.emit(_blocked_reason(checks))

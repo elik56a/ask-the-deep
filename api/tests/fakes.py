@@ -139,10 +139,15 @@ class FakeBudget:
 
 
 class FakeLimiter:
-    def __init__(self, allow: bool) -> None:
+    """Allows or refuses every key, or only keys starting with `block_prefix`."""
+
+    def __init__(self, allow: bool, block_prefix: str = "") -> None:
         self.allow_all = allow
+        self.block_prefix = block_prefix
 
     async def allow(self, visitor: str) -> bool:
+        if self.block_prefix:
+            return not visitor.startswith(self.block_prefix)
         return self.allow_all
 
 

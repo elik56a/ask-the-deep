@@ -55,7 +55,12 @@ class Settings(BaseSettings):
     monthly_budget_usd: float = 5.0
     daily_budget_usd: float = 0.5
     visitor_daily_budget_usd: float = 0.05
-    turnstile_secret_key: SecretStr | None = None
+    # Cloudflare's public test secret (always passes); production sets the real one.
+    turnstile_secret_key: SecretStr = SecretStr("1x0000000000000000000000000000000AA")
+    # Signs session tokens. Production reads the real one from SSM.
+    session_secret: SecretStr = SecretStr("local-dev-session-secret")
+    session_ttl_seconds: int = 3600
+    turnstile_timeout_s: float = 5.0
     langfuse_public_key: SecretStr | None = None
     langfuse_secret_key: SecretStr | None = None
     langfuse_host: str = "https://cloud.langfuse.com"
