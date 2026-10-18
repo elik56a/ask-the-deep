@@ -11,7 +11,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 12 | [ ] |
-| P2 Control & security | 13 | 2 | [ ] |
+| P2 Control & security | 13 | 3 | [ ] |
 | P3 Transparency & observability | 15 | 0 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 16 | 0 | [ ] |
@@ -103,7 +103,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P2.1** Turnstile: server-side token verification before the first message
 - [x] **P2.2** DynamoDB table (Terraform + Local) with TTL for counters; `app/control/counters.py` atomic `increment`, tests on DynamoDB Local (also in CI)
 - [x] **P2.3** Rate limit per IP-hash (`RATE_LIMIT_PER_MINUTE`, fixed 1-minute windows, fails closed) as the `rate_limit` guardrail; per-session limit comes with Turnstile (P2.1). Libraries (slowapi/limits) don't support DynamoDB; WAF costs ~$6/month fixed — _Deps: P2.2_
-- [ ] **P2.4** Daily budget counter + kill switch → fallback message at `DAILY_BUDGET_USD`; per-IP cost cap — _Deps: P2.2_
+- [x] **P2.4** Spend caps + kill switch (ADR 0008): `MONTHLY_BUDGET_USD` $5, `DAILY_BUDGET_USD` $0.50, `VISITOR_DAILY_BUDGET_USD` $0.05; `budget` guardrail → `budget_exhausted` message; cost recorded after each answer — _Deps: P2.2_
 - [ ] **P2.5** Input cap (`MAX_INPUT_CHARS`), output cap (`MAX_OUTPUT_TOKENS`); client sends the session history ≤ `MAX_HISTORY_MESSAGES` (20), server enforces
 - [ ] **P2.6** Injection defenses: no secrets in context, delimited data, "don't follow instructions in passages", `guardrails.checked` emits each check
 - [~] **P2.7** IPs stored only as hashes (HMAC with `IP_HASH_SALT`) ✓; nothing raw in logs (with P3.3)

@@ -1,4 +1,4 @@
-"""Counters in DynamoDB, shared by the rate limit and (next) the daily budget.
+"""Counters in DynamoDB, shared by the rate limit and the spend budget.
 
 Each counter is one item keyed by `pk`. Its `expires_at` timestamp lets
 DynamoDB delete it on its own (TTL), so nothing needs cleaning up.
@@ -23,16 +23,24 @@ def counters_table(settings: Settings) -> "Table | None":
     return dynamodb.Table(settings.dynamodb_table)
 
 
-async def increment(table: "Table", pk: str, expires_at: int) -> int:
-    """Add 1 to a counter and return the new value, in one atomic update."""
+async def increment(table: "Table", pk: str, expires_at: int, amount: int = 1) -> int:
+    """Add to a counter and return the new value, in one atomic update."""
     response = await asyncio.to_thread(
         table.update_item,
         Key={"pk": pk},
-        UpdateExpression="ADD hits :one SET expires_at = :expires_at",
-        ExpressionAttributeValues={":one": 1, ":expires_at": expires_at},
+        UpdateExpression="ADD hits :amount SET expires_at = :expires_at",
+        ExpressionAttributeValues={":amount": amount, ":expires_at": expires_at},
         ReturnValues="UPDATED_NEW",
     )
     return int(str(response["Attributes"]["hits"]))
+
+
+async def read(table: "Table", pk: str) -> int:
+    """A counter's current value (0 if it doesn't exist yet)."""
+    response = await asyncio.to_thread(
+        table.get_item, Key={"pk": pk}, ConsistentRead=True
+    )
+    return int(str(response.get("Item", {}).get("hits", 0)))
 
 
 def create_table(settings: Settings) -> None:

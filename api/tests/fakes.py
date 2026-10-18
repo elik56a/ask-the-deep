@@ -14,6 +14,8 @@ from pydantic_ai.models.function import (
 from app.agent.github import GITHUB_API, GitHubActivity
 from app.agent.tools import AgentDeps
 from app.config import Settings
+from app.control.rate_limit import NoRateLimit
+from app.pipeline import Services
 from app.rag.corpus import Chunk
 from app.rag.retrieval import Hit, tokenize
 
@@ -120,3 +122,38 @@ def scripted(*turns: Turn, record: list[ModelMessage] | None = None) -> Function
         yield {0: DeltaToolCall(json_args=payload[half:])}
 
     return FunctionModel(stream_function=stream)
+
+
+class FakeBudget:
+    """A budget that allows or refuses everything and remembers what was spent."""
+
+    def __init__(self, allow: bool = True) -> None:
+        self.allow = allow
+        self.spent: list[tuple[str, float]] = []
+
+    async def allows(self, visitor: str) -> bool:
+        return self.allow
+
+    async def record(self, visitor: str, cost_usd: float) -> None:
+        self.spent.append((visitor, cost_usd))
+
+
+class FakeLimiter:
+    def __init__(self, allow: bool) -> None:
+        self.allow_all = allow
+
+    async def allow(self, visitor: str) -> bool:
+        return self.allow_all
+
+
+def make_services(
+    retriever: StubRetriever,
+    budget: FakeBudget | None = None,
+    limiter: FakeLimiter | NoRateLimit | None = None,
+) -> Services:
+    return Services(
+        retriever=retriever,
+        github=fake_github(),
+        limiter=limiter or NoRateLimit(),
+        budget=budget or FakeBudget(),
+    )

@@ -13,54 +13,42 @@ from pydantic import BaseModel
 from app.agent.chat_agent import PastMessage
 from app.agent.github import GitHubActivity, github_client
 from app.config import Settings, get_settings
-from app.control.rate_limit import RateLimiter, client_ip, hash_ip, rate_limiter
-from app.pipeline import run_pipeline
+from app.control.budget import budget
+from app.control.rate_limit import client_ip, hash_ip, rate_limiter
+from app.pipeline import Services, run_pipeline
 from app.rag.db import create_pool
 from app.rag.embeddings import query_embedder
-from app.rag.retrieval import HybridRetriever, Retriever
+from app.rag.retrieval import HybridRetriever
 
-_retriever: Retriever | None = None
-_github: GitHubActivity | None = None
-_limiter: RateLimiter | None = None
+_services: Services | None = None
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """On startup, load the search index and open the GitHub and DynamoDB clients."""
-    global _retriever, _github, _limiter
+    global _services
     settings = get_settings()
     async with (
         create_pool(settings) as pool,
         github_client(settings.github_timeout_s) as http,
     ):
-        _retriever = await HybridRetriever.load(pool, query_embedder(settings))
-        _github = GitHubActivity(
-            http, settings.github_username, settings.github_cache_seconds
+        _services = Services(
+            retriever=await HybridRetriever.load(pool, query_embedder(settings)),
+            github=GitHubActivity(
+                http, settings.github_username, settings.github_cache_seconds
+            ),
+            limiter=rate_limiter(settings),
+            budget=budget(settings),
         )
-        _limiter = rate_limiter(settings)
         yield
-    _retriever = _github = _limiter = None
+    _services = None
 
 
-def get_retriever() -> Retriever:
-    """The search engine loaded at startup (replaced by a stub in tests)."""
-    if _retriever is None:
-        raise RuntimeError("Retriever is not loaded; the app lifespan did not run")
-    return _retriever
-
-
-def get_github() -> GitHubActivity:
-    """The GitHub client opened at startup (replaced by a fake in tests)."""
-    if _github is None:
-        raise RuntimeError("GitHub client is not ready; the app lifespan did not run")
-    return _github
-
-
-def get_limiter() -> RateLimiter:
-    """The rate limiter created at startup (replaced in tests)."""
-    if _limiter is None:
-        raise RuntimeError("Rate limiter is not ready; the app lifespan did not run")
-    return _limiter
+def get_services() -> Services:
+    """Everything created at startup (replaced by fakes in tests)."""
+    if _services is None:
+        raise RuntimeError("Services are not ready; the app lifespan did not run")
+    return _services
 
 
 def verify_origin(
@@ -97,29 +85,25 @@ class ChatRequest(BaseModel):
 
 
 @app.get("/api/health")
-def health(
-    retriever: Annotated[Retriever, Depends(get_retriever)],
-) -> dict[str, str]:
+def health(services: Annotated[Services, Depends(get_services)]) -> dict[str, str]:
     """Liveness check, plus which version of the knowledge base is loaded."""
-    return {"status": "ok", "corpus_version": retriever.corpus_version}
+    return {"status": "ok", "corpus_version": services.retriever.corpus_version}
 
 
 @app.post("/api/chat")
 async def chat(
     request: ChatRequest,
     http: Request,
-    retriever: Annotated[Retriever, Depends(get_retriever)],
-    github: Annotated[GitHubActivity, Depends(get_github)],
-    limiter: Annotated[RateLimiter, Depends(get_limiter)],
+    services: Annotated[Services, Depends(get_services)],
 ) -> StreamingResponse:
     """Run the pipeline for one question and stream its events."""
     settings = get_settings()
     ip = client_ip(http.headers, http.client.host if http.client else None)
-    allowed = await limiter.allow(hash_ip(ip, settings.ip_hash_salt.get_secret_value()))
+    visitor = hash_ip(ip, settings.ip_hash_salt.get_secret_value())
 
     async def sse() -> AsyncIterator[str]:
         async for event in run_pipeline(
-            request.question, settings, retriever, github, request.history, allowed
+            request.question, settings, services, visitor, request.history
         ):
             yield f"data: {event.model_dump_json()}\n\n"
 

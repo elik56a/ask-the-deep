@@ -51,7 +51,10 @@ class Settings(BaseSettings):
         "GitHub": "https://github.com/elik56a",
     }
     rate_limit_per_minute: int = 5
-    daily_budget_usd: float = 2.0
+    # Spend caps, counted at paid list prices (free-tier calls cost $0 for real).
+    monthly_budget_usd: float = 5.0
+    daily_budget_usd: float = 0.5
+    visitor_daily_budget_usd: float = 0.05
     turnstile_secret_key: SecretStr | None = None
     langfuse_public_key: SecretStr | None = None
     langfuse_secret_key: SecretStr | None = None

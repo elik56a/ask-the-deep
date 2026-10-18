@@ -7,9 +7,17 @@ from pydantic_ai.models.function import AgentInfo, DeltaToolCalls, FunctionModel
 from app.agent.chat_agent import PastMessage, agent
 from app.config import Settings
 from app.events import StreamEvent
-from app.pipeline import run_pipeline
+from app.pipeline import Services, run_pipeline
 from app.rag.retrieval import Hit
-from tests.fakes import StubRetriever, Turn, fake_github, make_chunk, scripted
+from tests.fakes import (
+    FakeBudget,
+    FakeLimiter,
+    StubRetriever,
+    Turn,
+    make_chunk,
+    make_services,
+    scripted,
+)
 
 SETTINGS = Settings()
 THRESHOLD = SETTINGS.retrieval_threshold
@@ -31,13 +39,14 @@ async def _run(
     retriever: StubRetriever = RELEVANT,
     model: FunctionModel | None = None,
     history: list[PastMessage] | None = None,
-    within_rate_limit: bool = True,
+    services: Services | None = None,
 ) -> list[StreamEvent]:
+    services = services or make_services(retriever)
     with agent.override(model=model or scripted(SEARCH, ANSWER)):
         return [
             e
             async for e in run_pipeline(
-                question, SETTINGS, retriever, fake_github(), history, within_rate_limit
+                question, SETTINGS, services, "visitor", history
             )
         ]
 
@@ -129,9 +138,26 @@ async def test_blocks_a_conversation_history_over_the_cap() -> None:
 
 
 async def test_rate_limited_visitor_is_blocked_before_the_agent() -> None:
-    events = await _run("Where?", within_rate_limit=False)
+    limited = make_services(RELEVANT, limiter=FakeLimiter(allow=False))
+    events = await _run("Where?", services=limited)
     _assert_well_formed(events)
     error = events[2].event.model_dump()
     assert error["code"] == "rate_limited"
     assert "tool.called" not in _types(events)
     assert events[-1].event.model_dump()["outcome"] == "blocked"
+
+
+async def test_over_budget_is_blocked_before_the_agent() -> None:
+    events = await _run("Where?", services=make_services(RELEVANT, FakeBudget(False)))
+    assert events[2].event.model_dump()["code"] == "budget_exhausted"
+    assert "tool.called" not in _types(events)
+    assert events[-1].event.model_dump()["outcome"] == "blocked"
+
+
+async def test_records_what_each_answer_cost() -> None:
+    budget = FakeBudget()
+    events = await _run("Where?", services=make_services(RELEVANT, budget))
+    usage = next(
+        e.event.model_dump() for e in events if e.event.type == "usage.reported"
+    )
+    assert budget.spent == [("visitor", usage["cost_usd"])]

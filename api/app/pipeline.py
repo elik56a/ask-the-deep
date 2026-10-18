@@ -5,14 +5,18 @@ Every step becomes an event, so the browser can show what the system is
 doing in real time.
 """
 
+import asyncio
 import re
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from uuid import uuid4
 
 from app.agent.chat_agent import AgentFinished, Answer, PastMessage, run_agent
 from app.agent.github import GitHubActivity
 from app.agent.tools import AgentDeps
 from app.config import Settings
+from app.control.budget import Budget
+from app.control.rate_limit import RateLimiter
 from app.emitter import Emitter
 from app.events import (
     Citation,
@@ -40,9 +44,23 @@ _EXCERPT_CHARS = 200
 _RATE_LIMITED = ErrorEvent(
     code="rate_limited", message="Too many questions. Please wait a minute."
 )
+_OVER_BUDGET = ErrorEvent(
+    code="budget_exhausted",
+    message="The assistant has reached its limit for now. Please come back later.",
+)
 _INPUT_REJECTED = ErrorEvent(
     code="input_rejected", message="The question or conversation is empty or too long."
 )
+
+
+@dataclass(frozen=True)
+class Services:
+    """The long-lived parts every question uses, created once at startup."""
+
+    retriever: Retriever
+    github: GitHubActivity
+    limiter: RateLimiter
+    budget: Budget
 
 
 def _language(text: str) -> str:
@@ -54,9 +72,11 @@ def _guardrails(
     history: list[PastMessage],
     settings: Settings,
     within_rate_limit: bool,
+    within_budget: bool,
 ) -> list[GuardrailCheck]:
     return [
         GuardrailCheck(name="rate_limit", passed=within_rate_limit),
+        GuardrailCheck(name="budget", passed=within_budget),
         GuardrailCheck(name="not_empty", passed=bool(question.strip())),
         GuardrailCheck(
             name="input_length", passed=len(question) <= settings.max_input_chars
@@ -92,18 +112,27 @@ def _decision(answer: Answer | None, deps: AgentDeps) -> DecisionMade:
     )
 
 
+def _blocked_reason(checks: list[GuardrailCheck]) -> ErrorEvent:
+    failed = {c.name for c in checks if not c.passed}
+    if "rate_limit" in failed:
+        return _RATE_LIMITED
+    if "budget" in failed:
+        return _OVER_BUDGET
+    return _INPUT_REJECTED
+
+
 async def run_pipeline(
     question: str,
     settings: Settings,
-    retriever: Retriever,
-    github: GitHubActivity,
+    services: Services,
+    visitor: str,
     history: list[PastMessage] | None = None,
-    within_rate_limit: bool = True,
 ) -> AsyncIterator[StreamEvent]:
     """Answer one question, yielding an event after every step.
 
-    If the agent gives no valid answer within its limits, the visitor gets
-    "I don't have that information" instead of a guess.
+    `visitor` is the hashed IP, used for the rate limit and spend caps. If the
+    agent gives no valid answer within its limits, the visitor gets "I don't
+    have that information" instead of a guess.
     """
     em = Emitter(uuid4().hex)
     provider, model = settings.llm_provider_and_name
@@ -114,14 +143,19 @@ async def run_pipeline(
     )
 
     history = history or []
-    checks = _guardrails(question, history, settings, within_rate_limit)
+    within_rate_limit, within_budget = await asyncio.gather(
+        services.limiter.allow(visitor), services.budget.allows(visitor)
+    )
+    checks = _guardrails(question, history, settings, within_rate_limit, within_budget)
     yield em.emit(GuardrailsChecked(checks=checks))
     if not all(c.passed for c in checks):
-        yield em.emit(_RATE_LIMITED if not within_rate_limit else _INPUT_REJECTED)
+        yield em.emit(_blocked_reason(checks))
         yield em.emit(RequestFinished(outcome="blocked"))
         return
 
-    deps = AgentDeps(retriever=retriever, github=github, settings=settings)
+    deps = AgentDeps(
+        retriever=services.retriever, github=services.github, settings=settings
+    )
     ttft_ms: int | None = None
     finished: AgentFinished | None = None
     try:
@@ -139,6 +173,7 @@ async def run_pipeline(
         yield em.emit(RequestFinished(outcome="error"))
         return
 
+    await services.budget.record(visitor, finished.cost_usd)
     answer = finished.answer
     yield em.emit(_decision(answer, deps))
     if answer is None:

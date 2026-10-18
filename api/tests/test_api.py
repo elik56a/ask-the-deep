@@ -4,13 +4,10 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
 from app.config import Settings, get_settings
-from app.control.rate_limit import NoRateLimit
-from app.main import app, get_github, get_limiter, get_retriever
-from tests.fakes import StubRetriever, fake_github
+from app.main import app, get_services
+from tests.fakes import StubRetriever, make_services
 
-app.dependency_overrides[get_retriever] = lambda: StubRetriever([])
-app.dependency_overrides[get_github] = fake_github
-app.dependency_overrides[get_limiter] = NoRateLimit
+app.dependency_overrides[get_services] = lambda: make_services(StubRetriever([]))
 client = TestClient(app)
 
 
