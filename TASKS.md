@@ -9,7 +9,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
-| P0 Foundations | 15 | 11 | [x] |
+| P0 Foundations | 15 | 12 | [x] |
 | P1 RAG core | 16 | 0 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
 | P3 Transparency & observability | 14 | 0 | [ ] |
@@ -55,7 +55,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [~] **P0.11** README: local run in a single command — _Deps: P0.10_
 
 ### Infra & CI
-- [~] **P0.12** Standalone Terraform in `infra/` (S3 + CloudFront with OAC, Lambda + Web Adapter + streaming Function URL under `/api/*`, DynamoDB with TTL, SSM secrets, $5 budget alarm), staging/prod via workspaces — _Done when_ `terraform plan` is clean for staging
+- [x] **P0.12** Standalone Terraform in `infra/` (S3 + CloudFront with OAC, Lambda + Web Adapter + streaming Function URL under `/api/*`, DynamoDB with TTL, SSM secrets, $5 budget alarm), staging/prod via workspaces — _Done when_ `terraform plan` is clean for staging
 - [x] **P0.13** Demo corpus: 3 markdown files with front matter (`visibility: public`) in `data/knowledge/`
 - [x] **P0.14** GitHub Actions CI: lint + types + unit tests, both sides — _Deps: P0.2–P0.4, P0.8_
 

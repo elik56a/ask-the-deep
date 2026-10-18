@@ -24,8 +24,8 @@ variable "monthly_budget_usd" {
 
 variable "lambda_concurrency" {
   type        = number
-  default     = 5
-  description = "Hard cap on parallel Lambda executions. Set -1 if the account's concurrency quota is still 10 (new accounts), since AWS keeps 10 unreserved."
+  default     = -1
+  description = "Reserved concurrency cap, -1 for none. Reserving needs an account quota above 10, since AWS keeps 10 unreserved; at quota 10 the account itself caps Lambda at 10."
 }
 
 variable "lwa_layer_version" {
