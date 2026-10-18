@@ -10,10 +10,10 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 16 | 5 | [ ] |
+| P1 RAG core | 18 | 10 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
 | P3 Transparency & observability | 14 | 0 | [ ] |
-| P4 Evals in CI | 8 | 0 | [ ] |
+| P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 16 | 0 | [ ] |
 
 ---
@@ -43,7 +43,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P0.3** Web side: TanStack Start (static/prerender) + React + TS strict + Biome via pnpm — _Done when_ `pnpm build` emits static files
 - [x] **P0.4** pre-commit for both sides; conventional commits — _Done when_ a bad-format commit is rejected
 - [x] **P0.5** `pydantic-settings` config module with every env var from the spec (LLM_MODEL … ALLOWED_ORIGINS), defaults as proposed, no hardcoded values elsewhere — _Deps: P0.2_
-- [x] **P0.6** ADR template + ADR-0001 (fixed pipeline over agentic), ADR-0002 (DynamoDB over Redis) — _Done when_ both committed
+- [x] **P0.6** ADR template + ADR-0001 (fixed pipeline over agentic, superseded by ADR-0005), ADR-0002 (DynamoDB over Redis) — _Done when_ both committed
 
 ### Schema
 - [x] **P0.7** `api/events.py`: Pydantic discriminated union of all 12 event types (request.started … request.finished). Every event has `request_id`, `seq`, `t_ms`. No fields for the system prompt, keys, IP or budget. — _Done when_ unit test round-trips each type
@@ -85,12 +85,14 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions
 - [ ] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers
 
-### Generation (`api/agent/`)
-- [ ] **P1.12** Model layer: single interface over Pydantic AI, `provider:model` from env, fallback chain (primary → fallback → failure message), versioned prompts + pricing files
-- [ ] **P1.13** Generation: restrictive prompt, retrieved passages inside delimiters, structured output (answer + citations), streaming
-- [ ] **P1.14** Deterministic citation check: every `chunk_id` must be in the retrieved set; on failure, 1 retry and then a refusal — _Done when_ unit test with a forged citation triggers retry → refusal
-- [ ] **P1.15** Threshold gate: best score < threshold → no model call; answer "I don't have that information" + contact pointer
-- [ ] **P1.16** Language follows the question language (he/en) — test both
+### Agent (`api/agent/`) — ADR 0005 replaces the fixed pipeline
+- [ ] **P1.12** Model layer: `provider:model` from env, fallback chain (primary → fallback → failure message), versioned prompts + pricing files
+- [x] **P1.13** Agent loop with limits (`AGENT_MAX_REQUESTS`, `AGENT_MAX_TOOL_CALLS`); structured answer (kind, citations, text), streaming; `tool.called` / `tool.completed` events
+- [x] **P1.14** Deterministic citation check: every cited id must be returned by a tool in this run; "answered" needs a tool result; 1 retry → refusal; invalid attempts are never streamed
+- [x] **P1.15** Gate inside `search_knowledge`: passages below threshold never reach the model; no valid answer → "I don't have that information" + contact pointer
+- [ ] **P1.16** Language follows the question language (he/en) — test both with the real model
+- [x] **P1.17** Tools: `search_knowledge`, `list_projects` / `get_project`, `github_activity` (cached, fails soft), `contact_info`
+- [x] **P1.18** Friendly timeline labels per tool, he/en (`web/src/lib/toolSteps.ts`, unit-tested); rendered in P3.12
 
 ---
 
@@ -146,6 +148,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P4.2** Eval runner (pytest + Pydantic Evals) with a Gemini LLM judge: groundedness, accuracy, refusal correctness
 - [ ] **P4.3** CI: retrieval evals + an E2E subset on every PR
 - [ ] **P4.4** Nightly full eval run + alert on a quality drop
+- [ ] **P4.9** Tool-trajectory evals: for each golden question, did the agent call the expected tools (and not more than needed)?
 - [ ] **P4.5** Quality gate: fail on a trap guess, a non-retrieved citation, or recall < target
 - [ ] **P4.6** Rule: changes to model/prompt/corpus can't merge without a green eval (CODEOWNERS or path-filtered required check)
 - [ ] **P4.7** Publish the last eval run (date, count, score) as a static JSON for the site

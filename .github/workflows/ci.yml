@@ -65,6 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec biome ci .
       - run: pnpm exec tsc --noEmit
+      - run: pnpm test
       - name: Generated event types are up to date
         run: pnpm gen:events && git diff --exit-code src/lib/events.gen.ts
       - run: pnpm build

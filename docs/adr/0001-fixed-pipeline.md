@@ -1,6 +1,6 @@
 # 0001. Fixed pipeline instead of an autonomous agent
 
-Date: 2026-10-18 · Status: accepted
+Date: 2026-10-18 · Status: superseded by [0005](0005-bounded-tool-calling-agent.md)
 
 ## Context
 

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.agent.github import GitHubActivity, github_client
 from app.config import get_settings
 from app.pipeline import run_pipeline
 from app.rag.db import create_pool
@@ -16,17 +17,24 @@ from app.rag.embeddings import query_embedder
 from app.rag.retrieval import HybridRetriever, Retriever
 
 _retriever: Retriever | None = None
+_github: GitHubActivity | None = None
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """On startup, load all passages from Postgres and build the search index."""
-    global _retriever
+    """On startup, load the search index and open the GitHub client."""
+    global _retriever, _github
     settings = get_settings()
-    async with create_pool(settings) as pool:
+    async with (
+        create_pool(settings) as pool,
+        github_client(settings.github_timeout_s) as http,
+    ):
         _retriever = await HybridRetriever.load(pool, query_embedder(settings))
+        _github = GitHubActivity(
+            http, settings.github_username, settings.github_cache_seconds
+        )
         yield
-    _retriever = None
+    _retriever = _github = None
 
 
 def get_retriever() -> Retriever:
@@ -34,6 +42,13 @@ def get_retriever() -> Retriever:
     if _retriever is None:
         raise RuntimeError("Retriever is not loaded; the app lifespan did not run")
     return _retriever
+
+
+def get_github() -> GitHubActivity:
+    """The GitHub client opened at startup (replaced by a fake in tests)."""
+    if _github is None:
+        raise RuntimeError("GitHub client is not ready; the app lifespan did not run")
+    return _github
 
 
 app = FastAPI(title="Portfolio chat API", lifespan=lifespan)
@@ -61,12 +76,15 @@ def health(
 
 @app.post("/api/chat")
 async def chat(
-    request: ChatRequest, retriever: Annotated[Retriever, Depends(get_retriever)]
+    request: ChatRequest,
+    retriever: Annotated[Retriever, Depends(get_retriever)],
+    github: Annotated[GitHubActivity, Depends(get_github)],
 ) -> StreamingResponse:
     """Run the pipeline for one question and stream its events."""
 
     async def sse() -> AsyncIterator[str]:
-        async for event in run_pipeline(request.question, get_settings(), retriever):
+        settings = get_settings()
+        async for event in run_pipeline(request.question, settings, retriever, github):
             yield f"data: {event.model_dump_json()}\n\n"
 
     return StreamingResponse(

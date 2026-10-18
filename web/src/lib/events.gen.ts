@@ -8,6 +8,8 @@ export interface StreamEvent {
     | RequestStarted
     | GuardrailsChecked
     | CacheChecked
+    | ToolCalled
+    | ToolCompleted
     | RetrievalStarted
     | RetrievalCompleted
     | DecisionMade
@@ -36,6 +38,20 @@ export interface CacheChecked {
   type: "cache.checked";
   hit: boolean;
   similarity: number | null;
+}
+export interface ToolCalled {
+  type: "tool.called";
+  tool: string;
+  args: {
+    [k: string]: string;
+  };
+}
+export interface ToolCompleted {
+  type: "tool.completed";
+  tool: string;
+  ok: boolean;
+  result_count: number;
+  duration_ms: number;
 }
 export interface RetrievalStarted {
   type: "retrieval.started";

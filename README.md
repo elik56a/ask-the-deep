@@ -6,13 +6,16 @@ It's built to production standards: retrieval-augmented generation (RAG) with me
 
 ## How it works
 
-Every question runs the same four stations, and each one streams a real event to the browser:
+After the guardrails, an agent decides which tools to call (search the knowledge base, browse projects, check GitHub, get contact details), then writes an answer. Every tool call streams a real event to the browser:
 
 ```
-question → guardrails → retrieval → decision gate → generation → answer + sources
-                                         │
-                                         └─ nothing relevant found → "I don't have that information" (no model call)
+question → guardrails → agent loop ─────────────────────────────→ checked answer + sources
+                        model → tool → result → … (max 4 calls)
+                                                       │
+                                                       └─ no valid answer → "I don't have that information"
 ```
+
+Code keeps the agent honest: weak passages never reach the model, citations must come from tool results, and limits cap cost ([ADR 0005](docs/adr/0005-bounded-tool-calling-agent.md)).
 
 The event schema in [`api/app/events.py`](api/app/events.py) is the single source of truth; the TypeScript types in `web/` are generated from it.
 

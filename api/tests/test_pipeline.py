@@ -1,10 +1,15 @@
 import itertools
+from collections.abc import AsyncIterator
 
+from pydantic_ai.messages import ModelMessage
+from pydantic_ai.models.function import AgentInfo, DeltaToolCalls, FunctionModel
+
+from app.agent.chat_agent import agent
 from app.config import Settings
 from app.events import StreamEvent
 from app.pipeline import run_pipeline
 from app.rag.retrieval import Hit
-from tests.fakes import StubRetriever, make_chunk
+from tests.fakes import StubRetriever, Turn, fake_github, make_chunk, scripted
 
 SETTINGS = Settings()
 THRESHOLD = SETTINGS.retrieval_threshold
@@ -14,10 +19,22 @@ RELEVANT = StubRetriever(
 IRRELEVANT = StubRetriever(
     [Hit(make_chunk("work", "Eliyahu works at Phytech"), THRESHOLD - 0.2, 0.03)]
 )
+SEARCH: Turn = ("search_knowledge", {"query": "work"})
+ANSWER: Turn = (
+    "answer",
+    {"kind": "answered", "citations": ["work"], "text": "He works at Phytech."},
+)
 
 
-async def _run(question: str, retriever: StubRetriever = RELEVANT) -> list[StreamEvent]:
-    return [e async for e in run_pipeline(question, SETTINGS, retriever)]
+async def _run(
+    question: str,
+    retriever: StubRetriever = RELEVANT,
+    model: FunctionModel | None = None,
+) -> list[StreamEvent]:
+    with agent.override(model=model or scripted(SEARCH, ANSWER)):
+        return [
+            e async for e in run_pipeline(question, SETTINGS, retriever, fake_github())
+        ]
 
 
 def _types(events: list[StreamEvent]) -> list[str]:
@@ -32,34 +49,44 @@ def _assert_well_formed(events: list[StreamEvent]) -> None:
         assert StreamEvent.model_validate_json(e.model_dump_json()) == e
 
 
-async def test_answers_from_corpus_and_emits_every_stage() -> None:
-    events = await _run("Which technologies does Eliyahu work with daily?")
+async def test_agent_answer_emits_every_stage_in_order() -> None:
+    events = await _run("Where does Eliyahu work?")
     _assert_well_formed(events)
     types = _types(events)
-    assert types[:6] == [
+    assert types[:7] == [
         "request.started",
         "guardrails.checked",
+        "tool.called",
         "retrieval.started",
         "retrieval.completed",
-        "decision.made",
+        "tool.completed",
         "generation.started",
     ]
     assert "text.delta" in types
-    assert types[-3:] == ["citations.attached", "usage.reported", "request.finished"]
+    assert types[-4:] == [
+        "decision.made",
+        "citations.attached",
+        "usage.reported",
+        "request.finished",
+    ]
     assert events[-1].event.model_dump()["outcome"] == "answered"
 
 
-async def test_skips_the_model_when_nothing_relevant_is_found() -> None:
-    events = await _run("What is your favorite pizza topping?", IRRELEVANT)
+async def test_attaches_only_the_cited_passages() -> None:
+    events = await _run("Where does Eliyahu work?")
+    cited = next(
+        e.event.model_dump() for e in events if e.event.type == "citations.attached"
+    )
+    assert [c["chunk_id"] for c in cited["citations"]] == ["work"]
+
+
+async def test_no_valid_answer_becomes_no_information_in_question_language() -> None:
+    events = await _run("איפה אליהו עובד?", IRRELEVANT)
     _assert_well_formed(events)
-    assert "generation.started" not in _types(events)
-    assert events[-1].event.model_dump()["outcome"] == "no_information"
-
-
-async def test_answers_no_information_in_the_question_language() -> None:
-    events = await _run("מה התוספת האהובה עליך בפיצה?", IRRELEVANT)
     delta = next(e.event.model_dump() for e in events if e.event.type == "text.delta")
     assert "אין לי" in delta["text"]
+    assert "citations.attached" not in _types(events)
+    assert events[-1].event.model_dump()["outcome"] == "no_information"
 
 
 async def test_blocks_input_over_the_length_cap() -> None:
@@ -73,15 +100,14 @@ async def test_blocks_input_over_the_length_cap() -> None:
     ]
 
 
-async def test_only_passages_above_threshold_are_cited() -> None:
-    mixed = StubRetriever(
-        [
-            Hit(make_chunk("good", "relevant"), THRESHOLD + 0.1, 0.03),
-            Hit(make_chunk("weak", "barely related"), THRESHOLD - 0.1, 0.02),
-        ]
-    )
-    events = await _run("Where does Eliyahu work?", mixed)
-    cited = next(
-        e.event.model_dump() for e in events if e.event.type == "citations.attached"
-    )
-    assert [c["chunk_id"] for c in cited["citations"]] == ["good"]
+async def test_model_failure_emits_a_public_error() -> None:
+    async def broken(
+        messages: list[ModelMessage], info: AgentInfo
+    ) -> AsyncIterator[DeltaToolCalls]:
+        raise RuntimeError("provider down")
+        yield {}
+
+    events = await _run("Where?", model=FunctionModel(stream_function=broken))
+    _assert_well_formed(events)
+    assert _types(events)[-2:] == ["error", "request.finished"]
+    assert events[-1].event.model_dump()["outcome"] == "error"

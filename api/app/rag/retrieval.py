@@ -39,6 +39,8 @@ class Retriever(Protocol):
 
     async def search(self, query: str, top_k: int) -> list[Hit]: ...
 
+    def passages(self) -> list[Chunk]: ...
+
 
 def tokenize(text: str) -> list[str]:
     """Split text into lowercase words for keyword search."""
@@ -118,6 +120,10 @@ class HybridRetriever:
         scores = self._bm25.get_scores(tokenize(query))
         ranked = sorted(zip(self._ids, scores, strict=True), key=lambda p: -p[1])
         return [cid for cid, score in ranked if score > 0]
+
+    def passages(self) -> list[Chunk]:
+        """Every loaded passage, for tools that browse instead of search."""
+        return list(self._chunks.values())
 
     async def search(self, query: str, top_k: int) -> list[Hit]:
         if not self._chunks:

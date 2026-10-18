@@ -19,6 +19,8 @@ from app.events import (
     ScoredPassage,
     StreamEvent,
     TextDelta,
+    ToolCalled,
+    ToolCompleted,
     UsageReported,
 )
 
@@ -26,6 +28,8 @@ SAMPLES: list[Event] = [
     RequestStarted(model="m", provider="p", rules_version="v1"),
     GuardrailsChecked(checks=[GuardrailCheck(name="input_length", passed=True)]),
     CacheChecked(hit=False),
+    ToolCalled(tool="search_knowledge", args={"query": "q"}),
+    ToolCompleted(tool="search_knowledge", ok=True, result_count=2, duration_ms=5),
     RetrievalStarted(query="q"),
     RetrievalCompleted(
         passages=[

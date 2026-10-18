@@ -2,10 +2,11 @@ import json
 
 from fastapi.testclient import TestClient
 
-from app.main import app, get_retriever
-from tests.fakes import StubRetriever
+from app.main import app, get_github, get_retriever
+from tests.fakes import StubRetriever, fake_github
 
 app.dependency_overrides[get_retriever] = lambda: StubRetriever([])
+app.dependency_overrides[get_github] = fake_github
 client = TestClient(app)
 
 

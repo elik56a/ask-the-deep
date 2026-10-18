@@ -1,14 +1,17 @@
-"""The four stations every question goes through.
+"""What happens to one question, from guardrails to the last event.
 
-guardrails -> retrieval -> decision gate -> generation. Each station emits an
-event, so the browser can show what the system is doing in real time.
+guardrails -> agent loop (the model calls tools, then answers) -> summary.
+Every step becomes an event, so the browser can show what the system is
+doing in real time.
 """
 
 import re
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
-from app.agent.generation import stream_answer
+from app.agent.chat_agent import AgentFinished, Answer, run_agent
+from app.agent.github import GitHubActivity
+from app.agent.tools import AgentDeps
 from app.config import Settings
 from app.emitter import Emitter
 from app.events import (
@@ -16,14 +19,10 @@ from app.events import (
     CitationsAttached,
     DecisionMade,
     ErrorEvent,
-    GenerationStarted,
     GuardrailCheck,
     GuardrailsChecked,
     RequestFinished,
     RequestStarted,
-    RetrievalCompleted,
-    RetrievalStarted,
-    ScoredPassage,
     StreamEvent,
     TextDelta,
     UsageReported,
@@ -62,13 +61,27 @@ def _citation(chunk: Chunk) -> Citation:
     )
 
 
+def _decision(answer: Answer | None, deps: AgentDeps) -> DecisionMade:
+    threshold = deps.settings.retrieval_threshold
+    if answer is None or answer.kind == "no_information":
+        action, reason = "no_information", "The tools found no information to answer"
+    elif answer.kind == "smalltalk":
+        action, reason = "answer", "Small talk, no facts needed"
+    else:
+        action = "answer"
+        reason = f"Answered from {deps.successful_tools} successful tool result(s)"
+    return DecisionMade(
+        action=action, reason=reason, best_score=deps.best_score, threshold=threshold
+    )
+
+
 async def run_pipeline(
-    question: str, settings: Settings, retriever: Retriever
+    question: str, settings: Settings, retriever: Retriever, github: GitHubActivity
 ) -> AsyncIterator[StreamEvent]:
     """Answer one question, yielding an event after every step.
 
-    The model is only called when retrieval finds a passage above the
-    threshold; otherwise the answer is "I don't have that information".
+    If the agent gives no valid answer within its limits, the visitor gets
+    "I don't have that information" instead of a guess.
     """
     em = Emitter(uuid4().hex)
     provider, model = settings.llm_provider_and_name
@@ -89,74 +102,42 @@ async def run_pipeline(
         yield em.emit(RequestFinished(outcome="blocked"))
         return
 
-    yield em.emit(RetrievalStarted(query=question))
-    threshold = settings.retrieval_threshold
-    hits = await retriever.search(question, settings.retrieval_top_k)
-    yield em.emit(
-        RetrievalCompleted(
-            passages=[
-                ScoredPassage(
-                    chunk_id=h.chunk.chunk_id,
-                    breadcrumb=h.chunk.breadcrumb,
-                    score=round(h.similarity, 3),
-                    above_threshold=h.similarity >= threshold,
-                )
-                for h in hits
-            ],
-            threshold=threshold,
-        )
-    )
-
-    best = max((h.similarity for h in hits), default=0.0)
-    if best < threshold:
-        yield em.emit(
-            DecisionMade(
-                action="no_information",
-                reason=f"Best score {best:.2f} is below threshold {threshold:.2f}",
-                best_score=best,
-                threshold=threshold,
-            )
-        )
-        yield em.emit(TextDelta(text=_NO_INFORMATION[_language(question)]))
-        yield em.emit(RequestFinished(outcome="no_information"))
-        return
-
-    yield em.emit(
-        DecisionMade(
-            action="answer",
-            reason=f"Best score {best:.2f} meets threshold {threshold:.2f}",
-            best_score=best,
-            threshold=threshold,
-        )
-    )
-    accepted = [h.chunk for h in hits if h.similarity >= threshold]
-    yield em.emit(
-        GenerationStarted(context_chunks=len(accepted), prompt_cache_hit=False)
-    )
-
-    generation_start = em.elapsed_ms()
+    deps = AgentDeps(retriever=retriever, github=github, settings=settings)
     ttft_ms: int | None = None
+    finished: AgentFinished | None = None
     try:
-        async with stream_answer(question, accepted, settings) as result:
-            async for delta in result.stream_text(delta=True):
-                if ttft_ms is None:
-                    ttft_ms = em.elapsed_ms()
-                yield em.emit(TextDelta(text=delta))
-            usage = result.usage
+        async for step in run_agent(question, deps):
+            if isinstance(step, AgentFinished):
+                finished = step
+                continue
+            if isinstance(step, TextDelta) and ttft_ms is None:
+                ttft_ms = em.elapsed_ms()
+            yield em.emit(step)
     except Exception:
+        finished = None
+    if finished is None:
         yield em.emit(ErrorEvent(code="generation_failed", message=_GENERATION_FAILED))
         yield em.emit(RequestFinished(outcome="error"))
         return
 
-    yield em.emit(CitationsAttached(citations=[_citation(c) for c in accepted]))
+    answer = finished.answer
+    yield em.emit(_decision(answer, deps))
+    if answer is None:
+        yield em.emit(TextDelta(text=_NO_INFORMATION[_language(question)]))
+    else:
+        cited = dict.fromkeys(answer.citations)
+        yield em.emit(
+            CitationsAttached(citations=[_citation(deps.seen[c]) for c in cited])
+        )
     yield em.emit(
         UsageReported(
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cached_tokens=usage.cache_read_tokens,
+            input_tokens=finished.usage.input_tokens,
+            output_tokens=finished.usage.output_tokens,
+            cached_tokens=finished.usage.cache_read_tokens,
             cost_usd=0.0,
-            latency_ms=em.elapsed_ms() - generation_start,
+            latency_ms=em.elapsed_ms(),
             ttft_ms=ttft_ms,
         )
     )
-    yield em.emit(RequestFinished(outcome="answered"))
+    no_info = answer is None or answer.kind == "no_information"
+    yield em.emit(RequestFinished(outcome="no_information" if no_info else "answered"))

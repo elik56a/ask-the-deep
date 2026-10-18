@@ -51,6 +51,20 @@ class CacheChecked(_Model):
     similarity: float | None = None
 
 
+class ToolCalled(_Model):
+    type: Literal["tool.called"] = "tool.called"
+    tool: str
+    args: dict[str, str]
+
+
+class ToolCompleted(_Model):
+    type: Literal["tool.completed"] = "tool.completed"
+    tool: str
+    ok: bool
+    result_count: int
+    duration_ms: int
+
+
 class RetrievalStarted(_Model):
     type: Literal["retrieval.started"] = "retrieval.started"
     query: str
@@ -111,6 +125,8 @@ Event = Annotated[
     RequestStarted
     | GuardrailsChecked
     | CacheChecked
+    | ToolCalled
+    | ToolCompleted
     | RetrievalStarted
     | RetrievalCompleted
     | DecisionMade
