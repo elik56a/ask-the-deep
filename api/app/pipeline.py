@@ -9,7 +9,7 @@ import re
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
-from app.agent.chat_agent import AgentFinished, Answer, run_agent
+from app.agent.chat_agent import AgentFinished, Answer, PastMessage, run_agent
 from app.agent.github import GitHubActivity
 from app.agent.tools import AgentDeps
 from app.config import Settings
@@ -43,11 +43,18 @@ def _language(text: str) -> str:
     return "he" if _HEBREW.search(text) else "en"
 
 
-def _guardrails(question: str, settings: Settings) -> list[GuardrailCheck]:
+def _guardrails(
+    question: str, history: list[PastMessage], settings: Settings
+) -> list[GuardrailCheck]:
     return [
         GuardrailCheck(name="not_empty", passed=bool(question.strip())),
         GuardrailCheck(
             name="input_length", passed=len(question) <= settings.max_input_chars
+        ),
+        GuardrailCheck(
+            name="history_size",
+            passed=len(history) <= settings.max_history_messages
+            and all(len(m.text) <= settings.max_history_chars for m in history),
         ),
     ]
 
@@ -76,7 +83,11 @@ def _decision(answer: Answer | None, deps: AgentDeps) -> DecisionMade:
 
 
 async def run_pipeline(
-    question: str, settings: Settings, retriever: Retriever, github: GitHubActivity
+    question: str,
+    settings: Settings,
+    retriever: Retriever,
+    github: GitHubActivity,
+    history: list[PastMessage] | None = None,
 ) -> AsyncIterator[StreamEvent]:
     """Answer one question, yielding an event after every step.
 
@@ -91,12 +102,14 @@ async def run_pipeline(
         )
     )
 
-    checks = _guardrails(question, settings)
+    history = history or []
+    checks = _guardrails(question, history, settings)
     yield em.emit(GuardrailsChecked(checks=checks))
     if not all(c.passed for c in checks):
         yield em.emit(
             ErrorEvent(
-                code="input_rejected", message="The question is empty or too long."
+                code="input_rejected",
+                message="The question or conversation is empty or too long.",
             )
         )
         yield em.emit(RequestFinished(outcome="blocked"))
@@ -106,7 +119,7 @@ async def run_pipeline(
     ttft_ms: int | None = None
     finished: AgentFinished | None = None
     try:
-        async for step in run_agent(question, deps):
+        async for step in run_agent(question, deps, history):
             if isinstance(step, AgentFinished):
                 finished = step
                 continue
@@ -134,7 +147,7 @@ async def run_pipeline(
             input_tokens=finished.usage.input_tokens,
             output_tokens=finished.usage.output_tokens,
             cached_tokens=finished.usage.cache_read_tokens,
-            cost_usd=0.0,
+            cost_usd=finished.cost_usd,
             latency_ms=em.elapsed_ms(),
             ttft_ms=ttft_ms,
         )

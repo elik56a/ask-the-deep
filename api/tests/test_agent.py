@@ -1,4 +1,24 @@
-from app.agent.chat_agent import AgentFinished, AgentStep, agent, run_agent
+from collections.abc import AsyncIterator
+
+from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
+)
+from pydantic_ai.models.fallback import FallbackModel
+from pydantic_ai.models.function import AgentInfo, DeltaToolCalls, FunctionModel
+from pydantic_ai.usage import RequestUsage
+
+from app.agent.chat_agent import (
+    AgentFinished,
+    AgentStep,
+    PastMessage,
+    agent,
+    cost_usd,
+    run_agent,
+)
 from app.config import Settings
 from app.events import TextDelta, ToolCompleted
 from app.rag.retrieval import Hit
@@ -21,7 +41,7 @@ FORGED: Turn = (
 
 async def _run(*turns: Turn, question: str = "Where?") -> list[AgentStep]:
     with agent.override(model=scripted(*turns)):
-        return [s async for s in run_agent(question, make_deps(RETRIEVER))]
+        return [s async for s in run_agent(question, make_deps(RETRIEVER), [])]
 
 
 def _finished(steps: list[AgentStep]) -> AgentFinished:
@@ -84,3 +104,56 @@ async def test_stops_a_model_that_keeps_calling_tools() -> None:
     tool_calls = [s for s in steps if isinstance(s, ToolCompleted)]
     assert len(tool_calls) <= Settings().agent_max_tool_calls
     assert _finished(steps).answer is None
+
+
+async def test_backup_model_answers_when_the_main_one_fails() -> None:
+    async def down(
+        messages: list[ModelMessage], info: AgentInfo
+    ) -> AsyncIterator[DeltaToolCalls]:
+        raise ModelHTTPError(503, "primary")
+        yield {}
+
+    backup = FallbackModel(FunctionModel(stream_function=down), scripted(SEARCH, VALID))
+    with agent.override(model=backup):
+        steps = [s async for s in run_agent("Where?", make_deps(RETRIEVER), [])]
+    assert _text(steps) == "He works at Phytech."
+
+
+def test_cost_uses_list_prices_and_treats_unknown_models_as_free() -> None:
+    usage = RequestUsage(input_tokens=1_000_000, output_tokens=0)
+    priced = ModelResponse(
+        parts=[TextPart("x")],
+        usage=usage,
+        model_name="gemini-2.5-flash-lite",
+        provider_name="google",
+    )
+    unknown = ModelResponse(parts=[TextPart("x")], usage=usage, model_name="test")
+    assert cost_usd([priced]) > 0
+    assert cost_usd([priced, unknown]) == cost_usd([priced])
+
+
+async def test_model_sees_earlier_messages_for_follow_ups() -> None:
+    sent: list[ModelMessage] = []
+    history = [
+        PastMessage(role="user", text="Where does Eliyahu work?"),
+        PastMessage(role="assistant", text="At Phytech."),
+    ]
+    with agent.override(model=scripted(VALID, record=sent)):
+        steps = [
+            s
+            async for s in run_agent(
+                "What does he do there?", make_deps(RETRIEVER), history
+            )
+        ]
+    contents = [
+        str(part.content)
+        for m in sent
+        for part in m.parts
+        if isinstance(part, UserPromptPart | TextPart)
+    ]
+    assert contents[:3] == [
+        "Where does Eliyahu work?",
+        "At Phytech.",
+        "What does he do there?",
+    ]
+    assert _finished(steps).cost_usd == 0.0

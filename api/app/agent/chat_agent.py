@@ -1,6 +1,8 @@
 """The agent loop: the model decides which tools to call, then writes a checked answer.
 
-Limits cap how many model and tool calls one question may use. The answer is
+If the main model fails (provider error), a backup model takes over when
+LLM_FALLBACK_MODEL is set. Limits cap how many model and tool calls one
+question may use. The answer is
 structured (kind, citations, text) and checked in code: it may cite only
 passages a tool returned, and an "answered" reply needs at least one tool
 result. A failed check makes the model retry once; after that, no answer.
@@ -11,7 +13,7 @@ the pipeline never touches Pydantic AI directly.
 
 import json
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -26,8 +28,16 @@ from pydantic_ai import (
     UsageLimits,
 )
 from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
-from pydantic_ai.messages import ToolReturnPart
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    ToolReturnPart,
+    UserPromptPart,
+)
 from pydantic_ai.models import Model
+from pydantic_ai.models.fallback import FallbackModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.result import AgentStream
 from pydantic_ai.usage import RunUsage
@@ -61,12 +71,20 @@ class Answer(BaseModel):
     text: str
 
 
+class PastMessage(BaseModel):
+    """An earlier message of the conversation, sent by the browser (never stored)."""
+
+    role: Literal["user", "assistant"]
+    text: str
+
+
 @dataclass(frozen=True)
 class AgentFinished:
     """The end of a run. `answer` is None when no valid answer came within limits."""
 
     answer: Answer | None
     usage: RunUsage
+    cost_usd: float
 
 
 AgentStep = (
@@ -113,13 +131,41 @@ def _model(settings: Settings) -> Model | str:
                 "text": _TEST_ANSWER,
             },
         )
+    if settings.llm_fallback_model:
+        return FallbackModel(settings.llm_model, settings.llm_fallback_model)
     return settings.llm_model
+
+
+def cost_usd(messages: Sequence[ModelMessage]) -> float:
+    """What the run's model calls cost at list prices (from genai-prices).
+
+    Each response is priced by the model that actually produced it, so a run
+    that fell back to the backup model is charged correctly. Unknown models
+    (the offline test model) count as free.
+    """
+    total = 0.0
+    for message in messages:
+        if isinstance(message, ModelResponse) and message.model_name:
+            try:
+                total += float(message.cost().total_price)
+            except LookupError:
+                continue
+    return total
 
 
 def _instructions(settings: Settings) -> str:
     return (_PROMPTS / f"answer_{settings.rules_version}.md").read_text(
         encoding="utf-8"
     )
+
+
+def _history(messages: list[PastMessage]) -> list[ModelMessage]:
+    return [
+        ModelRequest(parts=[UserPromptPart(m.text)])
+        if m.role == "user"
+        else ModelResponse(parts=[TextPart(m.text)])
+        for m in messages
+    ]
 
 
 def _scored(hits: list[Hit], threshold: float) -> list[ScoredPassage]:
@@ -213,15 +259,23 @@ async def _answer_steps(
         return
 
 
-async def run_agent(question: str, deps: AgentDeps) -> AsyncIterator[AgentStep]:
-    """Run the agent for one question, yielding a step for everything it does."""
+async def run_agent(
+    question: str, deps: AgentDeps, history: list[PastMessage]
+) -> AsyncIterator[AgentStep]:
+    """Run the agent for one question, yielding a step for everything it does.
+
+    `history` lets the model resolve follow-ups ("and what does he do there?")
+    into specific search queries; facts still have to come from this run's tools.
+    """
     settings = deps.settings
     tracker = _ToolTracker(settings.retrieval_threshold)
     usage = RunUsage()
+    cost = 0.0
     answer: Answer | None = None
     try:
         async with agent.iter(
             question,
+            message_history=_history(history),
             deps=deps,
             model=_model(settings),
             instructions=_instructions(settings),
@@ -245,6 +299,7 @@ async def run_agent(question: str, deps: AgentDeps) -> AsyncIterator[AgentStep]:
                 answer = run.result.output if run.result else None
             finally:
                 usage = run.usage
+                cost = cost_usd(run.new_messages())
     except (UnexpectedModelBehavior, UsageLimitExceeded):
         answer = None
-    yield AgentFinished(answer=answer, usage=usage)
+    yield AgentFinished(answer=answer, usage=usage, cost_usd=cost)

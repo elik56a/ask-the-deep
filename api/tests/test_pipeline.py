@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models.function import AgentInfo, DeltaToolCalls, FunctionModel
 
-from app.agent.chat_agent import agent
+from app.agent.chat_agent import PastMessage, agent
 from app.config import Settings
 from app.events import StreamEvent
 from app.pipeline import run_pipeline
@@ -30,10 +30,14 @@ async def _run(
     question: str,
     retriever: StubRetriever = RELEVANT,
     model: FunctionModel | None = None,
+    history: list[PastMessage] | None = None,
 ) -> list[StreamEvent]:
     with agent.override(model=model or scripted(SEARCH, ANSWER)):
         return [
-            e async for e in run_pipeline(question, SETTINGS, retriever, fake_github())
+            e
+            async for e in run_pipeline(
+                question, SETTINGS, retriever, fake_github(), history
+            )
         ]
 
 
@@ -111,3 +115,13 @@ async def test_model_failure_emits_a_public_error() -> None:
     _assert_well_formed(events)
     assert _types(events)[-2:] == ["error", "request.finished"]
     assert events[-1].event.model_dump()["outcome"] == "error"
+
+
+async def test_blocks_a_conversation_history_over_the_cap() -> None:
+    history = [PastMessage(role="user", text="hi")] * (
+        SETTINGS.max_history_messages + 1
+    )
+    events = await _run("Where?", history=history)
+    checks = events[1].event.model_dump()["checks"]
+    assert {"name": "history_size", "passed": False} in checks
+    assert events[-1].event.model_dump()["outcome"] == "blocked"

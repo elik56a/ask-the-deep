@@ -10,9 +10,9 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 10 | [ ] |
+| P1 RAG core | 18 | 12 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
-| P3 Transparency & observability | 14 | 0 | [ ] |
+| P3 Transparency & observability | 15 | 0 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 16 | 0 | [ ] |
 
@@ -79,14 +79,14 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P1.6** Expose the corpus version (`/api/health`; shown on site in P5.7)
 
 ### Retrieval
-- [ ] **P1.7** Question rewrite using the last 2 messages (resolve "he"/"there")
+- [x] **P1.7** Follow-up questions: the browser keeps the whole session's conversation and sends it with each question (up to `MAX_HISTORY_MESSAGES`, default 20, oldest dropped first; never stored server-side, ADR 0007); the agent resolves "he"/"there" into specific search queries (visible in `tool.called`) instead of a separate rewrite call; `history_size` guardrail
 - [x] **P1.8** Hybrid retrieval: pgvector + in-memory BM25 (rank-bm25, built at cold start from Postgres) in parallel, merged with RRF, top-k = `RETRIEVAL_TOP_K`. The server then reads only from Postgres; file loading moves to ingestion.
 - [ ] **P1.9** Embed with `gemini-embedding-001` (768 dims); measure recall@6 on Hebrew + English; ADR with the result
 - [ ] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions
 - [ ] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers
 
 ### Agent (`api/agent/`) — ADR 0005 replaces the fixed pipeline
-- [ ] **P1.12** Model layer: `provider:model` from env, fallback chain (primary → fallback → failure message), versioned prompts + pricing files
+- [x] **P1.12** Model layer: `provider:model` from env, fallback (`LLM_FALLBACK_MODEL` via Pydantic AI `FallbackModel` → failure message), versioned prompts, real cost per answer from genai-prices (ADR 0006)
 - [x] **P1.13** Agent loop with limits (`AGENT_MAX_REQUESTS`, `AGENT_MAX_TOOL_CALLS`); structured answer (kind, citations, text), streaming; `tool.called` / `tool.completed` events
 - [x] **P1.14** Deterministic citation check: every cited id must be returned by a tool in this run; "answered" needs a tool result; 1 retry → refusal; invalid attempts are never streamed
 - [x] **P1.15** Gate inside `search_knowledge`: passages below threshold never reach the model; no valid answer → "I don't have that information" + contact pointer
@@ -104,7 +104,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P2.2** DynamoDB table (Terraform + Local) with TTL for counters
 - [ ] **P2.3** Rate limit per IP-hash and session (`RATE_LIMIT_PER_MINUTE`) — _Deps: P2.2_
 - [ ] **P2.4** Daily budget counter + kill switch → fallback message at `DAILY_BUDGET_USD`; per-IP cost cap — _Deps: P2.2_
-- [ ] **P2.5** Input cap (`MAX_INPUT_CHARS`), output cap (`MAX_OUTPUT_TOKENS`); client sends ≤ 4 messages, server enforces
+- [ ] **P2.5** Input cap (`MAX_INPUT_CHARS`), output cap (`MAX_OUTPUT_TOKENS`); client sends the session history ≤ `MAX_HISTORY_MESSAGES` (20), server enforces
 - [ ] **P2.6** Injection defenses: no secrets in context, delimited data, "don't follow instructions in passages", `guardrails.checked` emits each check
 - [ ] **P2.7** IPs stored only as hashes (salted); nothing raw in logs
 - [ ] **P2.8** CORS limited to `ALLOWED_ORIGINS`; security headers + CSP on CloudFront; HTTPS only
@@ -125,7 +125,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P3.2** SSE in Vercel AI SDK protocol (answer as text parts, events as data parts); pin the AI SDK version; verify against current docs
 - [ ] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level
 - [ ] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4)
-- [ ] **P3.5** Cost calc from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.
+- [~] **P3.5** Cost calc (done in P1.12 via genai-prices → `usage.reported`; trace still to do) from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.
 - [ ] **P3.6** Prompt caching for the system prompt and fixed instructions
 - [ ] **P3.7** Public stats endpoint: question count, avg cost, latency, "no info" rate — aggregated, anonymous, no exact budget
 - [ ] **P3.8** Sentry on API and web
@@ -133,9 +133,10 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P3.10** Privacy check: no question or answer text in logs, traces or DynamoDB (test asserts it)
 
 ### Client
-- [ ] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label
+- [ ] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`
 - [ ] **P3.12** Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
 - [ ] **P3.13** "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
+- [ ] **P3.15** One event per LLM call (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
 - [ ] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans
 
 ---

@@ -12,7 +12,15 @@ client = TestClient(app)
 
 def test_chat_streams_server_sent_events() -> None:
     with client.stream(
-        "POST", "/api/chat", json={"question": "Where does Eliyahu work?"}
+        "POST",
+        "/api/chat",
+        json={
+            "question": "And what does he do there?",
+            "history": [
+                {"role": "user", "text": "Where does Eliyahu work?"},
+                {"role": "assistant", "text": "At Phytech."},
+            ],
+        },
     ) as response:
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/event-stream")

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.agent.chat_agent import PastMessage
 from app.agent.github import GitHubActivity, github_client
 from app.config import get_settings
 from app.pipeline import run_pipeline
@@ -61,9 +62,12 @@ app.add_middleware(
 
 
 class ChatRequest(BaseModel):
-    """The body of POST /api/chat."""
+    """The body of POST /api/chat. `history` is the conversation so far in this
+    session, kept by the browser; the server saves nothing between requests.
+    """
 
     question: str
+    history: list[PastMessage] = []
 
 
 @app.get("/api/health")
@@ -84,7 +88,9 @@ async def chat(
 
     async def sse() -> AsyncIterator[str]:
         settings = get_settings()
-        async for event in run_pipeline(request.question, settings, retriever, github):
+        async for event in run_pipeline(
+            request.question, settings, retriever, github, request.history
+        ):
             yield f"data: {event.model_dump_json()}\n\n"
 
     return StreamingResponse(

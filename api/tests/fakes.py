@@ -98,16 +98,19 @@ def make_deps(retriever: StubRetriever, settings: Settings | None = None) -> Age
 Turn = tuple[str, dict[str, object]]
 
 
-def scripted(*turns: Turn) -> FunctionModel:
+def scripted(*turns: Turn, record: list[ModelMessage] | None = None) -> FunctionModel:
     """A model that plays one turn per request: a tool call ("search_knowledge",
     {"query": ...}) or a final ("answer", {kind, citations, text}). After the
     last turn it repeats it. Args are streamed in two pieces, like a real model.
+    Pass `record` to collect the messages the model was sent.
     """
     queue = list(turns)
 
     async def stream(
         messages: list[ModelMessage], info: AgentInfo
     ) -> AsyncIterator[DeltaToolCalls]:
+        if record is not None:
+            record.extend(messages)
         name, args = queue.pop(0) if len(queue) > 1 else queue[0]
         if name == "answer":
             name = info.output_tools[0].name
