@@ -2,8 +2,10 @@ import json
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, get_retriever
+from tests.fakes import StubRetriever
 
+app.dependency_overrides[get_retriever] = lambda: StubRetriever([])
 client = TestClient(app)
 
 
@@ -23,4 +25,7 @@ def test_chat_streams_server_sent_events() -> None:
 
 
 def test_health() -> None:
-    assert client.get("/api/health").json() == {"status": "ok"}
+    assert client.get("/api/health").json() == {
+        "status": "ok",
+        "corpus_version": "stub-version",
+    }

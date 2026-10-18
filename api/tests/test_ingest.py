@@ -1,42 +1,12 @@
-import hashlib
-from collections.abc import Iterator, Sequence
 from pathlib import Path
-from uuid import uuid4
-
-import pytest
 
 from app.config import Settings
 from app.rag.corpus import Chunk, load_corpus
-from app.rag.db import Conn, connect
+from app.rag.db import Conn
 from app.rag.ingest import corpus_version, ingest
+from tests.fakes import FakeEmbedder
 
 SETTINGS = Settings()
-
-
-class FakeEmbedder:
-    def __init__(self) -> None:
-        self.calls: list[int] = []
-
-    def __call__(self, texts: Sequence[str]) -> list[list[float]]:
-        self.calls.append(len(texts))
-        return [self._vector(t) for t in texts]
-
-    @staticmethod
-    def _vector(text: str) -> list[float]:
-        digest = hashlib.sha256(text.encode()).digest()
-        return [
-            float(digest[i % len(digest)]) for i in range(SETTINGS.embedding_dimensions)
-        ]
-
-
-@pytest.fixture
-def conn() -> Iterator[Conn]:
-    schema = f"test_{uuid4().hex[:8]}"
-    with connect(SETTINGS) as connection:
-        connection.execute(f"CREATE SCHEMA {schema}")
-        connection.execute(f"SET search_path TO {schema}, public")
-        yield connection
-        connection.execute(f"DROP SCHEMA {schema} CASCADE")
 
 
 def _corpus(root: Path, sections: dict[str, str]) -> list[Chunk]:

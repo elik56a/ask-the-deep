@@ -1,9 +1,32 @@
 import psycopg
-from pgvector.psycopg import register_vector
+from pgvector.psycopg import register_vector, register_vector_async
+from psycopg_pool import AsyncConnectionPool
 
 from app.config import Settings
 
 Conn = psycopg.Connection[tuple[object, ...]]
+AsyncConn = psycopg.AsyncConnection[tuple[object, ...]]
+Pool = AsyncConnectionPool[AsyncConn]
+
+CORPUS_VERSION_SQL = (
+    "SELECT left(md5(coalesce(string_agg(content_hash, '' ORDER BY chunk_id), '')), 12)"
+    " FROM chunks"
+)
+
+
+async def configure_connection(conn: AsyncConn) -> None:
+    await register_vector_async(conn)
+
+
+def create_pool(settings: Settings) -> Pool:
+    return AsyncConnectionPool(
+        settings.database_url.get_secret_value(),
+        min_size=0,
+        max_size=2,
+        open=False,
+        kwargs={"autocommit": True},
+        configure=configure_connection,
+    )
 
 
 def connect(settings: Settings) -> Conn:

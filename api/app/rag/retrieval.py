@@ -1,32 +1,113 @@
+import asyncio
 import re
 from dataclasses import dataclass
+from typing import Protocol, Self
+
+from rank_bm25 import BM25Okapi
 
 from app.rag.corpus import Chunk
+from app.rag.db import CORPUS_VERSION_SQL, Pool
+from app.rag.embeddings import QueryEmbedFn
 
-_WORD = re.compile(r"\w{3,}")
+_WORD = re.compile(r"\w+")
+RRF_K = 60
 
 
 @dataclass(frozen=True)
 class Hit:
     chunk: Chunk
-    score: float
+    similarity: float
+    rrf: float
 
 
-def _words(text: str) -> set[str]:
-    return set(_WORD.findall(text.lower()))
+class Retriever(Protocol):
+    corpus_version: str
+
+    async def search(self, query: str, top_k: int) -> list[Hit]: ...
 
 
-# TODO(P1.8): word-overlap placeholder, replaced by hybrid vector + BM25 search.
-def retrieve(corpus: list[Chunk], query: str, top_k: int) -> list[Hit]:
-    query_words = _words(query)
-    if not query_words:
-        return []
-    hits = [
-        Hit(
-            chunk,
-            len(query_words & _words(f"{chunk.breadcrumb} {chunk.text}"))
-            / len(query_words),
+def tokenize(text: str) -> list[str]:
+    # No stemming: Hebrew prefixes (ה, ו, ב, ל) stay attached to words.
+    # The vector side covers what keyword matching misses.
+    return _WORD.findall(text.lower())
+
+
+def rrf_scores(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
+    scores: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, chunk_id in enumerate(ranking, start=1):
+            scores[chunk_id] = scores.get(chunk_id, 0.0) + 1 / (k + rank)
+    return scores
+
+
+class HybridRetriever:
+    def __init__(
+        self,
+        pool: Pool,
+        embed_query: QueryEmbedFn,
+        chunks: list[Chunk],
+        corpus_version: str = "",
+    ) -> None:
+        self.corpus_version = corpus_version
+        self._pool = pool
+        self._embed_query = embed_query
+        self._chunks = {c.chunk_id: c for c in chunks}
+        self._ids = list(self._chunks)
+        self._bm25 = (
+            BM25Okapi([tokenize(c.embed_text) for c in chunks]) if chunks else None
         )
-        for chunk in corpus
-    ]
-    return sorted(hits, key=lambda h: h.score, reverse=True)[:top_k]
+
+    @classmethod
+    async def load(cls, pool: Pool, embed_query: QueryEmbedFn) -> Self:
+        async with pool.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT chunk_id, source, breadcrumb, text, metadata FROM chunks"
+            )
+            rows = await cursor.fetchall()
+            version_row = await (await conn.execute(CORPUS_VERSION_SQL)).fetchone()
+        chunks = [
+            Chunk(
+                chunk_id=str(cid),
+                source=str(source),
+                breadcrumb=str(breadcrumb),
+                text=str(text),
+                metadata=dict(metadata) if isinstance(metadata, dict) else {},
+            )
+            for cid, source, breadcrumb, text, metadata in rows
+        ]
+        version = str(version_row[0]) if version_row else ""
+        return cls(pool, embed_query, chunks, version)
+
+    async def _similarities(self, query: str) -> dict[str, float]:
+        vector = await self._embed_query(query)
+        # Exact scan of every row: fine for a few thousand passages.
+        async with self._pool.connection() as conn:
+            cursor = await conn.execute(
+                "SELECT chunk_id, 1 - (embedding <=> %s::vector) FROM chunks",
+                (vector,),
+            )
+            rows = await cursor.fetchall()
+        return {str(cid): float(str(sim)) for cid, sim in rows}
+
+    def _keyword_ranking(self, query: str) -> list[str]:
+        if self._bm25 is None:
+            return []
+        scores = self._bm25.get_scores(tokenize(query))
+        ranked = sorted(zip(self._ids, scores, strict=True), key=lambda p: -p[1])
+        return [cid for cid, score in ranked if score > 0]
+
+    async def search(self, query: str, top_k: int) -> list[Hit]:
+        if not self._chunks:
+            return []
+        similarities, keyword_ranking = await asyncio.gather(
+            self._similarities(query),
+            asyncio.to_thread(self._keyword_ranking, query),
+        )
+        vector_ranking = sorted(similarities, key=lambda cid: -similarities[cid])
+        merged = rrf_scores([vector_ranking, keyword_ranking])
+        best = sorted(merged, key=lambda cid: -merged[cid])[:top_k]
+        return [
+            Hit(self._chunks[cid], similarities.get(cid, 0.0), merged[cid])
+            for cid in best
+            if cid in self._chunks
+        ]

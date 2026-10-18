@@ -1,10 +1,11 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 
 from pydantic_ai.embeddings import Embedder, TestEmbeddingModel
 
 from app.config import Settings
 
 EmbedFn = Callable[[Sequence[str]], list[list[float]]]
+QueryEmbedFn = Callable[[str], Awaitable[list[float]]]
 
 
 def _embedder(settings: Settings) -> Embedder:
@@ -21,5 +22,14 @@ def document_embedder(settings: Settings) -> EmbedFn:
 
     def embed(texts: Sequence[str]) -> list[list[float]]:
         return [list(v) for v in embedder.embed_documents_sync(texts).embeddings]
+
+    return embed
+
+
+def query_embedder(settings: Settings) -> QueryEmbedFn:
+    embedder = _embedder(settings)
+
+    async def embed(query: str) -> list[float]:
+        return list((await embedder.embed_query(query)).embeddings[0])
 
     return embed

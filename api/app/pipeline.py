@@ -23,7 +23,7 @@ from app.events import (
     UsageReported,
 )
 from app.rag.corpus import Chunk
-from app.rag.retrieval import retrieve
+from app.rag.retrieval import Retriever
 
 _HEBREW = re.compile(r"[֐-׿]")
 _NO_INFORMATION = {
@@ -57,7 +57,7 @@ def _citation(chunk: Chunk) -> Citation:
 
 
 async def run_pipeline(
-    question: str, settings: Settings, corpus: list[Chunk]
+    question: str, settings: Settings, retriever: Retriever
 ) -> AsyncIterator[StreamEvent]:
     em = Emitter(uuid4().hex)
     provider, model = settings.llm_provider_and_name
@@ -80,15 +80,15 @@ async def run_pipeline(
 
     yield em.emit(RetrievalStarted(query=question))
     threshold = settings.retrieval_threshold
-    hits = retrieve(corpus, question, settings.retrieval_top_k)
+    hits = await retriever.search(question, settings.retrieval_top_k)
     yield em.emit(
         RetrievalCompleted(
             passages=[
                 ScoredPassage(
                     chunk_id=h.chunk.chunk_id,
                     breadcrumb=h.chunk.breadcrumb,
-                    score=round(h.score, 3),
-                    above_threshold=h.score >= threshold,
+                    score=round(h.similarity, 3),
+                    above_threshold=h.similarity >= threshold,
                 )
                 for h in hits
             ],
@@ -96,7 +96,7 @@ async def run_pipeline(
         )
     )
 
-    best = hits[0].score if hits else 0.0
+    best = max((h.similarity for h in hits), default=0.0)
     if best < threshold:
         yield em.emit(
             DecisionMade(
@@ -118,7 +118,7 @@ async def run_pipeline(
             threshold=threshold,
         )
     )
-    accepted = [h.chunk for h in hits if h.score >= threshold]
+    accepted = [h.chunk for h in hits if h.similarity >= threshold]
     yield em.emit(
         GenerationStarted(context_chunks=len(accepted), prompt_cache_hit=False)
     )

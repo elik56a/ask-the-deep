@@ -11,3 +11,6 @@ dist/
 
 # Source documents with private details (CV etc.) never go to git
 *.pdf
+
+# Knowledge base stays local; ingestion runs from this machine (ADR 0004)
+data/knowledge/

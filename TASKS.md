@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 16 | 3 | [ ] |
+| P1 RAG core | 16 | 5 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
 | P3 Transparency & observability | 14 | 0 | [ ] |
 | P4 Evals in CI | 8 | 0 | [ ] |
@@ -70,17 +70,17 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Corpus
 - [~] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_
-- [ ] **P1.2** Privacy review of every corpus file before commit (checklist in PR template)
+- [ ] **P1.2** Privacy review of every corpus file before setting `visibility: public` (files stay local, ADR 0004)
 
 ### Ingestion (`api/rag/`)
 - [x] **P1.3** Loader: only `visibility: public`; parse front matter into metadata
 - [x] **P1.4** Chunker (ADR 0003): one passage per heading, split above 400 tokens, prefix a breadcrumb ("Phytech › Role › Achievements") — _Done when_ unit tests cover min/max size and breadcrumbs
 - [x] **P1.5** (also run it from `scripts/dev.sh`) Hash per passage; re-embed only the changed passages; write text, vector, metadata, hash and corpus version to Postgres. Idempotent. — _Done when_ a second run with no changes makes 0 embedding calls
-- [ ] **P1.6** Expose the corpus version (API field + shown on site later)
+- [x] **P1.6** Expose the corpus version (`/api/health`; shown on site in P5.7)
 
 ### Retrieval
 - [ ] **P1.7** Question rewrite using the last 2 messages (resolve "he"/"there")
-- [ ] **P1.8** Hybrid retrieval: pgvector + in-memory BM25 (rank-bm25, built at cold start from Postgres) in parallel, merged with RRF, top-k = `RETRIEVAL_TOP_K`. The server then reads only from Postgres; file loading moves to ingestion.
+- [x] **P1.8** Hybrid retrieval: pgvector + in-memory BM25 (rank-bm25, built at cold start from Postgres) in parallel, merged with RRF, top-k = `RETRIEVAL_TOP_K`. The server then reads only from Postgres; file loading moves to ingestion.
 - [ ] **P1.9** Embed with `gemini-embedding-001` (768 dims); measure recall@6 on Hebrew + English; ADR with the result
 - [ ] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions
 - [ ] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers
@@ -177,7 +177,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Launch
 - [ ] **P5.13** Playwright E2E: chat flow, panel, RTL, error states (runs on staging in CI)
-- [ ] **P5.14** CD: deploy staging → Playwright → promote prod; run ingestion when data changes
+- [ ] **P5.14** CD: deploy staging → Playwright → promote prod. Ingestion runs locally against Neon, not in CI (ADR 0004)
 - [ ] **P5.15** Domain + production deploy
 - [ ] **P5.16** Real-world cap test on production (rate limit, kill switch, provider limit) **before** sharing the link
 

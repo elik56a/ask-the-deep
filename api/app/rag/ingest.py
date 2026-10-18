@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from app.config import Settings, get_settings
 from app.rag.corpus import Chunk, load_corpus
-from app.rag.db import Conn, connect, create_schema
+from app.rag.db import CORPUS_VERSION_SQL, Conn, connect, create_schema
 from app.rag.embeddings import EmbedFn, document_embedder
 
 
@@ -79,11 +79,8 @@ def ingest(
 
 
 def corpus_version(conn: Conn) -> str:
-    row = conn.execute(
-        "SELECT md5(coalesce(string_agg(content_hash, '' ORDER BY chunk_id), ''))"
-        " FROM chunks"
-    ).fetchone()
-    return str(row[0])[:12] if row else ""
+    row = conn.execute(CORPUS_VERSION_SQL).fetchone()
+    return str(row[0]) if row else ""
 
 
 def main() -> None:

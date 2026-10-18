@@ -5,11 +5,13 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.146.0",
     "pgvector>=0.5.1",
+    "psycopg-pool>=3.3.3",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
     "pydantic-ai-slim[google]>=2.57.0",
     "pydantic-settings>=2.16.0",
     "pyyaml>=6.0.3",
+    "rank-bm25>=0.2.2",
     "structlog>=26.1.0",
     "uvicorn>=0.54.0",
 ]
@@ -29,7 +31,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["RUF001"]
+ignore = ["RUF001", "RUF003"]
 
 [tool.mypy]
 strict = true
@@ -39,3 +41,7 @@ plugins = ["pydantic.mypy"]
 asyncio_mode = "auto"
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[[tool.mypy.overrides]]
+module = ["rank_bm25"]
+ignore_missing_imports = true
