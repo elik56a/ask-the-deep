@@ -9,7 +9,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
-| P0 Foundations | 15 | 9 | [x] |
+| P0 Foundations | 15 | 11 | [x] |
 | P1 RAG core | 16 | 0 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
 | P3 Transparency & observability | 14 | 0 | [ ] |
@@ -47,7 +47,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Schema
 - [x] **P0.7** `api/events.py`: Pydantic discriminated union of all 12 event types (request.started … request.finished). Every event has `request_id`, `seq`, `t_ms`. No fields for the system prompt, keys, IP or budget. — _Done when_ unit test round-trips each type
-- [~] **P0.8** TS type generation `events.py → web/src/lib/events.gen.ts` via `pnpm gen:events` (done; CI freshness check lands with P0.14) — _Deps: P0.3, P0.7_
+- [x] **P0.8** TS type generation `events.py → web/src/lib/events.gen.ts` via `pnpm gen:events`; CI fails if it is stale — _Deps: P0.3, P0.7_
 
 ### Local env
 - [~] **P0.9** `docker-compose.yml`: Postgres + pgvector, DynamoDB Local — _Done when_ `docker compose up` is healthy
@@ -57,7 +57,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 ### Infra & CI
 - [~] **P0.12** Standalone Terraform in `infra/` (S3 + CloudFront with OAC, Lambda + Web Adapter + streaming Function URL under `/api/*`, DynamoDB with TTL, SSM secrets, $5 budget alarm), staging/prod via workspaces — _Done when_ `terraform plan` is clean for staging
 - [x] **P0.13** Demo corpus: 3 markdown files with front matter (`visibility: public`) in `data/knowledge/`
-- [ ] **P0.14** GitHub Actions CI: lint + types + unit tests, both sides — _Deps: P0.2–P0.4, P0.8_
+- [x] **P0.14** GitHub Actions CI: lint + types + unit tests, both sides — _Deps: P0.2–P0.4, P0.8_
 
 ### Walking skeleton
 - [x] **P0.15** End-to-end pipeline stub: FastAPI SSE endpoint → guardrails (noop) → naive retrieval → decision → generation via Pydantic AI, emitting every event — _Done when_ **gate** passes via a pytest that asserts event order and schema validity. _Deps: P0.7, P0.9, P0.13_
