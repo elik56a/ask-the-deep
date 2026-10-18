@@ -1,3 +1,9 @@
+"""Reads the knowledge markdown files and cuts them into passages.
+
+A passage is one `##` section of a file. Passages are what get embedded,
+searched and cited. Only files marked `visibility: public` are read.
+"""
+
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,6 +19,8 @@ _CHARS_PER_TOKEN = 4
 
 @dataclass(frozen=True)
 class Chunk:
+    """One passage: a `##` section of a knowledge file."""
+
     chunk_id: str
     source: str
     breadcrumb: str
@@ -21,6 +29,9 @@ class Chunk:
 
     @property
     def embed_text(self) -> str:
+        """The text that gets embedded: breadcrumb first, so the section's context
+        is part of its meaning ("Phytech › Roles at Phytech").
+        """
         return f"{self.breadcrumb}\n{self.text}"
 
 
@@ -91,6 +102,7 @@ def _chunks_for_file(path: Path, root: Path, max_tokens: int) -> list[Chunk]:
 
 
 def load_corpus(root: Path, max_tokens: int = 400) -> list[Chunk]:
+    """Every passage from every public markdown file under `root`."""
     return [
         chunk
         for path in sorted(root.rglob("*.md"))

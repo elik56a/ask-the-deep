@@ -30,7 +30,8 @@ Formatting and linting are owned by the tools, with default settings: Ruff (Pyth
 - **Types:** mypy strict and TypeScript strict. No `Any`/`any` — use a precise type, a generic, or `unknown` with narrowing. No `# type: ignore` / `@ts-expect-error` without a one-line reason.
 - **Small and single-purpose:** short functions, clear names, no duplication. Prefer the standard library and existing dependencies over new ones.
 - **Config, not literals:** tunable values (model, thresholds, limits, prices) live in `app/config.py` via environment variables. Fixed user-facing strings live with the module that owns them.
-- **Comments:** default to none. Comment only the non-obvious *why*. No comments that restate code, no banners, no commented-out code. `TODO(<task id>)` for known placeholders.
+- **Python docstrings:** every module gets a docstring saying its role in plain words; every public class and function gets one saying what it does and why (not restating the signature). Private helpers only when non-obvious.
+- **Comments:** inline comments only for the non-obvious *why*. No comments that restate code, no banners, no commented-out code. `TODO(<task id>)` for known placeholders. TypeScript stays comment-light.
 - **Tests:** every new module with logic ships with tests. Tests never call a paid API — use Pydantic AI's `TestModel` / `"test"` model.
 - **Generated files** (`*.gen.ts`) are never edited by hand.
 - **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:` …), small and focused.

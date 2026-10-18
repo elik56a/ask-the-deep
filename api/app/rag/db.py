@@ -1,3 +1,5 @@
+"""Postgres access: connections and the `chunks` table that stores passages."""
+
 import psycopg
 from pgvector.psycopg import register_vector, register_vector_async
 from psycopg_pool import AsyncConnectionPool
@@ -15,10 +17,12 @@ CORPUS_VERSION_SQL = (
 
 
 async def configure_connection(conn: AsyncConn) -> None:
+    """Teach each new connection about the `vector` column type."""
     await register_vector_async(conn)
 
 
 def create_pool(settings: Settings) -> Pool:
+    """A small pool of async connections for the server."""
     return AsyncConnectionPool(
         settings.database_url.get_secret_value(),
         min_size=0,
@@ -30,6 +34,7 @@ def create_pool(settings: Settings) -> Pool:
 
 
 def connect(settings: Settings) -> Conn:
+    """One sync connection, for ingestion and tests."""
     conn = psycopg.connect(settings.database_url.get_secret_value(), autocommit=True)
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
     register_vector(conn)
@@ -37,6 +42,7 @@ def connect(settings: Settings) -> Conn:
 
 
 def create_schema(conn: Conn, dimensions: int) -> None:
+    """Create the `chunks` table if it does not exist: one row per passage."""
     # No vector index: exact search over a few hundred rows is fast and fully accurate.
     conn.execute(
         f"""

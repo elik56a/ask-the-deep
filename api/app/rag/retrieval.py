@@ -1,3 +1,11 @@
+"""Finds the passages that best match a question.
+
+Two searches run together and are combined:
+- by meaning: compare the question's embedding with every passage's embedding
+- by keywords: BM25 ranks passages by shared words (good for exact names)
+The two rankings are merged with Reciprocal Rank Fusion (RRF).
+"""
+
 import asyncio
 import re
 from dataclasses import dataclass
@@ -15,24 +23,36 @@ RRF_K = 60
 
 @dataclass(frozen=True)
 class Hit:
+    """A search result. `similarity` (0-1, by meaning) feeds the decision gate;
+    `rrf` is the combined rank score used for ordering.
+    """
+
     chunk: Chunk
     similarity: float
     rrf: float
 
 
 class Retriever(Protocol):
+    """Anything that can search passages (the real one, or a stub in tests)."""
+
     corpus_version: str
 
     async def search(self, query: str, top_k: int) -> list[Hit]: ...
 
 
 def tokenize(text: str) -> list[str]:
+    """Split text into lowercase words for keyword search."""
     # No stemming: Hebrew prefixes (ה, ו, ב, ל) stay attached to words.
     # The vector side covers what keyword matching misses.
     return _WORD.findall(text.lower())
 
 
 def rrf_scores(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
+    """Merge several rankings into one score per passage.
+
+    Each list gives a passage 1 / (k + rank). A passage near the top of both
+    lists gets the highest total. k=60 is the standard value from the RRF paper.
+    """
     scores: dict[str, float] = {}
     for ranking in rankings:
         for rank, chunk_id in enumerate(ranking, start=1):
@@ -41,6 +61,8 @@ def rrf_scores(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
 
 
 class HybridRetriever:
+    """Search by meaning (pgvector) and by keywords (BM25), merged with RRF."""
+
     def __init__(
         self,
         pool: Pool,
@@ -59,6 +81,7 @@ class HybridRetriever:
 
     @classmethod
     async def load(cls, pool: Pool, embed_query: QueryEmbedFn) -> Self:
+        """Read all passages from Postgres and build the in-memory keyword index."""
         async with pool.connection() as conn:
             cursor = await conn.execute(
                 "SELECT chunk_id, source, breadcrumb, text, metadata FROM chunks"

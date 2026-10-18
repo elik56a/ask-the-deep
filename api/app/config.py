@@ -1,3 +1,9 @@
+"""All settings in one place, read from environment variables (or api/.env).
+
+Defaults are free and local: the "test" LLM and embedding models, and the
+Docker Postgres from docker-compose.yml.
+"""
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -8,6 +14,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    """Typed settings; each field maps to an environment variable of the same name."""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     llm_model: str = "test"
@@ -36,10 +44,12 @@ class Settings(BaseSettings):
 
     @property
     def llm_provider_and_name(self) -> tuple[str, str]:
+        """Split "provider:model" into its parts, e.g. ("google-gla", "gemini-...")."""
         provider, _, name = self.llm_model.partition(":")
         return provider, name or provider
 
 
 @lru_cache
 def get_settings() -> Settings:
+    """The settings, read once and cached for the life of the process."""
     return Settings()

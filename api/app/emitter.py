@@ -1,3 +1,5 @@
+"""Turns pipeline steps into numbered, timed events for the browser."""
+
 import time
 
 from app.events import Event, StreamEvent
@@ -12,9 +14,11 @@ class Emitter:
         self._start = time.perf_counter()
 
     def elapsed_ms(self) -> int:
+        """Milliseconds since this request started."""
         return int((time.perf_counter() - self._start) * 1000)
 
     def emit(self, event: Event) -> StreamEvent:
+        """Wrap an event with the request id, its sequence number and its time."""
         stamped = StreamEvent(
             request_id=self.request_id,
             seq=self._seq,

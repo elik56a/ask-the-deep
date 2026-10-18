@@ -1,3 +1,9 @@
+"""The four stations every question goes through.
+
+guardrails -> retrieval -> decision gate -> generation. Each station emits an
+event, so the browser can show what the system is doing in real time.
+"""
+
 import re
 from collections.abc import AsyncIterator
 from uuid import uuid4
@@ -59,6 +65,11 @@ def _citation(chunk: Chunk) -> Citation:
 async def run_pipeline(
     question: str, settings: Settings, retriever: Retriever
 ) -> AsyncIterator[StreamEvent]:
+    """Answer one question, yielding an event after every step.
+
+    The model is only called when retrieval finds a passage above the
+    threshold; otherwise the answer is "I don't have that information".
+    """
     em = Emitter(uuid4().hex)
     provider, model = settings.llm_provider_and_name
     yield em.emit(

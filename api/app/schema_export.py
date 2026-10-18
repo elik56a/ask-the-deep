@@ -1,3 +1,5 @@
+"""Prints the event schema as JSON Schema, for generating the TypeScript types."""
+
 import json
 from typing import Any
 

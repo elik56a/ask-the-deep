@@ -1,3 +1,9 @@
+"""Loads the knowledge files into Postgres (run: `uv run python -m app.rag.ingest`).
+
+Read files -> cut into passages -> embed only passages that changed -> save.
+Running it again with no changes makes no embedding calls.
+"""
+
 import hashlib
 import json
 from dataclasses import dataclass
@@ -10,12 +16,18 @@ from app.rag.embeddings import EmbedFn, document_embedder
 
 @dataclass(frozen=True)
 class IngestReport:
+    """What one ingestion run did."""
+
     embedded: int
     unchanged: int
     deleted: int
 
 
 def content_hash(chunk: Chunk, embedding_model: str, dimensions: int) -> str:
+    """A fingerprint of a passage; if it is unchanged, the stored embedding is reused.
+
+    The embedding model is part of it, so switching models re-embeds everything.
+    """
     key = f"{embedding_model}|{dimensions}|{chunk.embed_text}"
     return hashlib.sha256(key.encode()).hexdigest()
 
@@ -26,6 +38,9 @@ def ingest(
     embed: EmbedFn,
     settings: Settings,
 ) -> IngestReport:
+    """Sync the `chunks` table with `chunks`: embed new or changed passages,
+    keep unchanged ones, delete passages that no longer exist.
+    """
     create_schema(conn, settings.embedding_dimensions)
     hashes = {
         c.chunk_id: content_hash(
@@ -79,6 +94,7 @@ def ingest(
 
 
 def corpus_version(conn: Conn) -> str:
+    """A 12-character fingerprint of the whole knowledge base."""
     row = conn.execute(CORPUS_VERSION_SQL).fetchone()
     return str(row[0]) if row else ""
 

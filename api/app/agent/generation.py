@@ -1,3 +1,5 @@
+"""Asks the LLM to write an answer from the retrieved passages only."""
+
 from contextlib import AbstractAsyncContextManager
 from pathlib import Path
 from typing import Any
@@ -26,6 +28,11 @@ def _format_passages(chunks: list[Chunk]) -> str:
 def stream_answer(
     question: str, chunks: list[Chunk], settings: Settings
 ) -> AbstractAsyncContextManager[StreamedRunResult[None, Any]]:
+    """Start a streaming LLM call that answers from the given passages.
+
+    The passages are wrapped in <passage> tags so the model treats them as
+    data, not instructions.
+    """
     agent: Agent[None, str] = Agent(instructions=_load_prompt(settings.rules_version))
     return agent.run_stream(
         f"{_format_passages(chunks)}\n\nQuestion: {question}",

@@ -1,3 +1,5 @@
+"""The HTTP server: receives questions and streams events back as SSE."""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -18,6 +20,7 @@ _retriever: Retriever | None = None
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """On startup, load all passages from Postgres and build the search index."""
     global _retriever
     settings = get_settings()
     async with create_pool(settings) as pool:
@@ -27,6 +30,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 def get_retriever() -> Retriever:
+    """The search engine loaded at startup (replaced by a stub in tests)."""
     if _retriever is None:
         raise RuntimeError("Retriever is not loaded; the app lifespan did not run")
     return _retriever
@@ -42,6 +46,8 @@ app.add_middleware(
 
 
 class ChatRequest(BaseModel):
+    """The body of POST /api/chat."""
+
     question: str
 
 
@@ -49,6 +55,7 @@ class ChatRequest(BaseModel):
 def health(
     retriever: Annotated[Retriever, Depends(get_retriever)],
 ) -> dict[str, str]:
+    """Liveness check, plus which version of the knowledge base is loaded."""
     return {"status": "ok", "corpus_version": retriever.corpus_version}
 
 
@@ -56,6 +63,8 @@ def health(
 async def chat(
     request: ChatRequest, retriever: Annotated[Retriever, Depends(get_retriever)]
 ) -> StreamingResponse:
+    """Run the pipeline for one question and stream its events."""
+
     async def sse() -> AsyncIterator[str]:
         async for event in run_pipeline(request.question, get_settings(), retriever):
             yield f"data: {event.model_dump_json()}\n\n"

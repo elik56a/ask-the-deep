@@ -1,3 +1,9 @@
+"""Turns text into embeddings: lists of numbers that represent meaning.
+
+Texts with similar meaning get similar numbers, which is what lets search
+find a passage even when it uses different words than the question.
+"""
+
 from collections.abc import Awaitable, Callable, Sequence
 
 from pydantic_ai.embeddings import Embedder, TestEmbeddingModel
@@ -18,6 +24,7 @@ def _embedder(settings: Settings) -> Embedder:
 
 
 def document_embedder(settings: Settings) -> EmbedFn:
+    """A function that embeds passages (used by ingestion)."""
     embedder = _embedder(settings)
 
     def embed(texts: Sequence[str]) -> list[list[float]]:
@@ -27,6 +34,7 @@ def document_embedder(settings: Settings) -> EmbedFn:
 
 
 def query_embedder(settings: Settings) -> QueryEmbedFn:
+    """A function that embeds a question (used by search)."""
     embedder = _embedder(settings)
 
     async def embed(query: str) -> list[float]:
