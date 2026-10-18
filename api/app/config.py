@@ -12,14 +12,18 @@ class Settings(BaseSettings):
 
     llm_model: str = "test"
     llm_fallback_model: str | None = None
-    embedding_model: str = "google-gla:gemini-embedding-001"
-    database_url: SecretStr | None = None
+    embedding_model: str = "test"
+    embedding_dimensions: int = 768
+    database_url: SecretStr = SecretStr(
+        "postgresql://portfolio:portfolio@localhost:5432/portfolio"
+    )
     dynamodb_table: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
     rules_version: str = "v1"
     # Placeholder for the naive P0 retriever; calibrated from evals in P1.11.
     retrieval_threshold: float = 0.3
     retrieval_top_k: int = 6
+    max_passage_tokens: int = 400
     max_input_chars: int = 500
     max_output_tokens: int = 500
     rate_limit_per_minute: int = 5

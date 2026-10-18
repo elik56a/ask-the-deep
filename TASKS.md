@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 16 | 0 | [ ] |
+| P1 RAG core | 16 | 3 | [ ] |
 | P2 Control & security | 13 | 0 | [ ] |
 | P3 Transparency & observability | 14 | 0 | [ ] |
 | P4 Evals in CI | 8 | 0 | [ ] |
@@ -69,13 +69,13 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** recall@6 > 90% on an initial question set.
 
 ### Corpus
-- [ ] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_
+- [~] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_
 - [ ] **P1.2** Privacy review of every corpus file before commit (checklist in PR template)
 
 ### Ingestion (`api/rag/`)
-- [ ] **P1.3** Loader: only `visibility: public`; parse front matter into metadata
-- [ ] **P1.4** Chunker: split by headings into 150–400-token passages, prefix a breadcrumb ("Phytech › Role › Achievements") — _Done when_ unit tests cover min/max size and breadcrumbs
-- [ ] **P1.5** (also run it from `scripts/dev.sh`) Hash per passage; re-embed only the changed passages; write text, vector, metadata, hash and corpus version to Postgres. Idempotent. — _Done when_ a second run with no changes makes 0 embedding calls
+- [x] **P1.3** Loader: only `visibility: public`; parse front matter into metadata
+- [x] **P1.4** Chunker (ADR 0003): one passage per heading, split above 400 tokens, prefix a breadcrumb ("Phytech › Role › Achievements") — _Done when_ unit tests cover min/max size and breadcrumbs
+- [x] **P1.5** (also run it from `scripts/dev.sh`) Hash per passage; re-embed only the changed passages; write text, vector, metadata, hash and corpus version to Postgres. Idempotent. — _Done when_ a second run with no changes makes 0 embedding calls
 - [ ] **P1.6** Expose the corpus version (API field + shown on site later)
 
 ### Retrieval

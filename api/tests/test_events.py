@@ -1,3 +1,5 @@
+from typing import get_args
+
 import pytest
 
 from app.events import (
@@ -55,7 +57,8 @@ SAMPLES: list[Event] = [
 
 
 def test_samples_cover_every_event_type() -> None:
-    assert len({type(e) for e in SAMPLES}) == len(Event.__origin__.__args__)  # type: ignore[attr-defined]
+    event_union, _ = get_args(Event)
+    assert len({type(e) for e in SAMPLES}) == len(get_args(event_union))
 
 
 @pytest.mark.parametrize("event", SAMPLES, ids=lambda e: e.type)

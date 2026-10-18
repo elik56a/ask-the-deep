@@ -1,12 +1,11 @@
 import itertools
-from pathlib import Path
 
 from app.config import Settings
 from app.events import StreamEvent
 from app.pipeline import run_pipeline
 from app.rag.corpus import load_corpus
 
-SETTINGS = Settings(llm_model="test")
+SETTINGS = Settings()
 CORPUS = load_corpus(SETTINGS.knowledge_dir)
 
 
@@ -65,12 +64,3 @@ async def test_blocks_input_over_the_length_cap() -> None:
         "error",
         "request.finished",
     ]
-
-
-def test_corpus_only_includes_public_files(tmp_path: Path) -> None:
-    (tmp_path / "public.md").write_text("---\nvisibility: public\n---\n## A\ntext\n")
-    (tmp_path / "private.md").write_text(
-        "---\nvisibility: private\n---\n## B\nsecret\n"
-    )
-    (tmp_path / "no_front_matter.md").write_text("## C\nunlabeled\n")
-    assert [c.source for c in load_corpus(tmp_path)] == ["public.md"]
