@@ -1,0 +1,76 @@
+# Portfolio Chat Agent
+
+A personal portfolio where visitors ask an AI agent about me and get answers grounded only in verified information, while watching every step the system takes to produce each answer.
+
+It's built to production standards: retrieval-augmented generation (RAG) with measurable hallucination prevention, cost caps, security and observability, and a UI that explains rather than overwhelms.
+
+## How it works
+
+Every question runs the same four stations, and each one streams a real event to the browser:
+
+```
+question → guardrails → retrieval → decision gate → generation → answer + sources
+                                         │
+                                         └─ nothing relevant found → "I don't have that information" (no model call)
+```
+
+The event schema in [`api/app/events.py`](api/app/events.py) is the single source of truth; the TypeScript types in `web/` are generated from it.
+
+## Stack
+
+| Layer | Choice |
+| --- | --- |
+| API | Python 3.12, FastAPI, Pydantic AI, server-sent events |
+| Model | Google Gemini (free tier), set by `LLM_MODEL` |
+| Retrieval | Postgres + pgvector (Neon), BM25, merged with RRF |
+| Web | TanStack Start (static prerender), React, TypeScript |
+| Infra | AWS S3 + CloudFront, Lambda with response streaming, DynamoDB, Terraform |
+| Quality | Ruff, mypy strict, Biome, pytest, Pydantic Evals, pre-commit |
+
+## Repository
+
+```
+api/              FastAPI app, RAG pipeline, tests
+web/              TanStack Start site
+data/knowledge/   markdown knowledge base (only visibility: public is used)
+infra/            Terraform (pay-per-use resources only)
+docs/adr/         architecture decision records
+```
+
+## Run locally
+
+Requirements: [uv](https://docs.astral.sh/uv/), Node 22 with pnpm, and Docker (for the database, from Phase 1).
+
+```sh
+# API — runs on the free built-in "test" model, no keys needed
+cd api
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
+
+# Ask a question
+curl -N -X POST localhost:8000/api/chat \
+  -H 'content-type: application/json' \
+  -d '{"question": "Which technologies does Eliyahu work with daily?"}'
+
+# Web
+cd web
+pnpm install
+pnpm dev   # http://localhost:3000
+```
+
+To use a real model, copy `api/.env.example` to `api/.env` and set `GOOGLE_API_KEY`.
+
+## Checks
+
+```sh
+cd api && uv run ruff check . && uv run mypy app tests && uv run pytest
+cd web && pnpm exec biome check . && pnpm exec tsc --noEmit
+```
+
+Pre-commit runs all of them before each commit: `uvx pre-commit install`.
+
+## Docs
+
+- [Task tracker](TASKS.md) — build plan by phase, with status
+- [Architecture decisions](docs/adr/)
+- [Project conventions](CLAUDE.md)

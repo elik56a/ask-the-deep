@@ -1,0 +1,41 @@
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --directory api ruff format
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --directory api ruff check --fix
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        entry: uv run --directory api mypy app tests
+        language: system
+        files: ^api/.*\.py$
+        pass_filenames: false
+      - id: biome
+        name: biome check
+        entry: pnpm --dir web exec biome check --write .
+        language: system
+        files: ^web/
+        pass_filenames: false
+      - id: tsc
+        name: tsc
+        entry: pnpm --dir web exec tsc --noEmit
+        language: system
+        files: ^web/.*\.tsx?$
+        pass_filenames: false
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]

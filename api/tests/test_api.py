@@ -1,0 +1,26 @@
+import json
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_chat_streams_server_sent_events() -> None:
+    with client.stream(
+        "POST", "/api/chat", json={"question": "Where does Eliyahu work?"}
+    ) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        events = [
+            json.loads(line[6:])
+            for line in response.iter_lines()
+            if line.startswith("data: ")
+        ]
+    assert events[0]["event"]["type"] == "request.started"
+    assert events[-1]["event"]["type"] == "request.finished"
+
+
+def test_health() -> None:
+    assert client.get("/api/health").json() == {"status": "ok"}
