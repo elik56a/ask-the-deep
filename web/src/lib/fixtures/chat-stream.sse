@@ -1,0 +1,42 @@
+data: {"type":"start","messageId":"c7850445a9ba40ec96cdc9ff0c7a3f79"}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":0,"t_ms":0,"event":{"type":"request.started","model":"test","provider":"test","rules_version":"v2"}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":1,"t_ms":0,"event":{"type":"guardrails.checked","checks":[{"name":"human_check","passed":true},{"name":"rate_limit","passed":true},{"name":"budget","passed":true},{"name":"not_empty","passed":true},{"name":"input_length","passed":true},{"name":"history_size","passed":true}]}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":2,"t_ms":12,"event":{"type":"llm.started","call":1}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":3,"t_ms":14,"event":{"type":"llm.completed","call":1,"model":"test","input_tokens":54,"output_tokens":0,"cost_usd":0.0,"duration_ms":2,"decision":"tools","tools":["search_knowledge"],"fallback":false,"rejected":null}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":4,"t_ms":14,"event":{"type":"tool.called","tool":"search_knowledge","args":{"query":"a"}}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":5,"t_ms":14,"event":{"type":"retrieval.started","query":"a"}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":6,"t_ms":19,"event":{"type":"retrieval.completed","passages":[{"chunk_id":"experience/phytech.md#role","breadcrumb":"Phytech › Role","score":1.0,"above_threshold":true},{"chunk_id":"profile.md#summary","breadcrumb":"Profile › Summary","score":1.0,"above_threshold":true},{"chunk_id":"profile.md#daily-technologies","breadcrumb":"Profile › Daily technologies","score":1.0,"above_threshold":true},{"chunk_id":"projects/portfolio-chat.md#overview","breadcrumb":"Portfolio chat agent › Overview","score":1.0,"above_threshold":true}],"threshold":0.3}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":7,"t_ms":19,"event":{"type":"tool.completed","tool":"search_knowledge","ok":true,"result_count":4,"duration_ms":5}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":8,"t_ms":19,"event":{"type":"llm.started","call":2}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":9,"t_ms":20,"event":{"type":"generation.started","context_chunks":4,"prompt_cache_hit":false}}}
+
+data: {"type":"text-start","id":"answer"}
+
+data: {"type":"text-delta","delta":"This is the offline test model. Set LLM_MODEL for real answers.","id":"answer"}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":11,"t_ms":21,"event":{"type":"llm.completed","call":2,"model":"test","input_tokens":219,"output_tokens":5,"cost_usd":0.0,"duration_ms":2,"decision":"answer","tools":[],"fallback":false,"rejected":null}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":12,"t_ms":22,"event":{"type":"decision.made","action":"answer","reason":"Answered from 1 successful tool result(s)","best_score":1.0,"threshold":0.3}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":13,"t_ms":22,"event":{"type":"citations.attached","citations":[]}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":14,"t_ms":22,"event":{"type":"usage.reported","input_tokens":273,"output_tokens":5,"cached_tokens":0,"cost_usd":0.0,"latency_ms":22,"ttft_ms":21}}}
+
+data: {"type":"data-event","data":{"request_id":"c7850445a9ba40ec96cdc9ff0c7a3f79","seq":15,"t_ms":22,"event":{"type":"request.finished","outcome":"answered"}}}
+
+data: {"type":"text-end","id":"answer"}
+
+data: {"type":"finish"}
+
+data: [DONE]
+
