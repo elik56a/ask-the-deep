@@ -1,13 +1,54 @@
-* {
-  box-sizing: border-box;
+@import "tailwindcss";
+@import "@fontsource-variable/heebo";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Dark by default, light on request (ADR 0009); `case` is the panel, the deepest layer. */
+@theme {
+  --color-page: #0d0e12;
+  --color-surface: #13151a;
+  --color-sunk: #1a1d23;
+  --color-case: #08090c;
+  --color-text: #ecedef;
+  --color-muted: #9aa0ab;
+  --color-line: #22252d;
+  --color-line-strong: #30343f;
+  --color-accent: #7c93f5;
+  --color-on-accent: #0d0e12;
+  --color-ok: #69db7c;
+  --color-warn: #ffb454;
+
+  --font-sans: "Heebo Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-title: 1.75rem;
+  --text-display: 2.5rem;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* Spec light tokens; warn darkened from #e8890c to pass AA on white. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-page: #fafaf9;
+  --color-surface: #ffffff;
+  --color-sunk: #f3f3f1;
+  --color-case: #eef0f3;
+  --color-text: #17181c;
+  --color-muted: #5b606b;
+  --color-line: #e7e7e4;
+  --color-line-strong: #d2d3d0;
+  --color-accent: #3b5bdb;
+  --color-on-accent: #ffffff;
+  --color-ok: #2b8a3e;
+  --color-warn: #b25f00;
 }
 
 body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-}
-
-main {
-  width: min(42rem, calc(100% - 2rem));
-  margin: 4rem auto;
+  @apply bg-page font-sans text-text antialiased;
 }
