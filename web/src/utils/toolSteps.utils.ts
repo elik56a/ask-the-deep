@@ -6,7 +6,7 @@ import type { ToolCalled, ToolCompleted } from "#/generated/events.gen";
 import type { Lang } from "#/types/i18n.types";
 import type { ToolStepCopy } from "#/types/toolSteps.types";
 
-function fill(template: string, values: Record<string, string>): string {
+export function fill(template: string, values: Record<string, string>): string {
   return template.replace(
     /\{(\w+)\}/g,
     (placeholder, key: string) => values[key] ?? placeholder,

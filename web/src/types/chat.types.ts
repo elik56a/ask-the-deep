@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai";
 import type { StreamEvent } from "#/generated/events.gen";
+import type { StepsCopy } from "#/types/chatSteps.types";
 
 export type ChatMessage = UIMessage<never, { event: StreamEvent }>;
 
@@ -16,6 +17,9 @@ export interface ChatRequestBody {
 
 export interface ChatCopy {
   agentLabel: string;
+  introTitle: string;
+  introBody: string;
+  steps: StepsCopy;
   inputLabel: string;
   placeholder: string;
   send: string;

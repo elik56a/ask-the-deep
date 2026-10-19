@@ -10,9 +10,26 @@ export const MESSAGES_STORAGE_KEY = "portfolio-chat:messages";
 
 export const HUMAN_CHECK_REQUIRED = "human_check_required";
 
+// P3.12: each progress step stays on screen at least this long.
+export const STEP_MIN_MS = 300;
+
 export const CHAT_COPY: Record<Lang, ChatCopy> = {
   en: {
     agentLabel: "AI agent representing Eliyahu",
+    introTitle: "Ask about Eliyahu's work",
+    introBody:
+      "An AI agent answers from Eliyahu's own notes and cites its sources. You can watch every step it takes: each model call, search and score, with the time and cost.",
+    steps: {
+      checked: "Checked your question",
+      blocked: "A safety check stopped this question",
+      writing: "Writing the answer…",
+      written: "Answer written",
+      noInfo: "Not in Eliyahu's notes",
+      stopped: "Stopped before finishing",
+      doneIn: "Done in {s} s",
+      showSteps: "Show steps",
+      hideSteps: "Hide steps",
+    },
     inputLabel: "Your question",
     placeholder: "Ask about Eliyahu's work, skills or projects…",
     send: "Send",
@@ -36,6 +53,20 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
   },
   he: {
     agentLabel: "סוכן AI שמייצג את אליהו",
+    introTitle: "שאלו על העבודה של אליהו",
+    introBody:
+      "סוכן AI עונה מתוך הרשימות של אליהו ומציין את המקורות. אפשר לראות כל צעד שהוא עושה: כל קריאה למודל, כל חיפוש וכל ציון, עם הזמן והעלות.",
+    steps: {
+      checked: "השאלה נבדקה",
+      blocked: "בדיקת בטיחות עצרה את השאלה",
+      writing: "כותב את התשובה…",
+      written: "התשובה נכתבה",
+      noInfo: "המידע לא נמצא ברשימות של אליהו",
+      stopped: "נעצר לפני הסוף",
+      doneIn: "הסתיים תוך {s} שניות",
+      showSteps: "הצגת השלבים",
+      hideSteps: "הסתרת השלבים",
+    },
     inputLabel: "השאלה שלך",
     placeholder: "אפשר לשאול על העבודה, הכישורים או הפרויקטים של אליהו…",
     send: "שליחה",

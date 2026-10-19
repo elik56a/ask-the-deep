@@ -134,7 +134,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Client
 - [x] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`. Invisible Turnstile → session; a rejected session re-runs the check. UI defaults to English with a he/en switch (remembered in `localStorage`)
-- [~] **P3.12** Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
+- [~] **P3.12** (built: `chatSteps()` + `ChatSteps` + `usePacedCount`; to verify against a live run) Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
 - [~] **P3.13** (design: ADR 0009, prototype [Glass Box Panel](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` in `web/src/utils/trace.utils.ts` ✓) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
 - [x] **P3.15** One event per LLM call: `llm.started` + `llm.completed` (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
 - [ ] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans
