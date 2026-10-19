@@ -13,6 +13,9 @@ import {
 import type { ChatMessage } from "#/types/chat.types";
 import {
   chatRequestBody,
+  isChatMessages,
+  isWaiting,
+  messageError,
   messageEvents,
   messageText,
 } from "#/utils/chat.utils";
@@ -93,4 +96,47 @@ it("keeps history within the server's limits", () => {
   const { history } = chatRequestBody([...long, message("user", "q")], "s");
   expect(history).toHaveLength(MAX_HISTORY_MESSAGES);
   expect(history.every((m) => m.text.length === MAX_HISTORY_CHARS)).toBe(true);
+});
+
+const errorMessage = (code: string): ChatMessage => ({
+  id: "e",
+  role: "assistant",
+  parts: [
+    {
+      type: "data-event",
+      data: {
+        request_id: "r",
+        seq: 1,
+        t_ms: 0,
+        event: { type: "error", code, message: "" },
+      },
+    },
+  ],
+});
+
+it("finds the error code a blocked answer carries", () => {
+  expect(messageError(errorMessage("rate_limited"))).toBe("rate_limited");
+  expect(messageError(message("assistant", "hi"))).toBeUndefined();
+});
+
+it("waits until the answer starts or an error arrives", () => {
+  const question = message("user", "q");
+  const empty: ChatMessage = { id: "a", role: "assistant", parts: [] };
+  expect(isWaiting([question], "submitted")).toBe(true);
+  expect(isWaiting([question, empty], "streaming")).toBe(true);
+  expect(isWaiting([question, message("assistant", "a")], "streaming")).toBe(
+    false,
+  );
+  expect(isWaiting([question, errorMessage("timeout")], "streaming")).toBe(
+    false,
+  );
+  expect(isWaiting([question, empty], "ready")).toBe(false);
+});
+
+it("accepts only stored chats it can render", () => {
+  expect(isChatMessages([message("user", "q")])).toBe(true);
+  expect(isChatMessages([])).toBe(true);
+  expect(isChatMessages([{ id: "x", role: "system", parts: [] }])).toBe(false);
+  expect(isChatMessages([{ id: 1 }])).toBe(false);
+  expect(isChatMessages("nope")).toBe(false);
 });

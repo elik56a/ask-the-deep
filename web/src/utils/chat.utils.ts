@@ -1,3 +1,4 @@
+import type { ChatStatus } from "ai";
 import {
   MAX_HISTORY_CHARS,
   MAX_HISTORY_MESSAGES,
@@ -36,4 +37,42 @@ export function chatRequestBody(
     })
     .slice(-MAX_HISTORY_MESSAGES);
   return { question: last ? messageText(last) : "", history, session };
+}
+
+export function messageError(message: ChatMessage): string | undefined {
+  for (const { event } of messageEvents(message)) {
+    if (event.type === "error") return event.code;
+  }
+  return undefined;
+}
+
+export function isWaiting(
+  messages: ChatMessage[],
+  status: ChatStatus,
+): boolean {
+  if (status === "submitted") return true;
+  const last = messages.at(-1);
+  return (
+    status === "streaming" &&
+    last?.role === "assistant" &&
+    !messageText(last) &&
+    !messageError(last)
+  );
+}
+
+export function isChatMessages(value: unknown): value is ChatMessage[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item: unknown) =>
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
+        typeof item.id === "string" &&
+        "role" in item &&
+        (item.role === "user" || item.role === "assistant") &&
+        "parts" in item &&
+        Array.isArray(item.parts),
+    )
+  );
 }
