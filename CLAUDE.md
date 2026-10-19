@@ -20,7 +20,8 @@ uv run uvicorn app.main:app --reload --port 8000
 # web/
 pnpm exec biome check --write . && pnpm exec tsc --noEmit
 pnpm dev            # http://localhost:5173
-pnpm gen:events     # regenerate src/lib/events.gen.ts after changing api/app/events.py
+pnpm test          # vitest
+pnpm gen:events     # regenerate src/generated/events.gen.ts after changing api/app/events.py
 ```
 
 ## Code standards
@@ -38,7 +39,17 @@ Formatting and linting are owned by the tools, with default settings: Ruff (Pyth
 
 ## Frontend
 
-- Components render; logic lives in plain functions in `src/lib/` (unit-tested) or in hooks.
+- **One kind of thing per file.** Functions, types and constants never share a file. The only exception is a component's own props interface, which lives in the component.
+- **Folders** (`web/src/`):
+  - `routes/` pages (TanStack file routes)
+  - `components/` React components; they render, nothing else
+  - `hooks/` React hooks
+  - `utils/` pure functions only, `<name>.utils.ts`
+  - `types/` interfaces and types only, `<name>.types.ts`
+  - `constants/` constants and UI copy only (plain data, no functions), `<name>.constants.ts`
+  - `generated/` generated files, never edited by hand
+- **Tests** live in `web/tests/`, mirroring `src/` (`tests/utils/chat.utils.test.ts`); captured data in `web/tests/fixtures/`. Build scripts in `web/scripts/` follow the same file rules.
+- No abstraction layers for their own sake: plain functions and hooks, no classes or factories unless something needs them.
 - Styling with Tailwind and design tokens (CSS variables), no hardcoded colors, no inline style objects except truly dynamic values.
 - Accessibility is part of done: semantic HTML, keyboard navigation, WCAG AA contrast.
 - RTL-first: logical CSS properties (`ms-*`, `ps-*`, `margin-inline`), never left/right.

@@ -1,0 +1,1 @@
+export const SESSION_RENEW_BEFORE_MS = 60_000;

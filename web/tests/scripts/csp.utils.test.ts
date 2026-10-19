@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scriptHashes, withCsp } from "./csp.ts";
+import { scriptHashes, withCsp } from "../../scripts/csp.utils.ts";
 
 const PAGE =
   '<html><head><meta charSet="utf-8"/></head><body>' +

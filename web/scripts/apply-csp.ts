@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { withCsp } from "./csp.ts";
+import { withCsp } from "./csp.utils.ts";
 
 const root = process.argv[2] ?? "dist/client";
 const pages = readdirSync(root, { recursive: true, encoding: "utf8" }).filter(

@@ -6,7 +6,11 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/src/routeTree.gen.ts", "!**/src/lib/events.gen.ts"]
+    "includes": [
+      "**",
+      "!**/src/routeTree.gen.ts",
+      "!**/src/generated/events.gen.ts"
+    ]
   },
   "formatter": {
     "indentStyle": "space"

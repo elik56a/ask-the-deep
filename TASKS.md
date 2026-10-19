@@ -47,7 +47,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Schema
 - [x] **P0.7** `api/events.py`: Pydantic discriminated union of all 12 event types (request.started … request.finished). Every event has `request_id`, `seq`, `t_ms`. No fields for the system prompt, keys, IP or budget. — _Done when_ unit test round-trips each type
-- [x] **P0.8** TS type generation `events.py → web/src/lib/events.gen.ts` via `pnpm gen:events`; CI fails if it is stale — _Deps: P0.3, P0.7_
+- [x] **P0.8** TS type generation `events.py → web/src/generated/events.gen.ts` via `pnpm gen:events`; CI fails if it is stale — _Deps: P0.3, P0.7_
 
 ### Local env
 - [x] **P0.9** `docker-compose.yml`: Postgres + pgvector, DynamoDB Local — _Done when_ `docker compose up` is healthy
@@ -92,7 +92,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P1.15** Gate inside `search_knowledge`: passages below threshold never reach the model; no valid answer → "I don't have that information" + contact pointer
 - [ ] **P1.16** Language follows the question language (he/en) — test both with the real model
 - [x] **P1.17** Tools: `search_knowledge`, `list_projects` / `get_project`, `github_activity` (cached, fails soft), `contact_info`
-- [x] **P1.18** Friendly timeline labels per tool, he/en (`web/src/lib/toolSteps.ts`, unit-tested); rendered in P3.12
+- [x] **P1.18** Friendly timeline labels per tool, he/en (`web/src/constants/toolSteps.constants.ts` + `web/src/utils/toolSteps.utils.ts`, unit-tested); rendered in P3.12
 
 ---
 
@@ -122,7 +122,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Server
 - [ ] **P3.1** Single `Emitter`: one call fans out to SSE + OTel span + structlog. `text.delta` goes to SSE only. Errors emit only the public message. — _Done when_ grep finds no direct stream writes outside Emitter
-- [x] **P3.2** SSE in the Vercel AI SDK UI message stream protocol (v1 header; answer as text parts, every other event as a persistent `data-event` part) via Pydantic AI's typed chunks (`api/app/stream.py`); AI SDK pinned `ai@7.0.143`, `@ai-sdk/react@4.0.147`; contract test feeds a captured real stream (`web/src/lib/fixtures/chat-stream.sse`, recapture when the stream changes) through the SDK's own parsers
+- [x] **P3.2** SSE in the Vercel AI SDK UI message stream protocol (v1 header; answer as text parts, every other event as a persistent `data-event` part) via Pydantic AI's typed chunks (`api/app/stream.py`); AI SDK pinned `ai@7.0.143`, `@ai-sdk/react@4.0.147`; contract test feeds a captured real stream (`web/tests/fixtures/chat-stream.sse`, recapture when the stream changes) through the SDK's own parsers
 - [ ] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level
 - [ ] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4)
 - [~] **P3.5** Cost calc (done in P1.12 via genai-prices → `usage.reported`; trace still to do) from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.

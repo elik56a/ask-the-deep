@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ToolCalled, ToolCompleted } from "#/lib/events.gen";
-import { toolStepLabel } from "#/lib/toolSteps";
+import type { ToolCalled, ToolCompleted } from "#/generated/events.gen";
+import { toolStepLabel } from "#/utils/toolSteps.utils";
 
 const called = (
   tool: string,

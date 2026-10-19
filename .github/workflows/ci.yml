@@ -75,7 +75,7 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
       - name: Generated event types are up to date
-        run: pnpm gen:events && git diff --exit-code src/lib/events.gen.ts
+        run: pnpm gen:events && git diff --exit-code src/generated/events.gen.ts
       - run: pnpm build
       - name: Audit dependencies for known vulnerabilities
         run: pnpm audit --audit-level high
