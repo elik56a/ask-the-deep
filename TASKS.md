@@ -175,7 +175,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P5.9** Accessibility: WCAG AA contrast, full keyboard nav, throttled aria-live for messages; axe in Playwright
 
 ### Watch scene
-- [ ] **P5.10** Three.js + R3F watch movement built in code (no external model); lazy, client-only
+- [~] **P5.10** (plain three, ADR 0009: `useMovement` + `Movement` in the panel header, gear math in `gear.utils.ts`; tune lighting on a live run) Three.js + R3F watch movement built in code (no external model); lazy, client-only
 - [ ] **P5.11** Scroll reveals layers; during a request, components turn and light up from real events
 - [ ] **P5.12** Static fallback for reduced motion and weak devices; text and chat stay as HTML above the canvas
 

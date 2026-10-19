@@ -29,6 +29,14 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
     events: "Events",
     eventCount: "{n} events",
     span: { guard: "Guardrails", llm: "Model call {n}", stream: "Writing" },
+    stages: {
+      guard: "Guardrails",
+      llm: "Model",
+      tool: "Retrieval",
+      stream: "Writing",
+    },
+    movementNote:
+      "Each wheel is one stage. It turns and lights only when that stage's event arrives.",
     card: {
       requestStarted: "Request started",
       guardrailsPassed: "Guardrails passed",
@@ -88,6 +96,14 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
     events: "אירועים",
     eventCount: "{n} אירועים",
     span: { guard: "בדיקות הגנה", llm: "קריאה למודל {n}", stream: "כתיבה" },
+    stages: {
+      guard: "בדיקות הגנה",
+      llm: "מודל",
+      tool: "שליפה",
+      stream: "כתיבה",
+    },
+    movementNote:
+      "כל גלגל הוא שלב אחד. הוא מסתובב ונדלק רק כשהאירוע של השלב מגיע.",
     card: {
       requestStarted: "הבקשה התחילה",
       guardrailsPassed: "בדיקות ההגנה עברו",

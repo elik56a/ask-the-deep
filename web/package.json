@@ -28,7 +28,8 @@
     "cn": "0.5.0",
     "radix-ui": "1.8.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
@@ -37,6 +38,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/three": "0.186.0",
     "@vitejs/plugin-react": "^6.0.1",
     "json-schema-to-typescript": "16.0.0",
     "shadcn": "4.22.1",

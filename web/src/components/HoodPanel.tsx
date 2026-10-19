@@ -1,7 +1,9 @@
 import { EventCard } from "#/components/EventCard";
 import { Eyebrow } from "#/components/Eyebrow";
 import { HoodMeters } from "#/components/HoodMeters";
+import { Movement } from "#/components/Movement";
 import { RunClock } from "#/components/RunClock";
+import { StageLegend } from "#/components/StageLegend";
 import { TraceWaterfall } from "#/components/TraceWaterfall";
 import {
   EVENTS_WITHOUT_CARD,
@@ -43,24 +45,28 @@ export function HoodPanel({
       aria-label={copy.eyebrow}
       className="relative flex flex-col overflow-hidden rounded-2xl border border-line-strong bg-case after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:bg-linear-115 after:from-text/5 after:via-25% after:via-transparent after:to-transparent"
     >
-      <header className="flex items-start justify-between gap-4 p-5">
-        <div className="flex min-w-0 flex-col gap-2.5">
-          <Eyebrow>{copy.eyebrow}</Eyebrow>
-          <h2 className="text-balance font-semibold text-title leading-tight tracking-tight">
-            {copy.title}
-          </h2>
-          <p
-            role="status"
-            className="flex items-center gap-2 font-mono text-muted text-xs"
-          >
-            <span
-              aria-hidden="true"
-              className={`size-2 rounded-full ${STATUS_DOT[status]}`}
-            />
-            {copy.status[status]}
-          </p>
+      <header className="relative isolate flex min-h-80 flex-col justify-between gap-6 p-5">
+        <Movement spans={trace.spans} running={running} />
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-2.5">
+            <Eyebrow>{copy.eyebrow}</Eyebrow>
+            <h2 className="text-balance font-semibold text-title leading-tight tracking-tight">
+              {copy.title}
+            </h2>
+            <p
+              role="status"
+              className="flex items-center gap-2 font-mono text-muted text-xs"
+            >
+              <span
+                aria-hidden="true"
+                className={`size-2 rounded-full ${STATUS_DOT[status]}`}
+              />
+              {copy.status[status]}
+            </p>
+          </div>
+          <RunClock running={running} finalMs={finalMs} label={copy.elapsed} />
         </div>
-        <RunClock running={running} finalMs={finalMs} label={copy.elapsed} />
+        <StageLegend spans={trace.spans} lang={lang} />
       </header>
 
       <div className={section}>

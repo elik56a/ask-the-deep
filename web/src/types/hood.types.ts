@@ -1,4 +1,5 @@
 import type { RequestFinished } from "#/generated/events.gen";
+import type { StageId } from "#/types/trace.types";
 
 export type HoodStatus = "idle" | "running" | RequestFinished["outcome"];
 
@@ -49,5 +50,7 @@ export interface HoodCopy {
   events: string;
   eventCount: string;
   span: { guard: string; llm: string; stream: string };
+  stages: Record<StageId, string>;
+  movementNote: string;
   card: CardCopy;
 }
