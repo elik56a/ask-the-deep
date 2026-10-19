@@ -8,6 +8,8 @@ export interface StreamEvent {
     | RequestStarted
     | GuardrailsChecked
     | CacheChecked
+    | LlmStarted
+    | LlmCompleted
     | ToolCalled
     | ToolCompleted
     | RetrievalStarted
@@ -38,6 +40,26 @@ export interface CacheChecked {
   type: "cache.checked";
   hit: boolean;
   similarity: number | null;
+}
+export interface LlmStarted {
+  type: "llm.started";
+  call: number;
+}
+/**
+ * One model call: who answered, what it cost, and what it decided.
+ */
+export interface LlmCompleted {
+  type: "llm.completed";
+  call: number;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  duration_ms: number;
+  decision: "tools" | "answer" | "text";
+  tools: string[];
+  fallback: boolean;
+  rejected: string | null;
 }
 export interface ToolCalled {
   type: "tool.called";

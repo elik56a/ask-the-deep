@@ -20,7 +20,7 @@ from app.agent.chat_agent import (
     run_agent,
 )
 from app.config import Settings
-from app.events import TextDelta, ToolCompleted
+from app.events import LlmCompleted, TextDelta, ToolCompleted
 from app.rag.retrieval import Hit
 from tests.fakes import StubRetriever, Turn, make_chunk, make_deps, scripted
 
@@ -59,12 +59,17 @@ def _types(steps: list[AgentStep]) -> list[str]:
 
 async def test_searches_then_answers_with_citations() -> None:
     steps = await _run(SEARCH, VALID)
-    assert _types(steps)[:5] == [
+    assert _types(steps) == [
+        "llm.started",
+        "llm.completed",
         "tool.called",
         "retrieval.started",
         "retrieval.completed",
         "tool.completed",
+        "llm.started",
         "generation.started",
+        "text.delta",
+        "llm.completed",
     ]
     assert _text(steps) == "He works at Phytech."
     answer = _finished(steps).answer
@@ -157,3 +162,17 @@ async def test_model_sees_earlier_messages_for_follow_ups() -> None:
         "What does he do there?",
     ]
     assert _finished(steps).cost_usd == 0.0
+
+
+async def test_each_model_call_reports_its_decision_and_rejections() -> None:
+    steps = await _run(SEARCH, FORGED, VALID)
+    calls = [s for s in steps if isinstance(s, LlmCompleted)]
+    assert [(c.call, c.decision, c.tools) for c in calls] == [
+        (1, "tools", ["search_knowledge"]),
+        (2, "answer", []),
+        (3, "answer", []),
+    ]
+    assert calls[1].rejected is not None
+    assert "made-up" in calls[1].rejected
+    assert calls[2].rejected is None
+    assert all(c.input_tokens > 0 and not c.fallback for c in calls)

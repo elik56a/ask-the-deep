@@ -69,13 +69,16 @@ async def test_agent_answer_emits_every_stage_in_order() -> None:
     events = await _run("Where does Eliyahu work?")
     _assert_well_formed(events)
     types = _types(events)
-    assert types[:7] == [
+    assert types[:10] == [
         "request.started",
         "guardrails.checked",
+        "llm.started",
+        "llm.completed",
         "tool.called",
         "retrieval.started",
         "retrieval.completed",
         "tool.completed",
+        "llm.started",
         "generation.started",
     ]
     assert "text.delta" in types

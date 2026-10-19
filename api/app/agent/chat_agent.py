@@ -33,6 +33,7 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     TextPart,
+    ToolCallPart,
     ToolReturnPart,
     UserPromptPart,
 )
@@ -46,6 +47,8 @@ from app.agent.tools import TOOLS, AgentDeps, ToolMeta
 from app.config import Settings
 from app.events import (
     GenerationStarted,
+    LlmCompleted,
+    LlmStarted,
     RetrievalCompleted,
     RetrievalStarted,
     ScoredPassage,
@@ -88,7 +91,9 @@ class AgentFinished:
 
 
 AgentStep = (
-    ToolCalled
+    LlmStarted
+    | LlmCompleted
+    | ToolCalled
     | RetrievalStarted
     | RetrievalCompleted
     | ToolCompleted
@@ -98,6 +103,14 @@ AgentStep = (
 )
 
 agent = Agent(output_type=Answer, deps_type=AgentDeps, tools=TOOLS, retries=1)
+_TOOL_NAMES = {tool.name for tool in TOOLS}
+
+
+@dataclass
+class _Attempt:
+    """What happened to one model call's answer while it streamed."""
+
+    rejected: str | None = None
 
 
 def answer_problem(answer: Answer, deps: AgentDeps) -> str | None:
@@ -234,8 +247,35 @@ class _ToolTracker:
         return steps
 
 
+def _llm_completed(
+    call: int,
+    response: ModelResponse,
+    started: float,
+    attempt: _Attempt,
+    settings: Settings,
+) -> LlmCompleted:
+    calls = [p.tool_name for p in response.parts if isinstance(p, ToolCallPart)]
+    tools = [name for name in calls if name in _TOOL_NAMES]
+    decision: Literal["tools", "answer", "text"] = (
+        "tools" if tools else "answer" if calls else "text"
+    )
+    fallback_name = (settings.llm_fallback_model or "").partition(":")[2]
+    return LlmCompleted(
+        call=call,
+        model=response.model_name or "unknown",
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        cost_usd=cost_usd([response]),
+        duration_ms=round((time.monotonic() - started) * 1000),
+        decision=decision,
+        tools=tools,
+        fallback=bool(fallback_name) and response.model_name == fallback_name,
+        rejected=attempt.rejected,
+    )
+
+
 async def _answer_steps(
-    stream: AgentStream[AgentDeps, Answer], deps: AgentDeps
+    stream: AgentStream[AgentDeps, Answer], deps: AgentDeps, attempt: _Attempt
 ) -> AsyncIterator[AgentStep]:
     shown = 0
     held = False
@@ -245,7 +285,8 @@ async def _answer_steps(
                 continue
             if shown == 0:
                 # Hold back an invalid attempt entirely; the agent retries it.
-                if answer_problem(partial, deps):
+                if problem := answer_problem(partial, deps):
+                    attempt.rejected = problem
                     held = True
                     continue
                 yield GenerationStarted(
@@ -271,6 +312,7 @@ async def run_agent(
     tracker = _ToolTracker(settings.retrieval_threshold)
     usage = RunUsage()
     cost = 0.0
+    call = 0
     answer: Answer | None = None
     try:
         async with agent.iter(
@@ -291,9 +333,15 @@ async def run_agent(
             try:
                 async for node in run:
                     if Agent.is_model_request_node(node):
+                        call += 1
+                        yield LlmStarted(call=call)
+                        started, attempt = time.monotonic(), _Attempt()
                         async with node.stream(run.ctx) as stream:
-                            async for step in _answer_steps(stream, deps):
+                            async for step in _answer_steps(stream, deps, attempt):
                                 yield step
+                        yield _llm_completed(
+                            call, stream.response, started, attempt, settings
+                        )
                     elif Agent.is_call_tools_node(node):
                         async with node.stream(run.ctx) as events:
                             async for event in events:

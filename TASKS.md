@@ -12,7 +12,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 12 | [ ] |
 | P2 Control & security | 13 | 9 | [ ] |
-| P3 Transparency & observability | 15 | 0 | [ ] |
+| P3 Transparency & observability | 15 | 1 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 16 | 0 | [ ] |
 
@@ -136,7 +136,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [ ] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`
 - [ ] **P3.12** Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
 - [ ] **P3.13** "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
-- [ ] **P3.15** One event per LLM call (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
+- [x] **P3.15** One event per LLM call: `llm.started` + `llm.completed` (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
 - [ ] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans
 
 ---

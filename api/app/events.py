@@ -51,6 +51,27 @@ class CacheChecked(_Model):
     similarity: float | None = None
 
 
+class LlmStarted(_Model):
+    type: Literal["llm.started"] = "llm.started"
+    call: int
+
+
+class LlmCompleted(_Model):
+    """One model call: who answered, what it cost, and what it decided."""
+
+    type: Literal["llm.completed"] = "llm.completed"
+    call: int
+    model: str
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float
+    duration_ms: int
+    decision: Literal["tools", "answer", "text"]
+    tools: list[str]
+    fallback: bool
+    rejected: str | None
+
+
 class ToolCalled(_Model):
     type: Literal["tool.called"] = "tool.called"
     tool: str
@@ -125,6 +146,8 @@ Event = Annotated[
     RequestStarted
     | GuardrailsChecked
     | CacheChecked
+    | LlmStarted
+    | LlmCompleted
     | ToolCalled
     | ToolCompleted
     | RetrievalStarted
