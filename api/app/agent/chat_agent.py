@@ -279,7 +279,10 @@ async def run_agent(
             deps=deps,
             model=_model(settings),
             instructions=_instructions(settings),
-            model_settings={"max_tokens": settings.max_output_tokens},
+            model_settings={
+                "max_tokens": settings.max_output_tokens,
+                "timeout": settings.llm_timeout_s,
+            },
             usage_limits=UsageLimits(
                 request_limit=settings.agent_max_requests,
                 tool_calls_limit=settings.agent_max_tool_calls,

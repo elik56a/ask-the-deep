@@ -1,0 +1,37 @@
+# Weekly update PRs, grouped so each ecosystem opens at most one PR for
+# minor/patch bumps. The cooldown skips releases younger than a week, which
+# keeps freshly published (possibly hijacked) versions out.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /api
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      web:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directory: /infra
+    schedule:
+      interval: weekly

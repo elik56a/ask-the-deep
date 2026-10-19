@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     max_history_messages: int = 20
     max_history_chars: int = 2000
     max_output_tokens: int = 500
+    # Deadlines. The whole question must end before Lambda and CloudFront
+    # give up (30 s), so the visitor always gets a clear message.
+    request_timeout_s: float = 25.0
+    llm_timeout_s: float = 15.0
+    db_timeout_s: float = 5.0
     # Caps on the agent loop, so a confused model can't run up cost or latency.
     agent_max_requests: int = 4
     agent_max_tool_calls: int = 4

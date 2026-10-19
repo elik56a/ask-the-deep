@@ -11,7 +11,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 12 | [ ] |
-| P2 Control & security | 13 | 6 | [ ] |
+| P2 Control & security | 13 | 8 | [ ] |
 | P3 Transparency & observability | 15 | 0 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 16 | 0 | [ ] |
@@ -110,8 +110,8 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [~] **P2.8** API refuses requests without CloudFront's `x-origin-verify` secret ✓, so `CloudFront-Viewer-Address` can be trusted; CORS limited to `ALLOWED_ORIGINS`; security headers + CSP on CloudFront; HTTPS only
 - [ ] **P2.9** Output rendering: markdown without raw HTML, `rel=noopener`, sanitized — _(client side, can land in P3)_
 - [ ] **P2.10** Lambda reserved concurrency cap; spend limit configured at the model provider; separate key per env
-- [ ] **P2.11** Load safety: timeouts at every layer, a cap on concurrent SSE connections
-- [ ] **P2.12** Supply chain: Dependabot, pip-audit and npm audit in CI, pinned versions
+- [x] **P2.11** Load safety: timeouts at every layer (whole question `REQUEST_TIMEOUT_S` 25 s < Lambda/CloudFront 30 s; LLM call 15 s; Postgres 5 s connect/query; GitHub 3 s; Turnstile 5 s). Concurrent connections: each Lambda copy serves one stream, so the Lambda concurrency limit is the cap (P2.10)
+- [x] **P2.12** Supply chain: Dependabot (uv, npm, actions, terraform; weekly, grouped, 7-day cooldown), pip-audit and pnpm audit in CI, versions pinned by `uv.lock` / `pnpm-lock.yaml` (CI installs with `--locked` / `--frozen-lockfile`)
 - [ ] **P2.13** After first deploy: confirm the API receives `CloudFront-Viewer-Address` (Managed-AllViewerExceptHostHeader). Gate test suite: scripted injection prompts + burst traffic + budget-exhaust simulation against staging
 
 ---

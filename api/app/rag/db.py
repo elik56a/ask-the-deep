@@ -28,7 +28,12 @@ def create_pool(settings: Settings) -> Pool:
         min_size=0,
         max_size=2,
         open=False,
-        kwargs={"autocommit": True},
+        timeout=settings.db_timeout_s,
+        kwargs={
+            "autocommit": True,
+            "connect_timeout": round(settings.db_timeout_s),
+            "options": f"-c statement_timeout={round(settings.db_timeout_s * 1000)}",
+        },
         configure=configure_connection,
     )
 

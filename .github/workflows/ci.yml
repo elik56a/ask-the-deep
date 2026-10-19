@@ -47,6 +47,10 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy app tests
       - run: uv run pytest
+      - name: Audit dependencies for known vulnerabilities
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit --disable-pip -r "$RUNNER_TEMP/requirements.txt"
 
   web:
     runs-on: ubuntu-latest
@@ -73,3 +77,5 @@ jobs:
       - name: Generated event types are up to date
         run: pnpm gen:events && git diff --exit-code src/lib/events.gen.ts
       - run: pnpm build
+      - name: Audit dependencies for known vulnerabilities
+        run: pnpm audit --audit-level high

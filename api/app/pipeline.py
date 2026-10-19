@@ -40,6 +40,7 @@ _NO_INFORMATION = {
     "en": "I don't have that information. You can contact Eliyahu directly.",
 }
 _GENERATION_FAILED = "Something went wrong while writing the answer. Please try again."
+_TIMED_OUT = "That took too long. Please try again."
 _EXCERPT_CHARS = 200
 _NOT_VERIFIED = ErrorEvent(
     code="human_check_required",
@@ -65,6 +66,24 @@ class Services:
     github: GitHubActivity
     limiter: RateLimiter
     budget: Budget
+
+
+async def _with_deadline[T](
+    steps: AsyncIterator[T], seconds: float
+) -> AsyncIterator[T]:
+    """Yield from `steps`, raising TimeoutError once `seconds` have passed in total.
+
+    The timeout wraps only the wait for the next step, never our own `yield`,
+    so the cancellation always lands inside the agent, not in the HTTP stream.
+    """
+    deadline = asyncio.get_running_loop().time() + seconds
+    while True:
+        try:
+            async with asyncio.timeout_at(deadline):
+                step = await anext(steps)
+        except StopAsyncIteration:
+            return
+        yield step
 
 
 def _language(text: str) -> str:
@@ -181,13 +200,18 @@ async def run_pipeline(
     ttft_ms: int | None = None
     finished: AgentFinished | None = None
     try:
-        async for step in run_agent(question, deps, history):
+        steps = run_agent(question, deps, history)
+        async for step in _with_deadline(steps, settings.request_timeout_s):
             if isinstance(step, AgentFinished):
                 finished = step
                 continue
             if isinstance(step, TextDelta) and ttft_ms is None:
                 ttft_ms = em.elapsed_ms()
             yield em.emit(step)
+    except TimeoutError:
+        yield em.emit(ErrorEvent(code="timeout", message=_TIMED_OUT))
+        yield em.emit(RequestFinished(outcome="error"))
+        return
     except Exception:
         finished = None
     if finished is None:

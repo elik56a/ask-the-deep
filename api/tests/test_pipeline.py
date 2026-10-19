@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 from collections.abc import AsyncIterator
 
@@ -176,3 +177,23 @@ async def test_each_session_has_its_own_rate_limit() -> None:
     )
     events = await _run("Where?", services=per_session)
     assert events[2].event.model_dump()["code"] == "rate_limited"
+
+
+async def test_a_hanging_model_hits_the_deadline_with_a_clear_message() -> None:
+    async def hangs(
+        messages: list[ModelMessage], info: AgentInfo
+    ) -> AsyncIterator[DeltaToolCalls]:
+        await asyncio.sleep(30)
+        yield {}
+
+    quick = SETTINGS.model_copy(update={"request_timeout_s": 0.2})
+    with agent.override(model=FunctionModel(stream_function=hangs)):
+        events = [
+            e
+            async for e in run_pipeline(
+                "Where?", quick, make_services(RELEVANT), "visitor", "session-1"
+            )
+        ]
+    _assert_well_formed(events)
+    assert events[-2].event.model_dump()["code"] == "timeout"
+    assert events[-1].event.model_dump()["outcome"] == "error"
