@@ -2,6 +2,7 @@ import { ChatInput } from "#/components/ChatInput";
 import { MessageBubble } from "#/components/MessageBubble";
 import { StepIcon } from "#/components/StepIcon";
 import { SuggestedQuestions } from "#/components/SuggestedQuestions";
+import { Switch } from "#/components/ui/switch";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
 import type { Lang } from "#/types/i18n.types";
@@ -15,6 +16,8 @@ interface ChatProps {
   onSend: (question: string) => void;
   focusChunk: string | null;
   onFocusChunk: (chunkId: string | null) => void;
+  showProcess: boolean;
+  onShowProcess: (show: boolean) => void;
 }
 
 export function Chat({
@@ -26,6 +29,8 @@ export function Chat({
   onSend,
   focusChunk,
   onFocusChunk,
+  showProcess,
+  onShowProcess,
 }: ChatProps) {
   const copy = CHAT_COPY[lang];
   const thinking = waiting && messages.at(-1)?.role === "user";
@@ -34,10 +39,26 @@ export function Chat({
       aria-label={copy.agentLabel}
       className="flex min-h-150 flex-col gap-5 rounded-2xl border border-line-strong bg-linear-to-b from-accent/6 via-30% via-surface to-surface p-6"
     >
-      <p className="flex w-fit items-center gap-2 rounded-full border border-line px-3 py-1 text-muted text-sm">
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
-        {copy.agentLabel}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="flex w-fit items-center gap-2 rounded-full border border-line px-3 py-1 text-muted text-sm">
+          <span
+            aria-hidden="true"
+            className="size-1.5 rounded-full bg-accent"
+          />
+          {copy.agentLabel}
+        </p>
+        <label
+          htmlFor="show-process"
+          className="flex cursor-pointer items-center gap-2.5 text-muted text-sm has-data-checked:text-text"
+        >
+          <Switch
+            id="show-process"
+            checked={showProcess}
+            onCheckedChange={onShowProcess}
+          />
+          {copy.showProcess}
+        </label>
+      </div>
       {messages.length === 0 ? (
         <div className="flex flex-col gap-3.5 pt-6">
           <h2 className="text-balance font-bold text-display leading-[1.05] tracking-tight">

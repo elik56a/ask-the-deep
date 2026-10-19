@@ -17,6 +17,7 @@ export interface ChatRequestBody {
 
 export interface ChatCopy {
   agentLabel: string;
+  showProcess: string;
   introTitle: string;
   introBody: string;
   steps: StepsCopy;

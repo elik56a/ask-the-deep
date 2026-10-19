@@ -2,6 +2,8 @@ import type { HoodCopy, HoodStatus } from "#/types/hood.types";
 import type { Lang } from "#/types/i18n.types";
 import type { StageId } from "#/types/trace.types";
 
+export const PROCESS_STORAGE_KEY = "portfolio-chat:show-process";
+
 export const HOOD_COPY: Record<Lang, HoodCopy> = {
   en: {
     eyebrow: "Under the hood",

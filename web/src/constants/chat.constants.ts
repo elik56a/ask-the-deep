@@ -16,6 +16,7 @@ export const STEP_MIN_MS = 300;
 export const CHAT_COPY: Record<Lang, ChatCopy> = {
   en: {
     agentLabel: "AI agent representing Eliyahu",
+    showProcess: "Show the process",
     introTitle: "Ask about Eliyahu's work",
     introBody:
       "An AI agent answers from Eliyahu's own notes and cites its sources. You can watch every step it takes: each model call, search and score, with the time and cost.",
@@ -53,6 +54,7 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
   },
   he: {
     agentLabel: "סוכן AI שמייצג את אליהו",
+    showProcess: "הצגת התהליך",
     introTitle: "שאלו על העבודה של אליהו",
     introBody:
       "סוכן AI עונה מתוך הרשימות של אליהו ומציין את המקורות. אפשר לראות כל צעד שהוא עושה: כל קריאה למודל, כל חיפוש וכל ציון, עם הזמן והעלות.",
