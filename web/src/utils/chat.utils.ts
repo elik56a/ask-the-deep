@@ -3,7 +3,7 @@ import {
   MAX_HISTORY_CHARS,
   MAX_HISTORY_MESSAGES,
 } from "#/constants/chat.constants";
-import type { StreamEvent } from "#/generated/events.gen";
+import type { Citation, StreamEvent } from "#/generated/events.gen";
 import type {
   ChatMessage,
   ChatRequestBody,
@@ -14,6 +14,18 @@ export function messageEvents(message: ChatMessage): StreamEvent[] {
   return message.parts.flatMap((part) =>
     part.type === "data-event" ? [part.data] : [],
   );
+}
+
+export function messageCitations(events: StreamEvent[]): Citation[] {
+  return events.flatMap(({ event }) =>
+    event.type === "citations.attached" ? event.citations : [],
+  );
+}
+
+export function latestAnswer(messages: ChatMessage[]): ChatMessage | undefined {
+  return [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant");
 }
 
 export function messageText(message: ChatMessage): string {

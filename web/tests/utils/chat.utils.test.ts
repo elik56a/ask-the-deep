@@ -15,6 +15,8 @@ import {
   chatRequestBody,
   isChatMessages,
   isWaiting,
+  latestAnswer,
+  messageCitations,
   messageError,
   messageEvents,
   messageText,
@@ -87,6 +89,41 @@ it("sends the last message as the question and the rest as history", () => {
     ],
     session: "session-token",
   });
+});
+
+it("collects the sources an answer cites", () => {
+  const citation = {
+    chunk_id: "skills.md#a",
+    source: "skills.md",
+    breadcrumb: "Skills › A",
+    excerpt: "React and FastAPI.",
+  };
+  expect(
+    messageCitations([
+      {
+        request_id: "r",
+        seq: 1,
+        t_ms: 0,
+        event: { type: "llm.started", call: 1 },
+      },
+      {
+        request_id: "r",
+        seq: 2,
+        t_ms: 5,
+        event: { type: "citations.attached", citations: [citation] },
+      },
+    ]),
+  ).toEqual([citation]);
+});
+
+it("picks the newest answer, even while a new question waits", () => {
+  const first = message("assistant", "One");
+  const second = message("assistant", "Two");
+  expect(
+    latestAnswer([message("user", "Q"), first, message("user", "Q2"), second]),
+  ).toBe(second);
+  expect(latestAnswer([first, message("user", "Q3")])).toBe(first);
+  expect(latestAnswer([message("user", "Q")])).toBeUndefined();
 });
 
 it("keeps history within the server's limits", () => {

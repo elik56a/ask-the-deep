@@ -1,6 +1,11 @@
 import { expect, it } from "vitest";
 import type { LlmCompleted, StreamEvent } from "#/generated/events.gen";
-import { buildTrace } from "#/utils/trace.utils";
+import { buildTrace, rulerTicks } from "#/utils/trace.utils";
+
+it("picks a round ruler step with at most six marks", () => {
+  expect(rulerTicks(2910)).toEqual([0, 500, 1000, 1500, 2000, 2500]);
+  expect(rulerTicks(220)).toEqual([0, 50, 100, 150, 200]);
+});
 
 function at(t_ms: number, event: StreamEvent["event"]): StreamEvent {
   return { request_id: "r1", seq: 0, t_ms, event };

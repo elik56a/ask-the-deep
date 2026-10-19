@@ -1,17 +1,30 @@
 import { ChatSteps } from "#/components/ChatSteps";
+import { SourceChips } from "#/components/SourceChips";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
 import type { Lang } from "#/types/i18n.types";
-import { messageError, messageEvents, messageText } from "#/utils/chat.utils";
+import {
+  messageCitations,
+  messageError,
+  messageEvents,
+  messageText,
+} from "#/utils/chat.utils";
 import { chatSteps } from "#/utils/chatSteps.utils";
 import { buildTrace } from "#/utils/trace.utils";
 
 interface MessageBubbleProps {
   message: ChatMessage;
   lang: Lang;
+  focusChunk: string | null;
+  onFocusChunk: (chunkId: string | null) => void;
 }
 
-export function MessageBubble({ message, lang }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  lang,
+  focusChunk,
+  onFocusChunk,
+}: MessageBubbleProps) {
   const copy = CHAT_COPY[lang];
   const text = messageText(message);
 
@@ -58,6 +71,11 @@ export function MessageBubble({ message, lang }: MessageBubbleProps) {
           )}
         </div>
       )}
+      <SourceChips
+        citations={messageCitations(events)}
+        focusChunk={focusChunk}
+        onFocusChunk={onFocusChunk}
+      />
     </li>
   );
 }

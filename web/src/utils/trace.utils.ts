@@ -29,6 +29,17 @@ function addCall(
   totals.costUsd += cost;
 }
 
+/** Ruler marks for a waterfall spanning `domainMs`: a round step, at most six marks. */
+export function rulerTicks(domainMs: number): number[] {
+  const step =
+    [50, 100, 250, 500, 1000, 2000, 5000].find(
+      (size) => domainMs / size <= 6,
+    ) ?? 10000;
+  const ticks: number[] = [];
+  for (let at = 0; at <= domainMs; at += step) ticks.push(at);
+  return ticks;
+}
+
 export function buildTrace(events: StreamEvent[]): Trace {
   const spans: TraceSpan[] = [];
   const totals: TraceTotals = {

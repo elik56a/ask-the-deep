@@ -13,6 +13,8 @@ interface ChatProps {
   canSend: boolean;
   failed: boolean;
   onSend: (question: string) => void;
+  focusChunk: string | null;
+  onFocusChunk: (chunkId: string | null) => void;
 }
 
 export function Chat({
@@ -22,6 +24,8 @@ export function Chat({
   canSend,
   failed,
   onSend,
+  focusChunk,
+  onFocusChunk,
 }: ChatProps) {
   const copy = CHAT_COPY[lang];
   const thinking = waiting && messages.at(-1)?.role === "user";
@@ -47,7 +51,13 @@ export function Chat({
       ) : (
         <ol className="flex flex-col gap-4">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} lang={lang} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              lang={lang}
+              focusChunk={focusChunk}
+              onFocusChunk={onFocusChunk}
+            />
           ))}
         </ol>
       )}
