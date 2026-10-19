@@ -9,14 +9,14 @@ The spec proposes light and dark tokens, "Radix components, Motion" for styling,
 - A light chat beside a dark panel reads as two products. The "looking into the case" feeling needs one dark world.
 - The motion the UI needs is small: elements entering as events arrive, one panel reveal (FLIP of the chat plus a slide-in) and a few transitions. CSS and the Web Animations API cover all of it.
 - The watch movement is one imperative scene (a few gears, a balance wheel) driven by stream events. React Three Fiber adds a renderer layer around ~200 lines of plain three.js.
-- The components so far (a switch, a disclosure) are native elements with correct semantics.
+- The panel needs real widgets (tooltips on badges, a passage popover, a process switch, a mobile drawer) whose focus and dismissal rules are easy to get wrong by hand.
 
 ## Decision
 
 - The site is dark by default: the chat is the lifted surface and the panel is the deepest layer (`case`). A theme switch offers the spec's light tokens (warning darkened to `#b25f00` for AA on white); the choice is kept in `localStorage` and applied by an inline boot script before first paint. Both themes keep the chat and the panel in one palette, never light beside dark.
 - Motion uses CSS transitions and animations, and WAAPI (`element.animate`) where JS must measure (the panel reveal). No Motion library. Curves come from the animate skill: `--ease-out` for entries and exits, `--ease-in-out` for on-screen movement.
 - The watch movement uses plain `three` inside an effect, loaded lazily on the client. No React Three Fiber.
-- No component library yet. shadcn/ui on Radix comes in with the first component that needs managed focus (the mobile bottom drawer, P5.5).
+- Interactive widgets (switch, tooltip, popover, collapsible, drawer) come from shadcn/ui on Radix, as the spec intends: accessible behaviour (roles, focus, keyboard, dismissal) is the hard part and Radix owns it. Components are copied into `web/src/components/ui/` and added only when used; `styles.css` maps shadcn's token names onto ours. Plain elements stay native (`button`, `form`, `details`).
 
 ## Consequences
 
