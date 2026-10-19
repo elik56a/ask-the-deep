@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 5173 --strictPort",
     "generate-routes": "tsr generate",
-    "build": "vite build",
+    "build": "vite build && node --experimental-strip-types --no-warnings scripts/apply-csp.ts",
     "preview": "vite preview",
     "format": "biome format",
     "lint": "biome lint",
