@@ -17,8 +17,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/react": "4.0.147",
     "@tanstack/react-router": "1.170.45",
     "@tanstack/react-start": "1.169.3",
+    "ai": "7.0.143",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

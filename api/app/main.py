@@ -21,6 +21,7 @@ from app.pipeline import Services, run_pipeline
 from app.rag.db import create_pool
 from app.rag.embeddings import query_embedder
 from app.rag.retrieval import HybridRetriever
+from app.stream import HEADERS, ui_message_stream
 
 _services: Services | None = None
 _turnstile: Turnstile | None = None
@@ -154,17 +155,17 @@ async def chat(
     services: Annotated[Services, Depends(get_services)],
     sessions: Annotated[Sessions, Depends(get_sessions)],
 ) -> StreamingResponse:
-    """Run the pipeline for one question and stream its events."""
+    """Run the pipeline for one question and stream it in the AI SDK format."""
     settings = get_settings()
     _, visitor = _visitor(http, settings)
-    session_id = sessions.session_id(request.session)
-
-    async def sse() -> AsyncIterator[str]:
-        async for event in run_pipeline(
-            request.question, settings, services, visitor, session_id, request.history
-        ):
-            yield f"data: {event.model_dump_json()}\n\n"
-
+    events = run_pipeline(
+        request.question,
+        settings,
+        services,
+        visitor,
+        sessions.session_id(request.session),
+        request.history,
+    )
     return StreamingResponse(
-        sse(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"}
+        ui_message_stream(events), media_type="text/event-stream", headers=HEADERS
     )
