@@ -43,7 +43,7 @@ Formatting and linting are owned by the tools, with default settings: Ruff (Pyth
 - **Folders** (`web/src/`):
   - `routes/` pages (TanStack file routes)
   - `components/` React components; they render, nothing else
-  - `components/ui/` shadcn/ui on Radix, added with `pnpm exec shadcn add <name>` (vendor code: exempt from the one-kind-per-file and comment rules). On add, review it: no `transition-all`, and swap `bg-muted`/`bg-accent` (shadcn backgrounds) for our tokens, since `muted` and `accent` mean muted text and brand blue here
+  - `components/ui/` shadcn/ui on Radix, added with `pnpm exec shadcn add <name>` (vendor code: exempt from the one-kind-per-file and comment rules). On add, review it: no `transition-all`, and swap `bg-muted`/`bg-accent` (shadcn backgrounds) for our tokens, since `muted` and `accent` mean muted text and brand blue here. Buttons and badges always come from `ui/` (`Button` variants, `Badge` variants incl. `metric`/`ok`/`warn` for panel numbers); restyle with `className`, don't hand-roll
   - `hooks/` React hooks
   - `utils/` pure functions only, `<name>.utils.ts`
   - `types/` interfaces and types only, `<name>.types.ts`

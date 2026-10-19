@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { ArrowIcon } from "#/components/ArrowIcon";
+import { Button } from "#/components/ui/button";
 import { CHAT_COPY, MAX_QUESTION_CHARS } from "#/constants/chat.constants";
 import type { Lang } from "#/types/i18n.types";
 
@@ -37,14 +38,15 @@ export function ChatInput({ lang, disabled, onSend }: ChatInputProps) {
         placeholder={copy.placeholder}
         className="min-w-0 flex-1 bg-transparent py-2.5 placeholder:text-muted focus:outline-none"
       />
-      <button
+      <Button
         type="submit"
+        size="icon-lg"
         disabled={disabled}
         aria-label={copy.send}
-        className="grid size-11 flex-none place-items-center rounded-xl bg-accent text-on-accent transition-transform duration-150 ease-out focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 active:scale-95 disabled:opacity-50"
+        className="size-11 rounded-xl"
       >
         <ArrowIcon />
-      </button>
+      </Button>
     </form>
   );
 }

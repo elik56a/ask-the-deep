@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Badge } from "#/components/Badge";
 import { RetrievalGate } from "#/components/RetrievalGate";
+import { Badge } from "#/components/ui/badge";
 import { HOOD_COPY } from "#/constants/hood.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { Lang } from "#/types/i18n.types";
@@ -38,8 +38,8 @@ export function EventCard({
       title = copy.requestStarted;
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge>{`${event.provider}:${event.model}`}</Badge>
-          <Badge>{`rules ${event.rules_version}`}</Badge>
+          <Badge variant="metric">{`${event.provider}:${event.model}`}</Badge>
+          <Badge variant="metric">{`rules ${event.rules_version}`}</Badge>
         </div>
       );
       break;
@@ -67,11 +67,11 @@ export function EventCard({
       title = copy.cache;
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone={event.hit ? "ok" : undefined}>
+          <Badge variant={event.hit ? "ok" : "metric"}>
             {event.hit ? copy.cacheHit : copy.cacheMiss}
           </Badge>
           {event.similarity !== null && (
-            <Badge>{event.similarity.toFixed(2)}</Badge>
+            <Badge variant="metric">{event.similarity.toFixed(2)}</Badge>
           )}
         </div>
       );
@@ -102,12 +102,12 @@ export function EventCard({
             )}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            <Badge>{formatMs(event.duration_ms)}</Badge>
-            <Badge>{`${formatInt(event.input_tokens)} → ${formatInt(event.output_tokens)}`}</Badge>
-            <Badge>{formatUsd(event.cost_usd)}</Badge>
-            {event.fallback && <Badge tone="warn">{copy.fallback}</Badge>}
+            <Badge variant="metric">{formatMs(event.duration_ms)}</Badge>
+            <Badge variant="metric">{`${formatInt(event.input_tokens)} → ${formatInt(event.output_tokens)}`}</Badge>
+            <Badge variant="metric">{formatUsd(event.cost_usd)}</Badge>
+            {event.fallback && <Badge variant="warn">{copy.fallback}</Badge>}
             {event.rejected && (
-              <Badge tone="warn">
+              <Badge variant="warn">
                 {fill(copy.rejected, { reason: event.rejected })}
               </Badge>
             )}
@@ -142,10 +142,10 @@ export function EventCard({
       );
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone={event.ok ? "ok" : "warn"}>
+          <Badge variant={event.ok ? "ok" : "warn"}>
             {fill(copy.results, { n: String(event.result_count) })}
           </Badge>
-          <Badge>{formatMs(event.duration_ms)}</Badge>
+          <Badge variant="metric">{formatMs(event.duration_ms)}</Badge>
         </div>
       );
       break;
@@ -164,7 +164,7 @@ export function EventCard({
       title = fill(copy.writingFrom, { n: String(event.context_chunks) });
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone={event.prompt_cache_hit ? "ok" : undefined}>
+          <Badge variant={event.prompt_cache_hit ? "ok" : "metric"}>
             {event.prompt_cache_hit
               ? copy.promptCacheHit
               : copy.promptCacheMiss}
@@ -181,10 +181,12 @@ export function EventCard({
             {event.reason}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            <Badge tone={answered ? "ok" : "warn"}>
+            <Badge variant={answered ? "ok" : "warn"}>
               {fill(copy.best, { s: event.best_score.toFixed(2) })}
             </Badge>
-            <Badge>{fill(copy.gate, { t: event.threshold.toFixed(2) })}</Badge>
+            <Badge variant="metric">
+              {fill(copy.gate, { t: event.threshold.toFixed(2) })}
+            </Badge>
           </div>
         </>
       );
@@ -198,14 +200,14 @@ export function EventCard({
       body = (
         <div className="flex flex-wrap gap-1.5">
           {event.citations.length > 0 ? (
-            <Badge tone={matched === event.citations.length ? "ok" : "warn"}>
+            <Badge variant={matched === event.citations.length ? "ok" : "warn"}>
               {fill(copy.citationsMatched, {
                 m: String(matched),
                 n: String(event.citations.length),
               })}
             </Badge>
           ) : (
-            <Badge>{copy.noCitations}</Badge>
+            <Badge variant="metric">{copy.noCitations}</Badge>
           )}
         </div>
       );
@@ -215,7 +217,7 @@ export function EventCard({
       title = copy.error;
       body = (
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge tone="warn">{event.code}</Badge>
+          <Badge variant="warn">{event.code}</Badge>
           <span dir="auto" className="text-muted text-sm">
             {event.message}
           </span>
@@ -226,7 +228,7 @@ export function EventCard({
       title = copy.finished;
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone={event.outcome === "answered" ? "ok" : "warn"}>
+          <Badge variant={event.outcome === "answered" ? "ok" : "warn"}>
             {hood.status[event.outcome]}
           </Badge>
         </div>

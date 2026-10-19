@@ -1,3 +1,4 @@
+import { Button } from "#/components/ui/button";
 import { THEME_SWITCH_COPY } from "#/constants/theme.constants";
 import type { Lang } from "#/types/i18n.types";
 import type { Theme } from "#/types/theme.types";
@@ -12,12 +13,13 @@ export function ThemeSwitch({ lang, theme, onToggle }: ThemeSwitchProps) {
   const copy = THEME_SWITCH_COPY[lang];
   const label = theme === "dark" ? copy.toLight : copy.toDark;
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="icon-lg"
       onClick={onToggle}
       aria-label={label}
       title={label}
-      className="grid size-9 place-items-center rounded-md border border-line text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-accent"
+      className="text-muted"
     >
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
         {theme === "dark" ? (
@@ -40,6 +42,6 @@ export function ThemeSwitch({ lang, theme, onToggle }: ThemeSwitchProps) {
           />
         )}
       </svg>
-    </button>
+    </Button>
   );
 }
