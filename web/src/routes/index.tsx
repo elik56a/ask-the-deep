@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Chat } from "#/components/Chat";
 import { DepthRail } from "#/components/DepthRail";
+import { DiveComputer } from "#/components/DiveComputer";
 import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
@@ -50,6 +51,7 @@ function Home() {
     log,
     steps.map((step) => step.kind),
   );
+  const trace = buildTrace(replay.events);
   const ended =
     steps.at(-1)?.kind === "seabed" || steps.at(-1)?.kind === "abort";
   const follow = useDiveFollow(mode, water, layout.tops.at(-1) ?? null, () => {
@@ -103,7 +105,7 @@ function Home() {
       </section>
       <div
         data-diving={diving || undefined}
-        className="fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:w-120"
+        className="fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120"
       >
         <Chat
           lang={lang}
@@ -116,6 +118,7 @@ function Home() {
           onFocusChunk={setFocusChunk}
           stayAtSurface={!process.show}
           onStayAtSurface={stay}
+          collapsible={diving}
         />
         {!session.token && (
           <HumanCheck
@@ -140,7 +143,7 @@ function Home() {
               ended={ended}
               tops={layout.tops}
               listRef={log}
-              retrieved={buildTrace(replay.events).retrieved}
+              retrieved={trace.retrieved}
               focusChunk={focusChunk}
               onFocusChunk={setFocusChunk}
               end={
@@ -167,8 +170,18 @@ function Home() {
           </div>
         </main>
       )}
+      {diving && (
+        <DiveComputer
+          lang={lang}
+          waterRef={water}
+          totals={trace.totals}
+          status={trace.outcome ?? (chat.busy ? "running" : "idle")}
+          running={chat.busy || replay.replaying}
+          finalMs={trace.totals.latencyMs ?? trace.lastMs}
+        />
+      )}
       {mode === "dive" && (
-        <p className="glass fixed start-[max(16px,env(safe-area-inset-left,0px))] top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-32px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] lg:start-8 lg:max-w-[min(440px,calc(100%-536px))]">
+        <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
           {dive.guide[0]}
           <b className="font-semibold text-accent">{dive.guide[1]}</b>
           {dive.guide[2]}

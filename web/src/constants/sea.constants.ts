@@ -152,6 +152,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       errorTitle: "Something went wrong on the server",
     },
     logLabel: "Dive log",
+    hud: { label: "Dive computer", depth: "Depth", diveTime: "Dive time" },
     guide: [
       "Each card is ",
       "one step the server takes",
@@ -211,6 +212,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       errorTitle: "משהו השתבש בשרת",
     },
     logLabel: "יומן הצלילה",
+    hud: { label: "מחשב צלילה", depth: "עומק", diveTime: "זמן צלילה" },
     guide: [
       "כל כרטיס הוא ",
       "צעד אחד שהשרת עושה",

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { ChatInput } from "#/components/ChatInput";
 import { MessageBubble } from "#/components/MessageBubble";
 import { StepIcon } from "#/components/StepIcon";
 import { SuggestedQuestions } from "#/components/SuggestedQuestions";
+import { Button } from "#/components/ui/button";
 import { Switch } from "#/components/ui/switch";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
@@ -18,6 +20,8 @@ interface ChatProps {
   onFocusChunk: (chunkId: string | null) => void;
   stayAtSurface: boolean;
   onStayAtSurface: (stay: boolean) => void;
+  /** A bottom sheet on small screens while diving, so the dive stays visible. */
+  collapsible: boolean;
 }
 
 export function Chat({
@@ -31,8 +35,11 @@ export function Chat({
   onFocusChunk,
   stayAtSurface,
   onStayAtSurface,
+  collapsible,
 }: ChatProps) {
   const copy = CHAT_COPY[lang];
+  const [collapsed, setCollapsed] = useState(false);
+  const hidden = collapsible && collapsed;
   const thinking = waiting && messages.at(-1)?.role === "user";
   return (
     <section
@@ -63,11 +70,41 @@ export function Chat({
           />
           {copy.stayAtSurface}
         </label>
+        {collapsible && (
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? copy.showThread : copy.hideThread}
+            onClick={() => setCollapsed(!collapsed)}
+            className="lg:hidden"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              className={`transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Button>
+        )}
       </div>
       {messages.length === 0 ? (
         <SuggestedQuestions lang={lang} disabled={!canSend} onPick={onSend} />
       ) : (
-        <ol className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
+        <ol
+          hidden={hidden}
+          className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain"
+        >
           {messages.map((message) => (
             <MessageBubble
               key={message.id}

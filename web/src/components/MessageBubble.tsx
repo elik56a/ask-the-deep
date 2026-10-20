@@ -33,7 +33,7 @@ export function MessageBubble({
       <li className="flex justify-end">
         <div
           dir="auto"
-          className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-ee-md bg-accent px-4 py-2.5 font-medium text-on-accent"
+          className="max-w-[88%] whitespace-pre-wrap rounded-[18px] rounded-ee-md bg-haze px-3.5 py-2.25 font-medium text-ink"
         >
           {text}
         </div>
@@ -44,6 +44,7 @@ export function MessageBubble({
   const events = messageEvents(message);
   const trace = buildTrace(events);
   const error = messageError(message);
+  const streaming = Boolean(text) && trace.outcome === null;
   return (
     <li className="flex max-w-[92%] flex-col gap-2.5">
       <ChatSteps
@@ -54,21 +55,31 @@ export function MessageBubble({
       />
       {(text || error) && (
         <div
-          dir="auto"
-          className="whitespace-pre-wrap text-pretty rounded-2xl rounded-es-md border border-line-strong bg-sunk px-4 py-3 leading-relaxed"
+          data-live={streaming || undefined}
+          className="flex flex-col gap-2 rounded-2xl border border-line-strong bg-text/8 px-4 py-3.5 transition-[border-color,box-shadow] duration-300 data-live:border-accent/70 data-live:shadow-[0_0_24px_-6px_color-mix(in_oklab,var(--color-accent)_50%,transparent)]"
         >
-          {text}
-          {text && trace.outcome === null && (
-            <span
-              aria-hidden="true"
-              className="ms-0.5 inline-block h-[1.05em] w-0.5 animate-pulse bg-accent align-[-0.15em] motion-reduce:animate-none"
-            />
+          {text && (
+            <p className="font-mono text-[11px] text-accent uppercase leading-none tracking-[0.12em]">
+              {copy.answerLabel}
+            </p>
           )}
-          {error && !text && (
-            <span role="alert" className="text-muted">
-              {copy.errors[error] ?? copy.genericError}
-            </span>
-          )}
+          <div
+            dir="auto"
+            className="whitespace-pre-wrap text-pretty font-medium text-lg leading-[1.65]"
+          >
+            {text}
+            {streaming && (
+              <span
+                aria-hidden="true"
+                className="ms-0.5 inline-block h-[1.05em] w-0.5 animate-pulse bg-accent align-[-0.15em] motion-reduce:animate-none"
+              />
+            )}
+            {error && !text && (
+              <span role="alert" className="text-muted">
+                {copy.errors[error] ?? copy.genericError}
+              </span>
+            )}
+          </div>
         </div>
       )}
       <SourceChips

@@ -18,6 +18,9 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     agentLabel: "AI agent representing Eliyahu",
     stayAtSurface: "Stay at the surface",
     consoleTitle: "Ask the agent",
+    answerLabel: "Answer",
+    hideThread: "Hide the conversation",
+    showThread: "Show the conversation",
     introTitle: ["Ask about ", "Eliyahu's", " work"],
     introBody:
       "An AI agent answers from Eliyahu's own notes. Send a question and we dive: every model call, search and score shows up at its depth.",
@@ -57,6 +60,9 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     agentLabel: "סוכן AI שמייצג את אליהו",
     stayAtSurface: "להישאר על פני המים",
     consoleTitle: "שאלו את הסוכן",
+    answerLabel: "תשובה",
+    hideThread: "הסתרת השיחה",
+    showThread: "הצגת השיחה",
     introTitle: ["שאלו על העבודה של ", "אליהו", ""],
     introBody:
       "סוכן AI עונה מתוך הרשימות של אליהו. שולחים שאלה וצוללים: כל קריאה למודל, כל חיפוש וכל ציון מופיעים בעומק שלהם.",

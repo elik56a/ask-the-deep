@@ -95,6 +95,7 @@ export interface DiveCopy {
   zones: Record<ZoneId, string>;
   steps: StepCopy;
   logLabel: string;
+  hud: { label: string; depth: string; diveTime: string };
   /** Before the bold part, the bold part, after it. */
   guide: [string, string, string];
   follow: string;

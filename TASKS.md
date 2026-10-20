@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
-| P5 Design & launch | 24 | 7 | [ ] |
+| P5 Design & launch | 24 | 8 | [ ] |
 
 ---
 
@@ -204,7 +204,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
   - a sand puff at the seabed.
 
   Copy in he/en in `constants/` — _Done when_ every event type in `events.gen.ts` renders a card or is listed as having none, with a test per kind
-- [ ] **P5.24** Dive computer + docked console:
+- [x] **P5.24** Dive computer + docked console:
   - **HUD** (`DiveComputer`): depth, zone, dive time, model calls, tokens in/out, cost, time to first word, status. It replaces the panel header, `HoodMeters` and `RunClock`.
   - **Console** (`DiveConsole`): docked at the inline-end on desktop (480 px), a collapsible bottom sheet on mobile. It holds the question, the friendly steps, a bold "Answer" card that glows while it streams, and source chips still linked to their passages.
   - _Done when_ the answer stays readable at every depth (WCAG AA)

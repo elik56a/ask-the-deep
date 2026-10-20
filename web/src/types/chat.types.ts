@@ -19,6 +19,9 @@ export interface ChatCopy {
   agentLabel: string;
   stayAtSurface: string;
   consoleTitle: string;
+  answerLabel: string;
+  hideThread: string;
+  showThread: string;
   /** Before the name, the name (set in italics), after it. */
   introTitle: [string, string, string];
   introBody: string;
