@@ -31,7 +31,7 @@ export function SourceChips({
                 onPointerLeave={() => onFocusChunk(null)}
                 onFocus={() => onFocusChunk(citation.chunk_id)}
                 onBlur={() => onFocusChunk(null)}
-                className={`h-auto gap-1.5 rounded-full py-1 ps-1 pe-2.5 font-normal text-[13px] hover:border-accent aria-expanded:border-accent aria-expanded:bg-accent/10 ${focusChunk === citation.chunk_id ? "border-accent bg-accent/10" : ""}`}
+                className={`h-auto gap-1.5 rounded-full pointer-coarse:min-h-11 py-1 ps-1 pe-2.5 font-normal text-[13px] hover:border-accent aria-expanded:border-accent aria-expanded:bg-accent/10 ${focusChunk === citation.chunk_id ? "border-accent bg-accent/10" : ""}`}
               >
                 <span className="rounded-full bg-sunk px-1.5 py-0.5 font-mono font-semibold text-[11px] leading-none">
                   {index + 1}

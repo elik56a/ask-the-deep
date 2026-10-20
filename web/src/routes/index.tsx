@@ -136,6 +136,13 @@ function Home() {
           className="relative min-h-svh overflow-clip"
           style={{ height: `calc(${layout.bottom}px + 80svh)` }}
         >
+          {mode === "dive" && (
+            <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
+              {dive.guide[0]}
+              <b className="font-semibold text-accent">{dive.guide[1]}</b>
+              {dive.guide[2]}
+            </p>
+          )}
           <div className="absolute inset-y-0 inset-x-[max(16px,env(safe-area-inset-left,0px))] lg:inset-x-8">
             <DepthRail lang={lang} />
             <DiveLog
@@ -176,13 +183,6 @@ function Home() {
           running={chat.busy || replay.replaying}
           finalMs={trace.totals.latencyMs ?? trace.lastMs}
         />
-      )}
-      {mode === "dive" && (
-        <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
-          {dive.guide[0]}
-          <b className="font-semibold text-accent">{dive.guide[1]}</b>
-          {dive.guide[2]}
-        </p>
       )}
       {mode === "dive" && !follow.following && (
         <Button

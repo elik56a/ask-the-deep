@@ -61,7 +61,7 @@ export function Chat({
         </p>
         <label
           htmlFor="stay-at-surface"
-          className="flex min-h-9 cursor-pointer items-center gap-2.5 text-muted text-sm has-data-checked:text-text"
+          className="flex min-h-11 cursor-pointer items-center gap-2.5 text-muted text-sm has-data-checked:text-text"
         >
           <Switch
             id="stay-at-surface"
@@ -77,7 +77,7 @@ export function Chat({
             aria-expanded={!collapsed}
             aria-label={collapsed ? copy.showThread : copy.hideThread}
             onClick={() => setCollapsed(!collapsed)}
-            className="lg:hidden"
+            className="size-11 lg:hidden"
           >
             <svg
               width="16"
@@ -103,6 +103,9 @@ export function Chat({
       ) : (
         <ol
           hidden={hidden}
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: the thread scrolls on its own, so keyboard users need a tab stop to scroll it (axe scrollable-region-focusable)
+          tabIndex={0}
+          aria-label={copy.agentLabel}
           className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain"
         >
           {messages.map((message) => (

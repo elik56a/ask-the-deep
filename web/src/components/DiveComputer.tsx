@@ -47,23 +47,23 @@ export function DiveComputer({
   return (
     <aside
       aria-label={dive.hud.label}
-      className="glass fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(64px+env(safe-area-inset-top,0px))] z-16 grid grid-cols-[auto_1fr] items-end gap-x-4.5 gap-y-1.5 rounded-[20px] px-4 py-3 lg:start-auto lg:end-8 lg:w-112 lg:py-3.5"
+      className="glass fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(64px+env(safe-area-inset-top,0px))] z-16 grid grid-cols-[auto_1fr] items-center gap-x-4.5 gap-y-1.5 rounded-[20px] px-4 py-2 lg:start-auto lg:items-end lg:end-8 lg:w-112 lg:py-3.5"
     >
-      <div>
+      <div className="flex items-baseline gap-2.5 lg:block">
         <p className="sr-only">{dive.hud.depth}</p>
         <p
           dir="ltr"
-          className="text-start font-medium font-mono text-[2rem] tabular-nums leading-none tracking-tighter lg:text-[2.5rem]"
+          className="text-start font-medium font-mono text-2xl tabular-nums leading-none tracking-tighter lg:text-[2.5rem]"
         >
           {formatInt(meters)}
           <small className="ms-1 text-base text-muted">m</small>
         </p>
-        <p className="mt-1 font-display text-lg italic leading-none rtl:not-italic">
+        <p className="font-display text-lg italic leading-none lg:mt-1 rtl:not-italic">
           {meters > 0 ? dive.zones[zoneAt(meters).id] : dive.surface}
         </p>
       </div>
-      <div className="flex flex-col items-end gap-1.5">
-        <p role="status" className="flex items-center gap-2 text-sm">
+      <div className="flex items-center justify-end gap-3 lg:flex-col lg:items-end lg:gap-1.5">
+        <p className="flex items-center gap-2 text-sm">
           <span
             aria-hidden="true"
             className={`size-2 rounded-full ${STATUS_DOT[status]}`}

@@ -13,7 +13,7 @@ export function ModelCredits({ lang }: ModelCreditsProps) {
   const copy = MODEL_CREDITS_COPY[lang];
   return (
     <details className="glass fixed end-[max(16px,env(safe-area-inset-right,0px))] top-[calc(64px+env(safe-area-inset-top,0px))] sm:top-auto sm:bottom-[calc(12px+env(safe-area-inset-bottom,0px))] z-14 max-w-[min(360px,calc(100%-32px))] rounded-xl px-3 py-1.5 text-muted text-xs">
-      <summary className="flex min-h-7 cursor-pointer items-center">
+      <summary className="flex min-h-7 cursor-pointer items-center pointer-coarse:min-h-11">
         {copy.summary}
       </summary>
       <ul className="my-1.5 flex list-disc flex-col gap-1 ps-4">
