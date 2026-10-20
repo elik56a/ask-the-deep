@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 12 | [ ] |
+| P1 RAG core | 18 | 13 | [ ] |
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
@@ -70,7 +70,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Corpus
 - [~] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_
-- [ ] **P1.2** Privacy review of every corpus file before setting `visibility: public` (files stay local, ADR 0004)
+- [x] **P1.2** Privacy review of every corpus file before setting `visibility: public` (files stay local, ADR 0004) — `faq.md` stays private until answered
 
 ### Ingestion (`api/rag/`)
 - [x] **P1.3** Loader: only `visibility: public`; parse front matter into metadata
