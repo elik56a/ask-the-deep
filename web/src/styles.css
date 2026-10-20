@@ -6,10 +6,8 @@
 @import "@fontsource/instrument-serif/400-italic.css";
 @import "@fontsource-variable/jetbrains-mono";
 
-/* `dark:` follows our theme switch, not the OS; dark is the default when no theme is set. */
-@custom-variant dark (
-  &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *)
-);
+/* One palette, set by depth (ADR 0010): shadcn's `dark:` styles always apply, whatever the OS says. */
+@custom-variant dark (&:where(:root, :root *));
 
 /* shadcn/ui names mapped onto our tokens. `muted` and `accent` mean something else here
    (muted text, brand blue), so components using them are restyled when added. */
@@ -84,23 +82,6 @@
 
 :root {
   color-scheme: dark;
-}
-
-/* Spec light tokens; warn darkened from #e8890c to pass AA on white. */
-:root[data-theme="light"] {
-  color-scheme: light;
-  --color-page: #fafaf9;
-  --color-surface: #ffffff;
-  --color-sunk: #f3f3f1;
-  --color-case: #eef0f3;
-  --color-text: #17181c;
-  --color-muted: #5b606b;
-  --color-line: #e7e7e4;
-  --color-line-strong: #d2d3d0;
-  --color-accent: #3b5bdb;
-  --color-on-accent: #ffffff;
-  --color-ok: #2b8a3e;
-  --color-warn: #b25f00;
 }
 
 body {

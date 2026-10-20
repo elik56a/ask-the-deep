@@ -1,5 +1,4 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { THEME_BOOT_SCRIPT } from "#/constants/theme.constants";
 
 import appCss from "../styles.css?url";
 
@@ -17,7 +16,6 @@ export const Route = createRootRoute({
         title: "Eliyahu · Portfolio",
       },
     ],
-    scripts: [{ children: THEME_BOOT_SCRIPT }],
     links: [
       {
         rel: "stylesheet",
