@@ -17,8 +17,10 @@ export interface ChatRequestBody {
 
 export interface ChatCopy {
   agentLabel: string;
-  showProcess: string;
-  introTitle: string;
+  stayAtSurface: string;
+  consoleTitle: string;
+  /** Before the name, the name (set in italics), after it. */
+  introTitle: [string, string, string];
   introBody: string;
   steps: StepsCopy;
   inputLabel: string;

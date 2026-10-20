@@ -832,7 +832,9 @@ function createSea(
       const halfW =
         Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 9 * camera.aspect;
       const wide = camera.aspect > 1.2;
-      const restX = halfW * (wide ? 0.32 : 0.45);
+      // The diver floats on the side away from the hero, which follows the reading direction.
+      const side = document.documentElement.dir === "rtl" ? -1 : 1;
+      const restX = side * halfW * (wide ? 0.32 : 0.45);
       const restY = -1.25 + Math.sin(t * 0.7) * 0.2;
       const diveX = wide ? 0.8 : 0;
       diver.root.position.set(

@@ -23,7 +23,7 @@ export function ChatInput({ lang, disabled, onSend }: ChatInputProps) {
   return (
     <form
       onSubmit={submit}
-      className="flex items-center gap-2 rounded-2xl border border-line-strong bg-sunk py-2 ps-4 pe-2 transition-[border-color,box-shadow] duration-150 focus-within:border-accent focus-within:ring-3 focus-within:ring-accent/20"
+      className="flex flex-none items-center gap-2 rounded-2xl border border-line-strong bg-case/35 py-1.5 ps-3.5 pe-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-accent focus-within:ring-3 focus-within:ring-accent/14"
     >
       <label htmlFor="question" className="sr-only">
         {copy.inputLabel}

@@ -16,15 +16,15 @@ export function SuggestedQuestions({
 }: SuggestedQuestionsProps) {
   const copy = CHAT_COPY[lang];
   return (
-    <section aria-label={copy.suggestionsLabel} className="mt-2">
-      <ul className="flex flex-col gap-2">
+    <section aria-label={copy.suggestionsLabel}>
+      <ul className="flex flex-col gap-2 [@media(max-height:760px)]:[&>li:nth-child(n+3)]:hidden">
         {copy.suggestions.map((question) => (
           <li key={question}>
             <Button
               variant="outline"
               disabled={disabled}
               onClick={() => onPick(question)}
-              className="h-auto w-full justify-between gap-3 whitespace-normal rounded-xl bg-sunk px-4 py-3.5 text-start text-base hover:border-accent hover:bg-accent/10"
+              className="h-auto min-h-12 w-full justify-between gap-3 whitespace-normal rounded-[14px] border-line bg-text/6 px-3.5 py-3 text-start font-medium text-[0.9375rem] hover:border-accent hover:bg-accent/14"
             >
               <span dir="auto">{question}</span>
               <span className="text-accent">

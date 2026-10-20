@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/heebo";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
 @import "@fontsource-variable/jetbrains-mono";
 
 /* `dark:` follows our theme switch, not the OS; dark is the default when no theme is set. */
@@ -29,20 +31,21 @@
   --color-ring: var(--color-accent);
 }
 
-/* Dark by default, light on request (ADR 0009); `case` is the panel, the deepest layer. */
+/* One palette, set by depth (ADR 0010): UI surfaces are deep water, the accent is bioluminescent.
+   `line`, `line-strong` and `sunk` are foam at 16%, 28% and 6% over deep water, flattened. */
 @theme {
-  --color-page: #0d0e12;
-  --color-surface: #13151a;
-  --color-sunk: #1a1d23;
-  --color-case: #08090c;
-  --color-text: #ecedef;
-  --color-muted: #9aa0ab;
-  --color-line: #22252d;
-  --color-line-strong: #30343f;
-  --color-accent: #7c93f5;
-  --color-on-accent: #0d0e12;
-  --color-ok: #69db7c;
-  --color-warn: #ffb454;
+  --color-page: #06192f;
+  --color-surface: #06192f;
+  --color-sunk: #14263b;
+  --color-case: #02070f;
+  --color-text: #eaf6fa;
+  --color-muted: #a9c6d3;
+  --color-line: #2b3c50;
+  --color-line-strong: #46576a;
+  --color-accent: #5ef2e0;
+  --color-on-accent: #02121a;
+  --color-ok: #69db9c;
+  --color-warn: #ff8a65;
 
   /* The sea (ADR 0010): sky and swell at the surface, water darkening by zone. */
   --color-sky: #5fa8cf;
@@ -67,11 +70,13 @@
   --color-dust: #a89c80;
 
   --font-sans: "Heebo Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --font-mono:
     "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
   --text-title: 1.75rem;
   --text-display: 2.5rem;
+  --text-hero: clamp(2.75rem, 6.4vw, 5.5rem);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -100,4 +105,23 @@
 
 body {
   @apply bg-page font-sans text-text antialiased;
+}
+
+/* Instrument Serif has no Hebrew; Hebrew headings keep Heebo. */
+/* Frosted glass for the small chrome on the water (brand, language, credits). */
+@utility glass {
+  background: color-mix(in oklab, var(--color-surface) 64%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid var(--color-line);
+  box-shadow: inset 0 1px 0
+    color-mix(in oklab, var(--color-text) 10%, transparent);
+}
+
+:root:lang(he) {
+  --font-display: var(--font-sans);
+}
+
+/* The surface screen never scrolls; the first question starts the dive. */
+:root:not([data-asked]) {
+  overflow: hidden;
 }

@@ -1,4 +1,9 @@
-import type { ModelCredit, ModelId } from "#/types/models.types";
+import type { Lang } from "#/types/i18n.types";
+import type {
+  ModelCredit,
+  ModelCreditsCopy,
+  ModelId,
+} from "#/types/models.types";
 
 export const MODEL_URL: Record<ModelId, string> = {
   diver: "/models/diver.glb",
@@ -12,6 +17,19 @@ export const MODEL_URL: Record<ModelId, string> = {
 export const MODEL_LICENSE = {
   name: "CC BY 4.0",
   url: "https://creativecommons.org/licenses/by/4.0/",
+};
+
+export const MODEL_CREDITS_COPY: Record<Lang, ModelCreditsCopy> = {
+  en: {
+    summary: "3D model credits",
+    by: "by",
+    license: ["All licensed ", ", resized for the web."],
+  },
+  he: {
+    summary: "קרדיטים למודלים בתלת־ממד",
+    by: "מאת",
+    license: ["כולם ברישיון ", ", מוקטנים לרשת."],
+  },
 };
 
 export const MODEL_CREDITS: ModelCredit[] = [

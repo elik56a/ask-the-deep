@@ -16,10 +16,11 @@ export const STEP_MIN_MS = 300;
 export const CHAT_COPY: Record<Lang, ChatCopy> = {
   en: {
     agentLabel: "AI agent representing Eliyahu",
-    showProcess: "Show the process",
-    introTitle: "Ask about Eliyahu's work",
+    stayAtSurface: "Stay at the surface",
+    consoleTitle: "Ask the agent",
+    introTitle: ["Ask about ", "Eliyahu's", " work"],
     introBody:
-      "An AI agent answers from Eliyahu's own notes and cites its sources. You can watch every step it takes: each model call, search and score, with the time and cost.",
+      "An AI agent answers from Eliyahu's own notes. Send a question and we dive: every model call, search and score shows up at its depth.",
     steps: {
       checked: "Checked your question",
       blocked: "A safety check stopped this question",
@@ -54,10 +55,11 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
   },
   he: {
     agentLabel: "סוכן AI שמייצג את אליהו",
-    showProcess: "הצגת התהליך",
-    introTitle: "שאלו על העבודה של אליהו",
+    stayAtSurface: "להישאר על פני המים",
+    consoleTitle: "שאלו את הסוכן",
+    introTitle: ["שאלו על העבודה של ", "אליהו", ""],
     introBody:
-      "סוכן AI עונה מתוך הרשימות של אליהו ומציין את המקורות. אפשר לראות כל צעד שהוא עושה: כל קריאה למודל, כל חיפוש וכל ציון, עם הזמן והעלות.",
+      "סוכן AI עונה מתוך הרשימות של אליהו. שולחים שאלה וצוללים: כל קריאה למודל, כל חיפוש וכל ציון מופיעים בעומק שלהם.",
     steps: {
       checked: "השאלה נבדקה",
       blocked: "בדיקת בטיחות עצרה את השאלה",

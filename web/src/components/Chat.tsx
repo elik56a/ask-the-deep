@@ -16,8 +16,8 @@ interface ChatProps {
   onSend: (question: string) => void;
   focusChunk: string | null;
   onFocusChunk: (chunkId: string | null) => void;
-  showProcess: boolean;
-  onShowProcess: (show: boolean) => void;
+  stayAtSurface: boolean;
+  onStayAtSurface: (stay: boolean) => void;
 }
 
 export function Chat({
@@ -29,48 +29,45 @@ export function Chat({
   onSend,
   focusChunk,
   onFocusChunk,
-  showProcess,
-  onShowProcess,
+  stayAtSurface,
+  onStayAtSurface,
 }: ChatProps) {
   const copy = CHAT_COPY[lang];
   const thinking = waiting && messages.at(-1)?.role === "user";
   return (
     <section
       aria-label={copy.agentLabel}
-      className="flex min-h-150 flex-col gap-5 rounded-2xl border border-line-strong bg-linear-to-b from-accent/6 via-30% via-surface to-surface p-6"
+      className="flex min-h-0 flex-col gap-3.5 rounded-3xl border border-accent/34 bg-surface/93 p-4.5 shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-accent)_8%,transparent),0_30px_80px_-24px_var(--color-case)] backdrop-blur-lg"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="flex w-fit items-center gap-2 rounded-full border border-line px-3 py-1 text-muted text-sm">
+      {messages.length === 0 && (
+        <h2 className="font-display text-title italic leading-[1.05] rtl:not-italic">
+          {copy.consoleTitle}
+        </h2>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-muted text-sm">
           <span
             aria-hidden="true"
-            className="size-1.5 rounded-full bg-accent"
+            className="size-1.75 rounded-full bg-accent shadow-[0_0_10px_var(--color-accent)]"
           />
           {copy.agentLabel}
         </p>
         <label
-          htmlFor="show-process"
-          className="flex cursor-pointer items-center gap-2.5 text-muted text-sm has-data-checked:text-text"
+          htmlFor="stay-at-surface"
+          className="flex min-h-9 cursor-pointer items-center gap-2.5 text-muted text-sm has-data-checked:text-text"
         >
           <Switch
-            id="show-process"
-            checked={showProcess}
-            onCheckedChange={onShowProcess}
+            id="stay-at-surface"
+            checked={stayAtSurface}
+            onCheckedChange={onStayAtSurface}
           />
-          {copy.showProcess}
+          {copy.stayAtSurface}
         </label>
       </div>
       {messages.length === 0 ? (
-        <div className="flex flex-col gap-3.5 pt-6">
-          <h2 className="text-balance font-bold text-display leading-[1.05] tracking-tight">
-            {copy.introTitle}
-          </h2>
-          <p className="max-w-[54ch] text-pretty text-muted">
-            {copy.introBody}
-          </p>
-          <SuggestedQuestions lang={lang} disabled={!canSend} onPick={onSend} />
-        </div>
+        <SuggestedQuestions lang={lang} disabled={!canSend} onPick={onSend} />
       ) : (
-        <ol className="flex flex-col gap-4">
+        <ol className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
           {messages.map((message) => (
             <MessageBubble
               key={message.id}
@@ -95,9 +92,7 @@ export function Chat({
           {copy.genericError}
         </p>
       )}
-      <div className="mt-auto">
-        <ChatInput lang={lang} disabled={!canSend} onSend={onSend} />
-      </div>
+      <ChatInput lang={lang} disabled={!canSend} onSend={onSend} />
     </section>
   );
 }

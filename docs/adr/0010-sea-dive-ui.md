@@ -17,6 +17,7 @@ ADR 0009 put the chat beside a dark "under the hood" panel with a three.js watch
 - Stage = zone, event = step. Each zone gets the same scroll height, so meters are non-linear in pixels. Each event kind has a minimum depth, and no step is placed above the one before it.
 - **Depth replaces the theme switch.** There is one palette. The surface tokens are light and the depth tokens are dark, and the text flips once below about 150 m. `ThemeSwitch`, `useTheme`, the theme constants, utils and boot script are removed. The spec's light/dark token table is superseded for the home page.
 - "Stay at the surface" replaces "Show the process": it answers without diving.
+- Display headings use Instrument Serif (`@fontsource/instrument-serif`, self-hosted like Heebo), as in the prototype. Hebrew keeps Heebo, upright.
 - The 3D models ship as `.glb` in `web/public/models/`. The page credits each one (CC BY requires it).
 - ADR 0009 still holds for plain three.js without React Three Fiber, CSS and WAAPI motion without a motion library, and shadcn/ui on Radix.
 
