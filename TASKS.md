@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 15 | [ ] |
+| P1 RAG core | 18 | 16 | [ ] |
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
@@ -83,7 +83,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P1.8** Hybrid retrieval: pgvector + in-memory BM25 (rank-bm25, built at cold start from Postgres) in parallel, merged with RRF, top-k = `RETRIEVAL_TOP_K`. The server then reads only from Postgres; file loading moves to ingestion.
 - [x] **P1.9** Embed with `gemini-embedding-001` (768 dims); measure recall@6 on Hebrew + English; ADR with the result — recall@6 95% en + he (ADR 0011)
 - [x] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions — `api/evals/retrieval.yaml`, `app/rag/recall.py`
-- [ ] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers
+- [x] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers — 0.57 (ADR 0012)
 
 ### Agent (`api/agent/`) — ADR 0005 replaces the fixed pipeline
 - [x] **P1.12** Model layer: `provider:model` from env, fallback (`LLM_FALLBACK_MODEL` via Pydantic AI `FallbackModel` → failure message), versioned prompts, real cost per answer from genai-prices (ADR 0006)

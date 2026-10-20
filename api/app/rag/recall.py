@@ -93,7 +93,11 @@ def _spread(scores: list[float]) -> str:
     return f"min {low:.3f} · median {mid:.3f} · max {high:.3f} (n={len(scores)})"
 
 
-def _print(report: RecallReport, top_k: int) -> None:
+def _below(scores: list[float], threshold: float) -> str:
+    return f"{sum(s < threshold for s in scores)}/{len(scores)}"
+
+
+def _print(report: RecallReport, top_k: int, threshold: float) -> None:
     for lang in sorted(report.recall):
         n = len(report.recall[lang])
         print(f"recall@{top_k} {lang}: {report.mean_recall(lang):.1%} ({n} questions)")
@@ -103,6 +107,11 @@ def _print(report: RecallReport, top_k: int) -> None:
     print(f"similarity, right passages:  {_spread(report.relevant_scores)}")
     print(f"similarity, other passages:  {_spread(report.other_scores)}")
     print(f"similarity, best off-topic:  {_spread(report.off_topic_best)}")
+    print(
+        f"threshold {threshold}: blocks {_below(report.relevant_scores, threshold)}"
+        f" right passages, {_below(report.other_scores, threshold)} other passages,"
+        f" {_below(report.off_topic_best, threshold)} off-topic questions"
+    )
 
 
 async def main() -> None:
@@ -111,7 +120,7 @@ async def main() -> None:
         retriever = await HybridRetriever.load(pool, query_embedder(settings))
         report = await measure(retriever, load_questions(), settings.retrieval_top_k)
     print(f"{settings.embedding_model} · corpus {retriever.corpus_version}")
-    _print(report, settings.retrieval_top_k)
+    _print(report, settings.retrieval_top_k, settings.retrieval_threshold)
 
 
 if __name__ == "__main__":

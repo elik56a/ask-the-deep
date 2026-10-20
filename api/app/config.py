@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
     rules_version: str = "v2"
-    # Placeholder for the naive P0 retriever; calibrated from evals in P1.11.
-    retrieval_threshold: float = 0.3
+    # Cosine similarity a passage needs to reach the model; set from measured
+    # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
+    retrieval_threshold: float = 0.57
     retrieval_top_k: int = 6
     max_passage_tokens: int = 400
     max_input_chars: int = 500
