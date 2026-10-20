@@ -1,6 +1,6 @@
 # 0009. Glass box UI: dark case, CSS motion, plain three.js
 
-Date: 2026-10-19 · Status: accepted
+Date: 2026-10-19 · Status: accepted · layout, watch and theme switch superseded by 0010
 
 ## Context
 
