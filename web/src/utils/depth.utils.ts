@@ -7,7 +7,7 @@ import {
   ZONES,
 } from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
-import type { StepKind, Zone, ZoneId } from "#/types/sea.types";
+import type { DiveStep, StepKind, Zone, ZoneId } from "#/types/sea.types";
 
 const last = ZONES.length - 1;
 
@@ -108,4 +108,30 @@ export function stepKindOf(event: StreamEvent["event"]): StepKind | null {
     case "usage.reported":
       return null;
   }
+}
+
+function opens(step: DiveStep, result: StreamEvent["event"]): boolean {
+  const open = step.event.event;
+  if (result.type === "llm.completed") {
+    return open.type === "llm.started" && open.call === result.call;
+  }
+  if (result.type === "tool.completed") {
+    return open.type === "tool.called" && open.tool === result.tool;
+  }
+  return false;
+}
+
+/** The dive log: one step per stage, with a model or tool call closed by its result. */
+export function diveSteps(events: StreamEvent[]): DiveStep[] {
+  const steps: DiveStep[] = [];
+  for (const item of events) {
+    const opener = [...steps].reverse().find((step) => opens(step, item.event));
+    if (opener) {
+      opener.result = item;
+      continue;
+    }
+    const kind = stepKindOf(item.event);
+    if (kind) steps.push({ kind, event: item, result: null });
+  }
+  return steps;
 }

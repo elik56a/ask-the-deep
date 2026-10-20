@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
-| P5 Design & launch | 24 | 5 | [ ] |
+| P5 Design & launch | 24 | 6 | [ ] |
 
 ---
 
@@ -191,7 +191,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
   - Reduced motion draws a still frame. With no WebGL, a CSS gradient follows the depth.
   - _Done when_ there is no console error and both fallbacks are checked
 - [x] **P5.21** Surface screen: hero in the sky, a solid "Ask the agent" console with the suggested questions, the diver at the waterline, no scroll at rest. "Stay at the surface" replaces "Show the process" (`useProcessPreference`, answers without diving). The 3D credits are reachable — _Done when_ the first screen shows the console and the diver with no scrollbar at 1440×900 and 375×667
-- [ ] **P5.22** Dive scroll: sending a question unlocks scroll and adds the water column (depth rail, zone labels).
+- [x] **P5.22** Dive scroll: sending a question unlocks scroll and adds the water column (depth rail, zone labels).
   - `hooks/useDiveFollow.ts`: an rAF glide that follows the latest step at 30% of the viewport height, with a speed cap.
   - Any user scroll pauses following, and a "Follow the dive ↓" pill resumes it.
   - "Surface ↑" ascends and resets; Replay runs the dive again. No `scrollIntoView`.
@@ -212,7 +212,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
 - [ ] **P5.26** Mobile, RTL, accessibility: HUD as a single strip, rail on the inline-start side and mirrored in Hebrew, the log is real DOM in the document scroll, a single aria-live line for steps, full keyboard path, touch targets ≥ 44 px, no horizontal scroll — _Done when_ axe passes and a manual he/en run works at 375 px
 - [ ] **P5.27** Remove the watch and split-panel code:
   - `Movement.tsx`, `useMovement.ts`, `movement.constants.ts`, `gear.utils.ts` (+ tests)
-  - `usePanelPresence.ts`, `useFlip.ts`
+  - `usePanelPresence.ts`, `useFlip.ts`, `HoodPanel.tsx` (no longer rendered since P5.22)
   - the split grid in `routes/index.tsx`
   - the theme switch (ADR 0010): `ThemeSwitch.tsx`, `useTheme.ts`, `theme.constants.ts`, `theme.utils.ts` (+ tests), `theme.types.ts`, the boot script in `__root.tsx`
 

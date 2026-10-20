@@ -122,6 +122,6 @@ body {
 }
 
 /* The surface screen never scrolls; the first question starts the dive. */
-:root:not([data-asked]) {
+:root:not([data-diving]) {
   overflow: hidden;
 }

@@ -1,4 +1,5 @@
-import type { StepKind, Zone } from "#/types/sea.types";
+import type { Lang } from "#/types/i18n.types";
+import type { DiveCopy, StepKind, Zone } from "#/types/sea.types";
 
 // Real ocean zones in meters; the last one is the deepest trench.
 export const ZONES: Zone[] = [
@@ -33,6 +34,11 @@ export const DIVER_LINE = 0.3;
 // three.js units of camera travel per zone.
 export const WORLD_PER_ZONE = 60;
 export const SEA_MAX_PIXEL_RATIO = 1.75;
+// Scroll speed caps in px per second: following a step, and the ascent.
+export const FOLLOW_SPEED = 1600;
+export const ASCEND_SPEED = 3400;
+// Rail ticks between zone borders.
+export const RAIL_TICKS = 3;
 
 // Keyframes over zone position (0 = the waterline, 1 = one zone down).
 export const WATER_KEYS: [number, string][] = [
@@ -66,3 +72,32 @@ export const SHAFT_KEYS: [number, number][] = [
   [0.7, 0.05],
   [1, 0],
 ];
+
+export const DIVE_COPY: Record<Lang, DiveCopy> = {
+  en: {
+    zones: {
+      sunlight: "Sunlight zone",
+      twilight: "Twilight zone",
+      midnight: "Midnight zone",
+      abyss: "Abyss",
+      trench: "Trench",
+    },
+    logLabel: "Dive log",
+    follow: "Follow the dive",
+    surface: "Surface",
+    replay: "Replay the dive",
+  },
+  he: {
+    zones: {
+      sunlight: "אזור אור השמש",
+      twilight: "אזור הדמדומים",
+      midnight: "אזור חצות",
+      abyss: "התהום",
+      trench: "השוחה",
+    },
+    logLabel: "יומן הצלילה",
+    follow: "לעקוב אחרי הצלילה",
+    surface: "חזרה לפני המים",
+    replay: "לצלול שוב",
+  },
+};

@@ -1,19 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Chat } from "#/components/Chat";
-import { HoodPanel } from "#/components/HoodPanel";
+import { DepthRail } from "#/components/DepthRail";
+import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
 import { ModelCredits } from "#/components/ModelCredits";
 import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
+import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
+import { DIVE_COPY } from "#/constants/sea.constants";
 import { useChatSession } from "#/hooks/useChatSession";
+import { useDiveFollow } from "#/hooks/useDiveFollow";
+import { useDiveLayout } from "#/hooks/useDiveLayout";
 import { useLang } from "#/hooks/useLang";
 import { useProcessPreference } from "#/hooks/useProcessPreference";
+import { useReplay } from "#/hooks/useReplay";
 import { useSea } from "#/hooks/useSea";
 import { useSession } from "#/hooks/useSession";
-import { latestAnswer, messageEvents } from "#/utils/chat.utils";
+import type { DiveMode } from "#/types/sea.types";
+import { messageEvents } from "#/utils/chat.utils";
+import { diveSteps } from "#/utils/depth.utils";
+import { buildTrace } from "#/utils/trace.utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -22,17 +31,55 @@ function Home() {
   const session = useSession();
   const chat = useChatSession(session.token, session.reset);
   const [focusChunk, setFocusChunk] = useState<string | null>(null);
-  const answer = latestAnswer(chat.messages);
   const process = useProcessPreference();
   const asked = chat.messages.length > 0;
-  const diving = asked && process.show;
+  const [mode, setMode] = useState<DiveMode>("rest");
+  const diving = mode !== "rest";
   const seaCanvas = useRef<HTMLCanvasElement>(null);
   const water = useRef<HTMLElement>(null);
-  useSea(seaCanvas, water);
+  const log = useRef<HTMLOListElement>(null);
+  const sea = useSea(seaCanvas, water);
+
+  const last = chat.messages.at(-1);
+  const replay = useReplay(
+    last?.role === "assistant" ? messageEvents(last) : [],
+  );
+  const steps = diveSteps(replay.events);
+  const layout = useDiveLayout(
+    log,
+    steps.map((step) => step.kind),
+  );
+  const ended =
+    steps.at(-1)?.kind === "seabed" || steps.at(-1)?.kind === "abort";
+  const follow = useDiveFollow(mode, water, layout.tops.at(-1) ?? null, () => {
+    setMode("rest");
+    sea.current?.reset();
+  });
+  const dive = DIVE_COPY[lang];
 
   useEffect(() => {
-    document.documentElement.toggleAttribute("data-asked", diving);
+    document.documentElement.toggleAttribute("data-diving", diving);
   }, [diving]);
+
+  function startDive() {
+    scrollTo(0, 0);
+    sea.current?.reset();
+    setMode("dive");
+  }
+
+  function ask(question: string) {
+    if (!question.trim() || chat.busy) return;
+    chat.send(question);
+    if (process.show) startDive();
+  }
+
+  function stay(on: boolean) {
+    process.change(!on);
+    if (on && diving) {
+      scrollTo(0, 0);
+      setMode("rest");
+    } else if (!on && asked) startDive();
+  }
 
   return (
     <>
@@ -62,11 +109,11 @@ function Home() {
           waiting={chat.waiting}
           canSend={Boolean(session.token) && !chat.busy}
           failed={chat.failed}
-          onSend={chat.send}
+          onSend={ask}
           focusChunk={focusChunk}
           onFocusChunk={setFocusChunk}
           stayAtSurface={!process.show}
-          onStayAtSurface={(stay) => process.change(!stay)}
+          onStayAtSurface={stay}
         />
         {!session.token && (
           <HumanCheck
@@ -78,19 +125,53 @@ function Home() {
         )}
       </div>
       {diving && (
-        // TODO(P5.22): the water column with the depth rail and the dive log.
         <main
           ref={water}
-          className="relative min-h-[300svh] px-4 pb-[60svh] lg:pe-136"
+          className="relative min-h-svh overflow-clip"
+          style={{ height: `calc(${layout.bottom}px + 80svh)` }}
         >
-          <HoodPanel
-            lang={lang}
-            events={answer ? messageEvents(answer) : []}
-            running={chat.busy}
-            focusChunk={focusChunk}
-            onFocusChunk={setFocusChunk}
-          />
+          <div className="absolute inset-y-0 inset-x-[max(16px,env(safe-area-inset-left,0px))] lg:inset-x-8">
+            <DepthRail lang={lang} />
+            <DiveLog
+              lang={lang}
+              steps={steps}
+              tops={layout.tops}
+              listRef={log}
+              retrieved={buildTrace(replay.events).retrieved}
+              focusChunk={focusChunk}
+              onFocusChunk={setFocusChunk}
+              end={
+                ended &&
+                !replay.replaying && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="lg" onClick={() => setMode("ascend")}>
+                      {dive.surface} ↑
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => {
+                        startDive();
+                        replay.replay();
+                      }}
+                    >
+                      {dive.replay}
+                    </Button>
+                  </div>
+                )
+              }
+            />
+          </div>
         </main>
+      )}
+      {mode === "dive" && !follow.following && (
+        <Button
+          variant="outline"
+          onClick={follow.resume}
+          className="glass fixed start-[max(100px,calc(env(safe-area-inset-left,0px)+84px))] bottom-[calc(24px+env(safe-area-inset-bottom,0px))] z-17 min-h-11 rounded-full px-4 max-lg:bottom-[calc(48svh+12px)]"
+        >
+          {dive.follow} ↓
+        </Button>
       )}
       {!diving && <ModelCredits lang={lang} />}
     </>

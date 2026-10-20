@@ -239,7 +239,7 @@ export function EventCard({
   }
 
   return (
-    <li className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 border-line border-t border-dashed py-3 transition-[opacity,translate] duration-200 ease-out first:border-t-0 first:pt-0 starting:translate-y-1.5 starting:opacity-0 motion-reduce:starting:translate-y-0">
+    <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3">
       <div
         dir="ltr"
         className="text-start font-mono text-[11px] text-muted tabular-nums leading-relaxed"
@@ -255,6 +255,6 @@ export function EventCard({
         </div>
         {body}
       </div>
-    </li>
+    </div>
   );
 }

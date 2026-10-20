@@ -95,14 +95,18 @@ export function HoodPanel({
         </div>
         <ol className="flex flex-col">
           {cards.map((item) => (
-            <EventCard
+            <li
               key={item.seq}
-              item={item}
-              lang={lang}
-              retrieved={trace.retrieved}
-              focusChunk={focusChunk}
-              onFocusChunk={onFocusChunk}
-            />
+              className="border-line border-t border-dashed py-3 first:border-t-0 first:pt-0"
+            >
+              <EventCard
+                item={item}
+                lang={lang}
+                retrieved={trace.retrieved}
+                focusChunk={focusChunk}
+                onFocusChunk={onFocusChunk}
+              />
+            </li>
           ))}
         </ol>
       </section>

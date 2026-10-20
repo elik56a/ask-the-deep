@@ -1,8 +1,10 @@
 import { expect, it } from "vitest";
 import { STEP_GAP, ZONE_PX, ZONES } from "#/constants/sea.constants";
+import type { StreamEvent } from "#/generated/events.gen";
 import type { StepKind } from "#/types/sea.types";
 import {
   diveOffset,
+  diveSteps,
   floorPx,
   keyframe,
   metersToPx,
@@ -107,4 +109,47 @@ it("measures the dive from the diver line, not the top of the screen", () => {
   expect(diveOffset(5000, Number.POSITIVE_INFINITY, 1000)).toBe(
     Number.NEGATIVE_INFINITY,
   );
+});
+
+it("closes a model call and a tool call with their results", () => {
+  const events: StreamEvent["event"][] = [
+    { type: "llm.started", call: 1 },
+    {
+      type: "llm.completed",
+      call: 1,
+      model: "m",
+      input_tokens: 1,
+      output_tokens: 1,
+      cost_usd: 0,
+      duration_ms: 1,
+      decision: "tools",
+      tools: ["search_knowledge"],
+      fallback: false,
+      rejected: null,
+    },
+    { type: "tool.called", tool: "search_knowledge", args: {} },
+    { type: "retrieval.started", query: "q" },
+    { type: "retrieval.completed", passages: [], threshold: 0.5 },
+    {
+      type: "tool.completed",
+      tool: "search_knowledge",
+      ok: true,
+      result_count: 0,
+      duration_ms: 1,
+    },
+    { type: "llm.started", call: 2 },
+  ];
+  const steps = diveSteps(
+    events.map((event, seq) => ({ request_id: "r", seq, t_ms: seq, event })),
+  );
+
+  expect(steps.map((step) => step.kind)).toEqual([
+    "llm",
+    "tool",
+    "tool",
+    "llm",
+  ]);
+  expect(steps[0].result?.event.type).toBe("llm.completed");
+  expect(steps[1].result?.event.type).toBe("tool.completed");
+  expect(steps[3].result).toBeNull();
 });
