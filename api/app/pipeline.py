@@ -6,6 +6,7 @@ doing in real time.
 """
 
 import asyncio
+import logging
 import re
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -33,6 +34,8 @@ from app.events import (
 )
 from app.rag.corpus import Chunk
 from app.rag.retrieval import Retriever
+
+logger = logging.getLogger(__name__)
 
 _HEBREW = re.compile(r"[֐-׿]")
 _NO_INFORMATION = {
@@ -212,7 +215,9 @@ async def run_pipeline(
         yield em.emit(ErrorEvent(code="timeout", message=_TIMED_OUT))
         yield em.emit(RequestFinished(outcome="error"))
         return
-    except Exception:
+    except Exception as exc:
+        # The type only: provider messages can echo conversation text.
+        logger.warning("generation failed: %s", type(exc).__name__)
         finished = None
     if finished is None:
         yield em.emit(ErrorEvent(code="generation_failed", message=_GENERATION_FAILED))
