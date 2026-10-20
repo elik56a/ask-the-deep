@@ -1,12 +1,14 @@
 import type { ReactNode, RefObject } from "react";
-import { EventCard } from "#/components/EventCard";
+import { StepCard } from "#/components/StepCard";
 import { DIVE_COPY } from "#/constants/sea.constants";
 import type { Lang } from "#/types/i18n.types";
 import type { DiveStep } from "#/types/sea.types";
+import { pxToMeters } from "#/utils/depth.utils";
 
 interface DiveLogProps {
   lang: Lang;
   steps: DiveStep[];
+  ended: boolean;
   tops: number[];
   listRef: RefObject<HTMLOListElement | null>;
   retrieved: string[];
@@ -19,6 +21,7 @@ interface DiveLogProps {
 export function DiveLog({
   lang,
   steps,
+  ended,
   tops,
   listRef,
   retrieved,
@@ -38,15 +41,16 @@ export function DiveLog({
           className="absolute start-21 flex w-[min(560px,calc(100%-84px))] flex-col gap-3 transition-[top] duration-350 ease-out lg:w-[min(560px,calc(100%-84px-472px))]"
           style={{ top: tops[i] ?? 0 }}
         >
-          <div className="rounded-[14px] border border-accent/30 bg-case/46 px-3.5 py-3 backdrop-blur-sm">
-            <EventCard
-              item={step.result ?? step.event}
-              lang={lang}
-              retrieved={retrieved}
-              focusChunk={focusChunk}
-              onFocusChunk={onFocusChunk}
-            />
-          </div>
+          <StepCard
+            lang={lang}
+            step={step}
+            index={i}
+            meters={pxToMeters(tops[i] ?? 0)}
+            ended={ended}
+            retrieved={retrieved}
+            focusChunk={focusChunk}
+            onFocusChunk={onFocusChunk}
+          />
           {i === steps.length - 1 && end}
         </li>
       ))}

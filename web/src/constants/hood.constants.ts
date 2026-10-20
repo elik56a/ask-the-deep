@@ -141,14 +141,6 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
   },
 };
 
-// Shown by the trace and meters instead of a card of their own.
-export const EVENTS_WITHOUT_CARD: string[] = [
-  "llm.started",
-  "retrieval.started",
-  "usage.reported",
-  "text.delta",
-];
-
 export const STATUS_DOT: Record<HoodStatus, string> = {
   idle: "bg-line-strong",
   running: "bg-accent animate-pulse motion-reduce:animate-none",

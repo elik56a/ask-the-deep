@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { STEP_GAP, ZONE_PX, ZONES } from "#/constants/sea.constants";
+import { STEP_GAP, ZONE_HEAD, ZONE_PX, ZONES } from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { StepKind } from "#/types/sea.types";
 import {
@@ -152,4 +152,17 @@ it("closes a model call and a tool call with their results", () => {
   expect(steps[0].result?.event.type).toBe("llm.completed");
   expect(steps[1].result?.event.type).toBe("tool.completed");
   expect(steps[3].result).toBeNull();
+});
+
+it("never covers a zone label with a card", () => {
+  const kinds: StepKind[] = ["llm", "tool", "tool", "llm", "tool", "gen"];
+  const height = 260;
+  const tops = placeSteps(kinds.map((kind) => ({ kind, height })));
+  const lines = ZONES.map((zone) => metersToPx(zone.from));
+
+  for (const top of tops) {
+    for (const line of lines) {
+      expect(top >= line + ZONE_HEAD || top + height <= line).toBe(true);
+    }
+  }
 });

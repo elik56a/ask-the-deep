@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
-| P5 Design & launch | 24 | 6 | [ ] |
+| P5 Design & launch | 24 | 7 | [ ] |
 
 ---
 
@@ -196,7 +196,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
   - Any user scroll pauses following, and a "Follow the dive ↓" pill resumes it.
   - "Surface ↑" ascends and resets; Replay runs the dive again. No `scrollIntoView`.
   - _Done when_ a live run follows every event, and scrolling up mid-dive pauses and resumes correctly
-- [ ] **P5.23** Dive log: `EventCard` becomes a numbered step card placed at its depth: "Step N", a stage label, a plain-language title ("The model chose to search Eliyahu's notes"), and a small tech line (event type, seq, +ms). Model call 2+ is labelled "agent loop, round N". The retrieval gate becomes the thermocline. Each event drives the scene:
+- [x] **P5.23** Dive log: `EventCard` becomes a numbered step card placed at its depth: "Step N", a stage label, a plain-language title ("The model chose to search Eliyahu's notes"), and a small tech line (event type, seq, +ms). Model call 2+ is labelled "agent loop, round N". The retrieval gate becomes the thermocline. Each event drives the scene:
   - a lamp while the model thinks;
   - a sonar ring on `tool.called`;
   - lanterns above or below the gate on `retrieval.completed`;
@@ -212,7 +212,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
 - [ ] **P5.26** Mobile, RTL, accessibility: HUD as a single strip, rail on the inline-start side and mirrored in Hebrew, the log is real DOM in the document scroll, a single aria-live line for steps, full keyboard path, touch targets ≥ 44 px, no horizontal scroll — _Done when_ axe passes and a manual he/en run works at 375 px
 - [ ] **P5.27** Remove the watch and split-panel code:
   - `Movement.tsx`, `useMovement.ts`, `movement.constants.ts`, `gear.utils.ts` (+ tests)
-  - `usePanelPresence.ts`, `useFlip.ts`, `HoodPanel.tsx` (no longer rendered since P5.22)
+  - `usePanelPresence.ts`, `useFlip.ts` (`HoodPanel.tsx` went in P5.23)
   - the split grid in `routes/index.tsx`
   - the theme switch (ADR 0010): `ThemeSwitch.tsx`, `useTheme.ts`, `theme.constants.ts`, `theme.utils.ts` (+ tests), `theme.types.ts`, the boot script in `__root.tsx`
 

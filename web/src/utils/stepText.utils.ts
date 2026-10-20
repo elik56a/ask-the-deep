@@ -1,0 +1,100 @@
+import { SEARCH_TOOL } from "#/constants/sea.constants";
+import type { LlmCompleted } from "#/generated/events.gen";
+import type { DiveStep, StepCopy, StepText } from "#/types/sea.types";
+import { fill } from "#/utils/toolSteps.utils";
+
+function choice(result: LlmCompleted, copy: StepCopy): string {
+  if (result.decision === "answer") return copy.choseAnswer;
+  if (result.decision === "text") return copy.choseText;
+  return result.tools.includes(SEARCH_TOOL)
+    ? copy.choseSearch
+    : fill(copy.choseTool, { tool: result.tools.join(", ") });
+}
+
+/** The stage label and the plain-language title of a dive step; `ended` once the run is over. */
+export function stepText(
+  step: DiveStep,
+  copy: StepCopy,
+  ended = false,
+): StepText {
+  const { event } = step.event;
+  const result = step.result?.event;
+  switch (event.type) {
+    case "request.started":
+      return { label: copy.request, title: copy.requestTitle };
+    case "guardrails.checked": {
+      const n = String(event.checks.length);
+      const p = String(event.checks.filter((check) => check.passed).length);
+      return step.kind === "abort"
+        ? { label: copy.safety, title: fill(copy.safetyBlocked, { n, p }) }
+        : { label: copy.safety, title: fill(copy.safetyPassed, { n }) };
+    }
+    case "cache.checked":
+      return {
+        label: copy.cache,
+        title: event.hit ? copy.cacheHit : copy.cacheMiss,
+      };
+    case "llm.started": {
+      const n = String(event.call);
+      const label = fill(copy.modelCall, { n });
+      return {
+        label:
+          event.call > 1 ? `${label} · ${fill(copy.loopRound, { n })}` : label,
+        title:
+          result?.type === "llm.completed"
+            ? choice(result, copy)
+            : ended
+              ? copy.unfinished
+              : copy.thinking,
+      };
+    }
+    case "tool.called":
+      return {
+        label: fill(copy.toolCall, { tool: event.tool }),
+        title:
+          event.tool === SEARCH_TOOL
+            ? copy.searching
+            : fill(copy.running, { tool: event.tool }),
+      };
+    case "retrieval.completed": {
+      const n = String(event.passages.length);
+      const good = event.passages.filter((p) => p.above_threshold).length;
+      return {
+        label: copy.results,
+        title: good
+          ? fill(copy.resultsGood, { n, g: String(good) })
+          : fill(copy.resultsNone, { n }),
+      };
+    }
+    case "generation.started":
+      return {
+        label: copy.writing,
+        title: event.context_chunks
+          ? fill(copy.writingFrom, { n: String(event.context_chunks) })
+          : copy.writingNone,
+      };
+    case "decision.made":
+      return {
+        label: copy.decision,
+        title:
+          event.action === "answer" ? copy.decisionAnswer : copy.decisionNoInfo,
+      };
+    case "citations.attached":
+      return {
+        label: copy.sources,
+        title: event.citations.length
+          ? fill(copy.sourcesChecked, { n: String(event.citations.length) })
+          : copy.sourcesNone,
+      };
+    case "request.finished":
+      if (event.outcome === "answered") {
+        return { label: copy.done, title: copy.seabedAnswered };
+      }
+      if (event.outcome === "no_information") {
+        return { label: copy.done, title: copy.seabedNoInfo };
+      }
+      return { label: copy.stopped, title: copy.calledOff };
+    default:
+      return { label: copy.error, title: copy.errorTitle };
+  }
+}

@@ -18,6 +18,7 @@ import { useLang } from "#/hooks/useLang";
 import { useProcessPreference } from "#/hooks/useProcessPreference";
 import { useReplay } from "#/hooks/useReplay";
 import { useSea } from "#/hooks/useSea";
+import { useSeaEvents } from "#/hooks/useSeaEvents";
 import { useSession } from "#/hooks/useSession";
 import type { DiveMode } from "#/types/sea.types";
 import { messageEvents } from "#/utils/chat.utils";
@@ -55,6 +56,7 @@ function Home() {
     setMode("rest");
     sea.current?.reset();
   });
+  useSeaEvents(sea, replay.events, steps, layout.tops, mode === "dive");
   const dive = DIVE_COPY[lang];
 
   useEffect(() => {
@@ -135,6 +137,7 @@ function Home() {
             <DiveLog
               lang={lang}
               steps={steps}
+              ended={ended}
               tops={layout.tops}
               listRef={log}
               retrieved={buildTrace(replay.events).retrieved}
@@ -163,6 +166,13 @@ function Home() {
             />
           </div>
         </main>
+      )}
+      {mode === "dive" && (
+        <p className="glass fixed start-[max(16px,env(safe-area-inset-left,0px))] top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-32px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] lg:start-8 lg:max-w-[min(440px,calc(100%-536px))]">
+          {dive.guide[0]}
+          <b className="font-semibold text-accent">{dive.guide[1]}</b>
+          {dive.guide[2]}
+        </p>
       )}
       {mode === "dive" && !follow.following && (
         <Button

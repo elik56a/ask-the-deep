@@ -35,13 +35,24 @@ export function floorPx(kind: StepKind): number {
   return metersToPx(meters) + (atZoneTop ? ZONE_HEAD : 0);
 }
 
+// A card that would cover a zone's label starts just below it.
+function clearOfLabels(top: number, height: number): number {
+  const label = ZONES.map((zone) => metersToPx(zone.from)).find(
+    (line) => top < line + ZONE_HEAD && top + height > line,
+  );
+  return label === undefined ? top : label + ZONE_HEAD;
+}
+
 /** Top of each step in px: at its floor, or one gap below the step before, whichever is deeper. */
 export function placeSteps(
   steps: { kind: StepKind; height: number }[],
 ): number[] {
   let bottom = -STEP_GAP;
   return steps.map(({ kind, height }) => {
-    const top = Math.max(bottom + STEP_GAP, floorPx(kind));
+    const top = clearOfLabels(
+      Math.max(bottom + STEP_GAP, floorPx(kind)),
+      height,
+    );
     bottom = top + height;
     return top;
   });
