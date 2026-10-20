@@ -77,7 +77,7 @@ class Settings(BaseSettings):
 
     @property
     def llm_provider_and_name(self) -> tuple[str, str]:
-        """Split "provider:model" into its parts, e.g. ("google-gla", "gemini-...")."""
+        """Split "provider:model" into its parts, e.g. ("google", "gemini-...")."""
         provider, _, name = self.llm_model.partition(":")
         return provider, name or provider
 
