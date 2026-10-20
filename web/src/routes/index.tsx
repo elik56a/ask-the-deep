@@ -4,6 +4,7 @@ import { Chat } from "#/components/Chat";
 import { HoodPanel } from "#/components/HoodPanel";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
+import { SeaScene } from "#/components/SeaScene";
 import { ThemeSwitch } from "#/components/ThemeSwitch";
 import { PAGE_COPY } from "#/constants/i18n.constants";
 import { useChatSession } from "#/hooks/useChatSession";
@@ -11,6 +12,7 @@ import { useFlip } from "#/hooks/useFlip";
 import { useLang } from "#/hooks/useLang";
 import { usePanelPresence } from "#/hooks/usePanelPresence";
 import { useProcessPreference } from "#/hooks/useProcessPreference";
+import { useSea } from "#/hooks/useSea";
 import { useSession } from "#/hooks/useSession";
 import { useTheme } from "#/hooks/useTheme";
 import { latestAnswer, messageEvents } from "#/utils/chat.utils";
@@ -28,8 +30,13 @@ function Home() {
   const panel = usePanelPresence(chat.messages.length > 0 && process.show);
   const chatColumn = useRef<HTMLDivElement>(null);
   useFlip(chatColumn, panel.mounted);
+  const seaCanvas = useRef<HTMLCanvasElement>(null);
+  // TODO(P5.22): the water column starts below the surface screen.
+  const water = useRef<HTMLElement>(null);
+  useSea(seaCanvas, water);
   return (
     <>
+      <SeaScene canvasRef={seaCanvas} />
       <header className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 pt-5">
         <h1 className="font-semibold text-xl tracking-tight">
           {PAGE_COPY[lang].title}
@@ -44,6 +51,7 @@ function Home() {
         </div>
       </header>
       <main
+        ref={water}
         className={`mx-auto my-6 grid items-start gap-5 px-4 ${panel.mounted ? "max-w-7xl lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : "max-w-3xl"}`}
       >
         <div

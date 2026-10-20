@@ -2,7 +2,7 @@
 
 Source: [System Specification: Portfolio with a Transparent Chat Agent](https://claude.ai/artifact/TrVTLh2UgxXrebhpkkrtkp) (rev 23, 2026-10-18)
 
-Status: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
+Status: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` dropped (replaced, kept for history)
 Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the spec; a phase is done only when its gate passes.
 
 ## Progress
@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
-| P5 Design & launch | 16 | 0 | [ ] |
+| P5 Design & launch | 24 | 4 | [ ] |
 
 ---
 
@@ -135,7 +135,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 ### Client
 - [x] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`. Invisible Turnstile → session; a rejected session re-runs the check. UI defaults to English with a he/en switch (remembered in `localStorage`)
 - [~] **P3.12** (built: `chatSteps()` + `ChatSteps` + `usePacedCount`; to verify against a live run) Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
-- [~] **P3.13** (design: ADR 0009, prototype [Glass Box Panel](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` ✓, `HoodPanel` with clock, meters, trace waterfall, event cards, retrieval gate and linked source chips ✓, panel reveal (FLIP) + "Show the process" switch ✓; to verify against a live run) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
+- [~] **P3.13** (design: ADR 0009, now restyled as the sea dive in P5.17–P5.27, prototype [The Dive](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` ✓, `HoodPanel` with clock, meters, trace waterfall, event cards, retrieval gate and linked source chips ✓, panel reveal (FLIP) + "Show the process" switch ✓; to verify against a live run) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
 - [x] **P3.15** One event per LLM call: `llm.started` + `llm.completed` (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
 - [ ] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans
 
@@ -162,22 +162,61 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** production site live; rate limit and kill switch verified on prod; Playwright passes in Hebrew and English; Lighthouse accessibility ≥ 95.
 
 ### Design system
-- [ ] **P5.1** Tokens (light/dark) from the spec table as CSS vars + Tailwind config; Heebo + JetBrains Mono; type scale 14/16/20/28/40
+- [ ] **P5.1** Tokens as CSS vars + Tailwind config: one palette set by depth, light surface and dark deep, no theme switch (ADR 0010); Heebo + JetBrains Mono; type scale 14/16/20/28/40
 - [ ] **P5.2** Radix-based components: message bubble (`dir=auto`), source chip, timeline, chunk card, badges, mode toggle, AI label
 - [ ] **P5.3** All states: empty, loading, streaming, no info, rate-limited, budget exhausted, error
 - [ ] **P5.4** Motion: 150–250 ms stage entry, streaming caret, `prefers-reduced-motion`
 
 ### Pages
-- [ ] **P5.5** Home: hero (name, role, call to chat); chat centerpiece; panel beside it on desktop, bottom drawer on mobile
+- [ ] **P5.5** Home: hero (name, role, call to chat); chat centerpiece. Layout is the sea dive (P5.21–P5.24): a calm surface screen, then the dive with the console docked at the side on desktop and as a bottom sheet on mobile
 - [ ] **P5.6** Sections: technologies, experience, projects, contact
 - [ ] **P5.7** "How this was built": architecture, live dashboard (P3.7), eval results (P4.7), corpus version (P1.6)
 - [ ] **P5.8** RTL-first with logical properties; Hebrew/English mixed text
 - [ ] **P5.9** Accessibility: WCAG AA contrast, full keyboard nav, throttled aria-live for messages; axe in Playwright
 
-### Watch scene
-- [~] **P5.10** (plain three, ADR 0009: `useMovement` + `Movement` in the panel header, gear math in `gear.utils.ts`; tune lighting on a live run) Three.js + R3F watch movement built in code (no external model); lazy, client-only
-- [ ] **P5.11** Scroll reveals layers; during a request, components turn and light up from real events
-- [ ] **P5.12** Static fallback for reduced motion and weak devices; text and chat stay as HTML above the canvas
+### Watch scene (replaced by the sea dive)
+- [-] **P5.10** ~~Three.js watch movement in the panel header~~ (built in `29c2ea7`, ADR 0009). Replaced by P5.20; its code is removed in P5.27
+- [-] **P5.11** ~~Scroll reveals layers; components light up from real events~~ → P5.22 + P5.23
+- [-] **P5.12** ~~Static fallback for reduced motion and weak devices~~ → part of P5.20
+
+### Sea dive
+UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz), the approved reference for look and behaviour. Build in this order.
+
+- [x] **P5.17** ADR 0010 "Sea dive UI": the sea replaces the watch metaphor and the side-by-side panel (supersedes the layout part of ADR 0009). Decide and record: does depth replace the light/dark theme switch, or does the switch stay? — _Done when_ the ADR is committed and P5.1 is updated to match
+- [x] **P5.18** Depth model as pure functions: `utils/depth.utils.ts` (zones Sunlight 0–200 m, Twilight 200–1,000, Midnight 1,000–4,000, Abyss 4,000–6,000, Trench 6,000+; equal scroll height per zone; px ↔ meters; a minimum depth per event kind, so stage = zone and event = one step deeper; agent loops go deeper) + `constants/sea.constants.ts` (zones, zone height, step gap, floors per step kind; the water colours are CSS tokens, added in P5.20) — _Done when_ `tests/utils/depth.utils.test.ts` covers px ↔ meters round trips, zone floors, depth never going back up, and loops landing in the Trench
+- [x] **P5.19** 3D models: the 5 CC BY Sketchfab models from the prototype (diver, sardine school, fish, jellyfish, anglerfish), shrunk with gltf-transform (only the animations used, textures ≤ 512 px, about 4.8 MB in total) as `.glb` in `web/public/models/`, and credits in `constants/models.constants.ts`, shown on the page. The CC BY licence requires the credits. — _Done when_ every model loads in the dev build and the credits list names each author with a link
+- [x] **P5.20** `hooks/useSea.ts` + `components/SeaScene.tsx`: one fixed full-screen three.js canvas, lazy and client-only.
+  - The scene: sky and low sun, faceted swell shader, light shafts, marine snow, glowing specks, seabed, creature clones with their own mixers, and the diver (floats at the surface, dives head-first with the camera).
+  - Reuse the `useMovement` lifecycle: wake/settle, pause when hidden, context loss, dispose everything.
+  - Reduced motion draws a still frame. With no WebGL, a CSS gradient follows the depth.
+  - _Done when_ there is no console error and both fallbacks are checked
+- [ ] **P5.21** Surface screen: hero in the sky, a solid "Ask the agent" console with the suggested questions, the diver at the waterline, no scroll at rest. "Stay at the surface" replaces "Show the process" (`useProcessPreference`, answers without diving). The 3D credits are reachable — _Done when_ the first screen shows the console and the diver with no scrollbar at 1440×900 and 375×667
+- [ ] **P5.22** Dive scroll: sending a question unlocks scroll and adds the water column (depth rail, zone labels).
+  - `hooks/useDiveFollow.ts`: an rAF glide that follows the latest step at 30% of the viewport height, with a speed cap.
+  - Any user scroll pauses following, and a "Follow the dive ↓" pill resumes it.
+  - "Surface ↑" ascends and resets; Replay runs the dive again. No `scrollIntoView`.
+  - _Done when_ a live run follows every event, and scrolling up mid-dive pauses and resumes correctly
+- [ ] **P5.23** Dive log: `EventCard` becomes a numbered step card placed at its depth: "Step N", a stage label, a plain-language title ("The model chose to search Eliyahu's notes"), and a small tech line (event type, seq, +ms). Model call 2+ is labelled "agent loop, round N". The retrieval gate becomes the thermocline. Each event drives the scene:
+  - a lamp while the model thinks;
+  - a sonar ring on `tool.called`;
+  - lanterns above or below the gate on `retrieval.completed`;
+  - bubbles on `text.delta`;
+  - a sand puff at the seabed.
+
+  Copy in he/en in `constants/` — _Done when_ every event type in `events.gen.ts` renders a card or is listed as having none, with a test per kind
+- [ ] **P5.24** Dive computer + docked console:
+  - **HUD** (`DiveComputer`): depth, zone, dive time, model calls, tokens in/out, cost, time to first word, status. It replaces the panel header, `HoodMeters` and `RunClock`.
+  - **Console** (`DiveConsole`): docked at the inline-end on desktop (480 px), a collapsible bottom sheet on mobile. It holds the question, the friendly steps, a bold "Answer" card that glows while it streams, and source chips still linked to their passages.
+  - _Done when_ the answer stays readable at every depth (WCAG AA)
+- [ ] **P5.25** Seabed: a dive profile chart (depth over time, one segment per stage, drawn to scale) replaces `TraceWaterfall`, with a receipt (total time, model calls, tokens, cost, outcome). Blocked or error runs show "Dive called off" where they stopped — _Done when_ both sample outcomes and a blocked run render correctly
+- [ ] **P5.26** Mobile, RTL, accessibility: HUD as a single strip, rail on the inline-start side and mirrored in Hebrew, the log is real DOM in the document scroll, a single aria-live line for steps, full keyboard path, touch targets ≥ 44 px, no horizontal scroll — _Done when_ axe passes and a manual he/en run works at 375 px
+- [ ] **P5.27** Remove the watch and split-panel code:
+  - `Movement.tsx`, `useMovement.ts`, `movement.constants.ts`, `gear.utils.ts` (+ tests)
+  - `usePanelPresence.ts`, `useFlip.ts`
+  - the split grid in `routes/index.tsx`
+  - the theme switch (ADR 0010): `ThemeSwitch.tsx`, `useTheme.ts`, `theme.constants.ts`, `theme.utils.ts` (+ tests), `theme.types.ts`, the boot script in `__root.tsx`
+
+  _Done when_ there is nothing left that imports them, and the lint, type and test commands pass
 
 ### Launch
 - [ ] **P5.13** Playwright E2E: chat flow, panel, RTL, error states (runs on staging in CI)

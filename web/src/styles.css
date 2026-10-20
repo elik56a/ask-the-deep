@@ -44,6 +44,28 @@
   --color-ok: #69db7c;
   --color-warn: #ffb454;
 
+  /* The sea (ADR 0010): sky and swell at the surface, water darkening by zone. */
+  --color-sky: #5fa8cf;
+  --color-haze: #f6c89a;
+  --color-sun: #fff0d2;
+  --color-swell: #46adc8;
+  --color-swell-deep: #0e5675;
+  --color-water-0: #3a9bc0;
+  --color-water-1: #1f6e96;
+  --color-water-2: #0e3b5e;
+  --color-water-3: #06192f;
+  --color-water-4: #02070f;
+  --color-water-5: #010307;
+  --color-ink: #0b2236;
+  --color-foam: #eaf6fa;
+  --color-shaft: #bff3ff;
+  --color-glow: #5ef2e0;
+  --color-coral: #ff8a65;
+  --color-peri: #9db6ff;
+  --color-sand: #575143;
+  --color-rock: #33403f;
+  --color-dust: #a89c80;
+
   --font-sans: "Heebo Variable", "Segoe UI", system-ui, sans-serif;
   --font-mono:
     "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
