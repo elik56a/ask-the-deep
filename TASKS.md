@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 16 | [ ] |
+| P1 RAG core | 18 | 17 | [ ] |
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
@@ -90,7 +90,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P1.13** Agent loop with limits (`AGENT_MAX_REQUESTS`, `AGENT_MAX_TOOL_CALLS`); structured answer (kind, citations, text), streaming; `tool.called` / `tool.completed` events
 - [x] **P1.14** Deterministic citation check: every cited id must be returned by a tool in this run; "answered" needs a tool result; 1 retry → refusal; invalid attempts are never streamed
 - [x] **P1.15** Gate inside `search_knowledge`: passages below threshold never reach the model; no valid answer → "I don't have that information" + contact pointer
-- [ ] **P1.16** Language follows the question language (he/en) — test both with the real model
+- [x] **P1.16** Language follows the question language (he/en) — test both with the real model — prompt v3, Hebrew names in the corpus, `MAX_OUTPUT_TOKENS` 1000 (ADR 0013)
 - [x] **P1.17** Tools: `search_knowledge`, `list_projects` / `get_project`, `github_activity` (cached, fails soft), `contact_info`
 - [x] **P1.18** Friendly timeline labels per tool, he/en (`web/src/constants/toolSteps.constants.ts` + `web/src/utils/toolSteps.utils.ts`, unit-tested); rendered in P3.12
 

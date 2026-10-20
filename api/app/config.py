@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     dynamodb_table: str | None = None
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
-    rules_version: str = "v2"
+    rules_version: str = "v3"
     # Cosine similarity a passage needs to reach the model; set from measured
     # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
     retrieval_threshold: float = 0.57
@@ -39,7 +39,9 @@ class Settings(BaseSettings):
     # question; this caps it (oldest messages are dropped first) to bound cost.
     max_history_messages: int = 20
     max_history_chars: int = 2000
-    max_output_tokens: int = 500
+    # Hebrew needs about 2-3x the tokens of English, and the structured answer
+    # (text plus citations) must fit before anything streams. ADR 0013.
+    max_output_tokens: int = 1000
     # Deadlines. The whole question must end before Lambda and CloudFront
     # give up (30 s), so the visitor always gets a clear message.
     request_timeout_s: float = 25.0

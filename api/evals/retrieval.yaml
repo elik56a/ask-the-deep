@@ -65,6 +65,12 @@
 - question: מה הוא בנה לניטור השקיה?
   language: he
   expected: [experience/phytech.md#hydraulic-and-irrigation-monitoring-at-phytech]
+- question: מה אליהו עושה בפייטק?
+  language: he
+  expected: [experience/phytech.md#roles-at-phytech]
+- question: מה הוא בנה בגיברס?
+  language: he
+  expected: [experience/givers.md#telemedicine-platform-at-givers]
 - question: כמה הוא מרוויח?
   language: he
   expected: [boundaries.md#topics-the-agent-does-not-answer]
