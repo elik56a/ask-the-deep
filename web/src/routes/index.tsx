@@ -7,6 +7,7 @@ import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
 import { ModelCredits } from "#/components/ModelCredits";
+import { Seabed } from "#/components/Seabed";
 import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
@@ -149,21 +150,17 @@ function Home() {
               end={
                 ended &&
                 !replay.replaying && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="lg" onClick={() => setMode("ascend")}>
-                      {dive.surface} ↑
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={() => {
-                        startDive();
-                        replay.replay();
-                      }}
-                    >
-                      {dive.replay}
-                    </Button>
-                  </div>
+                  <Seabed
+                    lang={lang}
+                    steps={steps}
+                    tops={layout.tops}
+                    trace={trace}
+                    onSurface={() => setMode("ascend")}
+                    onReplay={() => {
+                      startDive();
+                      replay.replay();
+                    }}
+                  />
                 )
               }
             />

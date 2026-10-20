@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
-| P5 Design & launch | 24 | 8 | [ ] |
+| P5 Design & launch | 24 | 9 | [ ] |
 
 ---
 
@@ -208,11 +208,11 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
   - **HUD** (`DiveComputer`): depth, zone, dive time, model calls, tokens in/out, cost, time to first word, status. It replaces the panel header, `HoodMeters` and `RunClock`.
   - **Console** (`DiveConsole`): docked at the inline-end on desktop (480 px), a collapsible bottom sheet on mobile. It holds the question, the friendly steps, a bold "Answer" card that glows while it streams, and source chips still linked to their passages.
   - _Done when_ the answer stays readable at every depth (WCAG AA)
-- [ ] **P5.25** Seabed: a dive profile chart (depth over time, one segment per stage, drawn to scale) replaces `TraceWaterfall`, with a receipt (total time, model calls, tokens, cost, outcome). Blocked or error runs show "Dive called off" where they stopped — _Done when_ both sample outcomes and a blocked run render correctly
+- [x] **P5.25** Seabed: a dive profile chart (depth over time, one segment per stage, drawn to scale) replaces `TraceWaterfall`, with a receipt (total time, model calls, tokens, cost, outcome). Blocked or error runs show "Dive called off" where they stopped — _Done when_ both sample outcomes and a blocked run render correctly
 - [ ] **P5.26** Mobile, RTL, accessibility: HUD as a single strip, rail on the inline-start side and mirrored in Hebrew, the log is real DOM in the document scroll, a single aria-live line for steps, full keyboard path, touch targets ≥ 44 px, no horizontal scroll — _Done when_ axe passes and a manual he/en run works at 375 px
 - [ ] **P5.27** Remove the watch and split-panel code:
   - `Movement.tsx`, `useMovement.ts`, `movement.constants.ts`, `gear.utils.ts` (+ tests)
-  - `usePanelPresence.ts`, `useFlip.ts` (`HoodPanel.tsx` went in P5.23)
+  - `usePanelPresence.ts`, `useFlip.ts`, `TraceWaterfall.tsx` (`HoodPanel.tsx` went in P5.23)
   - the split grid in `routes/index.tsx`
   - the theme switch (ADR 0010): `ThemeSwitch.tsx`, `useTheme.ts`, `theme.constants.ts`, `theme.utils.ts` (+ tests), `theme.types.ts`, the boot script in `__root.tsx`
 

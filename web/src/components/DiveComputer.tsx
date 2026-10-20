@@ -47,7 +47,7 @@ export function DiveComputer({
   return (
     <aside
       aria-label={dive.hud.label}
-      className="glass fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(64px+env(safe-area-inset-top,0px))] z-16 grid grid-cols-[auto_1fr] items-end gap-x-4.5 gap-y-1.5 rounded-[20px] px-4 py-3 lg:start-auto lg:end-8 lg:w-105 lg:py-3.5"
+      className="glass fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(64px+env(safe-area-inset-top,0px))] z-16 grid grid-cols-[auto_1fr] items-end gap-x-4.5 gap-y-1.5 rounded-[20px] px-4 py-3 lg:start-auto lg:end-8 lg:w-112 lg:py-3.5"
     >
       <div>
         <p className="sr-only">{dive.hud.depth}</p>

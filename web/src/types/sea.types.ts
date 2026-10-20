@@ -91,10 +91,32 @@ export interface StepCopy {
   errorTitle: string;
 }
 
+/** One corner of the dive profile: when, how deep (in zones), and the stage that took us there. */
+export interface ProfilePoint {
+  t: number;
+  zone: number;
+  kind: StepKind;
+}
+
+export interface SeabedCopy {
+  /** `{n}` steps, `{m}` depth, `{t}` time. */
+  profileLabel: string;
+  axisNote: string;
+  earlyEnd: string;
+  receipt: {
+    total: string;
+    calls: string;
+    tokens: string;
+    cost: string;
+    outcome: string;
+  };
+}
+
 export interface DiveCopy {
   zones: Record<ZoneId, string>;
   steps: StepCopy;
   logLabel: string;
+  seabed: SeabedCopy;
   hud: { label: string; depth: string; diveTime: string };
   /** Before the bold part, the bold part, after it. */
   guide: [string, string, string];

@@ -152,6 +152,18 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       errorTitle: "Something went wrong on the server",
     },
     logLabel: "Dive log",
+    seabed: {
+      profileLabel: "Dive profile: {n} steps down to {m} in {t}.",
+      axisNote: "Depth axis in ocean zones",
+      earlyEnd: "The run ended early, so there is no seabed this time.",
+      receipt: {
+        total: "total",
+        calls: "model calls",
+        tokens: "tokens",
+        cost: "cost",
+        outcome: "outcome",
+      },
+    },
     hud: { label: "Dive computer", depth: "Depth", diveTime: "Dive time" },
     guide: [
       "Each card is ",
@@ -212,6 +224,18 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       errorTitle: "משהו השתבש בשרת",
     },
     logLabel: "יומן הצלילה",
+    seabed: {
+      profileLabel: "פרופיל הצלילה: {n} שלבים עד עומק {m} תוך {t}.",
+      axisNote: "ציר העומק לפי אזורי האוקיינוס",
+      earlyEnd: "הריצה נגמרה מוקדם, אז הפעם אין קרקעית.",
+      receipt: {
+        total: "סה״כ",
+        calls: "קריאות למודל",
+        tokens: "טוקנים",
+        cost: "עלות",
+        outcome: "תוצאה",
+      },
+    },
     hud: { label: "מחשב צלילה", depth: "עומק", diveTime: "זמן צלילה" },
     guide: [
       "כל כרטיס הוא ",
