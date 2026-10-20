@@ -3,7 +3,7 @@ import pytest
 from app.config import Settings
 from app.rag.db import Conn, Pool
 from app.rag.ingest import corpus_version, ingest
-from app.rag.retrieval import HybridRetriever, rrf_scores
+from app.rag.retrieval import HybridRetriever, rrf_scores, tokenize
 from tests.fakes import FakeEmbedder, fake_query_embedder, make_chunk
 
 SETTINGS = Settings()
@@ -27,7 +27,7 @@ def test_rrf_rewards_passages_ranked_high_in_both_lists() -> None:
 
 
 async def test_finds_the_passage_closest_in_meaning(retriever: HybridRetriever) -> None:
-    hits = await retriever.search("Where does Eliyahu work?", top_k=3)
+    hits = await retriever.search("Is he a senior engineer?", top_k=3)
     assert hits[0].chunk.chunk_id == "work"
     assert hits[0].similarity > hits[-1].similarity
 
@@ -52,3 +52,8 @@ async def test_empty_database_returns_no_hits(conn: Conn, pool: Pool) -> None:
     ingest(conn, [], FakeEmbedder(), SETTINGS)
     retriever = await HybridRetriever.load(pool, fake_query_embedder)
     assert await retriever.search("anything", top_k=3) == []
+
+
+def test_keyword_search_ignores_question_words() -> None:
+    assert tokenize("Where did he study?") == ["study"]
+    assert tokenize("איפה אליהו למד?") == ["למד"]

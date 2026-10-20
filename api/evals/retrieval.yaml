@@ -1,0 +1,83 @@
+# Initial retrieval question set (P1.10), written by hand.
+# `expected` lists the passages a good search must return in the top k.
+# Off-topic questions have no expected passages: their scores show what
+# "nothing relevant" looks like, for the threshold (P1.11).
+
+- question: Where does Eliyahu work now?
+  language: en
+  expected: [profile.md#who-eliyahu-is, experience/phytech.md#roles-at-phytech]
+- question: What did he build at Givers?
+  language: en
+  expected: [experience/givers.md#telemedicine-platform-at-givers]
+- question: How much faster did he make the build pipelines?
+  language: en
+  expected: [experience/phytech.md#ci-cd-and-delivery-at-phytech]
+- question: Has he worked with RabbitMQ?
+  language: en
+  expected: [skills/overview.md#databases-and-messaging]
+- question: What is DevConverter?
+  language: en
+  expected: [projects/devconverter.md#what-devconverter-dev-is]
+- question: Does he use Claude Code?
+  language: en
+  expected:
+    - experience/phytech.md#ai-and-engineering-governance-at-phytech
+    - skills/overview.md#ai-assisted-development
+- question: What languages does he speak?
+  language: en
+  expected: [profile.md#spoken-languages]
+- question: How did he speed up the SMS campaigns at 019 Mobile?
+  language: en
+  expected: [experience/019-mobile.md#sms-campaign-engine-at-019-mobile]
+- question: Where did he study?
+  language: en
+  expected: [profile.md#education]
+- question: How does this chat agent work?
+  language: en
+  expected: [projects/portfolio-chat.md#how-the-portfolio-chat-agent-works]
+
+- question: באיזו חברה אליהו עובד היום?
+  language: he
+  expected: [profile.md#who-eliyahu-is, experience/phytech.md#roles-at-phytech]
+- question: מה הוא עשה בשירות המילואים?
+  language: he
+  expected: [experience/idf-lotem.md#reserve-duty-as-a-full-stack-engineer]
+- question: יש לו ניסיון עם Terraform?
+  language: he
+  expected: [skills/overview.md#infrastructure-and-devops]
+- question: איך אפשר ליצור איתו קשר?
+  language: he
+  expected: [profile.md#how-to-contact-eliyahu]
+- question: ספר לי על המעבר ל-monorepo בפייטק
+  language: he
+  expected: [experience/phytech.md#monorepo-migration-at-phytech]
+- question: מה כיסוי הבדיקות בצוות שלו?
+  language: he
+  expected: [experience/phytech.md#testing-strategy-at-phytech]
+- question: אילו כלים יש ב-DevConverter?
+  language: he
+  expected: [projects/devconverter.md#tools-on-devconverter-dev]
+- question: הוא עבד עם Vue?
+  language: he
+  expected:
+    - experience/019-mobile.md#legacy-modernization-at-019-mobile
+    - skills/overview.md#frameworks-and-libraries
+- question: מה הוא בנה לניטור השקיה?
+  language: he
+  expected: [experience/phytech.md#hydraulic-and-irrigation-monitoring-at-phytech]
+- question: כמה הוא מרוויח?
+  language: he
+  expected: [boundaries.md#topics-the-agent-does-not-answer]
+
+- question: What's the weather in Paris today?
+  language: en
+  expected: []
+- question: Who won the 2018 World Cup?
+  language: en
+  expected: []
+- question: מה המתכון הכי טוב לשקשוקה?
+  language: he
+  expected: []
+- question: תסביר לי מה זה שזירה קוונטית
+  language: he
+  expected: []

@@ -19,6 +19,95 @@ from app.rag.embeddings import QueryEmbedFn
 
 _WORD = re.compile(r"\w+")
 RRF_K = 60
+# Question words match passages at random and drown out the vector ranking
+# ("Where did he study?" has no content word left but "study").
+_STOPWORDS = frozenset(
+    [
+        "a",
+        "about",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "can",
+        "did",
+        "do",
+        "does",
+        "for",
+        "from",
+        "has",
+        "have",
+        "he",
+        "him",
+        "his",
+        "how",
+        "i",
+        "in",
+        "is",
+        "it",
+        "me",
+        "of",
+        "on",
+        "or",
+        "so",
+        "that",
+        "the",
+        "their",
+        "there",
+        "this",
+        "to",
+        "was",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "with",
+        "you",
+        "your",
+        "eliyahu",
+        "kriel",
+        "אני",
+        "את",
+        "אתה",
+        "אליהו",
+        "אם",
+        "או",
+        "איך",
+        "איפה",
+        "איזה",
+        "איזו",
+        "אילו",
+        "גם",
+        "הוא",
+        "היא",
+        "הם",
+        "ב",
+        "ה",
+        "ו",
+        "ל",
+        "מ",
+        "ש",
+        "כמה",
+        "כן",
+        "לא",
+        "לי",
+        "לו",
+        "מה",
+        "מי",
+        "עם",
+        "על",
+        "של",
+        "שלו",
+        "תספר",
+        "ספר",
+    ]
+)
 
 
 @dataclass(frozen=True)
@@ -43,10 +132,10 @@ class Retriever(Protocol):
 
 
 def tokenize(text: str) -> list[str]:
-    """Split text into lowercase words for keyword search."""
+    """Split text into lowercase content words for keyword search."""
     # No stemming: Hebrew prefixes (ה, ו, ב, ל) stay attached to words.
     # The vector side covers what keyword matching misses.
-    return _WORD.findall(text.lower())
+    return [w for w in _WORD.findall(text.lower()) if w not in _STOPWORDS]
 
 
 def rrf_scores(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:

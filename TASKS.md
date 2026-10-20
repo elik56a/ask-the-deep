@@ -10,7 +10,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 13 | [ ] |
+| P1 RAG core | 18 | 15 | [ ] |
 | P2 Control & security | 13 | 9 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
@@ -81,8 +81,8 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 ### Retrieval
 - [x] **P1.7** Follow-up questions: the browser keeps the whole session's conversation and sends it with each question (up to `MAX_HISTORY_MESSAGES`, default 20, oldest dropped first; never stored server-side, ADR 0007); the agent resolves "he"/"there" into specific search queries (visible in `tool.called`) instead of a separate rewrite call; `history_size` guardrail
 - [x] **P1.8** Hybrid retrieval: pgvector + in-memory BM25 (rank-bm25, built at cold start from Postgres) in parallel, merged with RRF, top-k = `RETRIEVAL_TOP_K`. The server then reads only from Postgres; file loading moves to ingestion.
-- [ ] **P1.9** Embed with `gemini-embedding-001` (768 dims); measure recall@6 on Hebrew + English; ADR with the result
-- [ ] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions
+- [x] **P1.9** Embed with `gemini-embedding-001` (768 dims); measure recall@6 on Hebrew + English; ADR with the result — recall@6 95% en + he (ADR 0011)
+- [x] **P1.10** Initial question set (~15–20 Qs, he/en) + retrieval unit tests: recall@k and score distributions — `api/evals/retrieval.yaml`, `app/rag/recall.py`
 - [ ] **P1.11** Threshold calibration from score distributions → `RETRIEVAL_THRESHOLD`; ADR with the numbers
 
 ### Agent (`api/agent/`) — ADR 0005 replaces the fixed pipeline
