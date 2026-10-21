@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DIVE_COPY, EVENTS_WITHOUT_STEP } from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import { diveSteps } from "#/utils/depth.utils";
-import { stepText } from "#/utils/stepText.utils";
+import { stepText, toolList } from "#/utils/stepText.utils";
 import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 const copy = DIVE_COPY.en.steps;
@@ -116,5 +116,11 @@ it("lands on the seabed, or calls the dive off", () => {
   );
   expect(text(EVENT_SAMPLES.error).title).toBe(
     "Something went wrong on the server",
+  );
+});
+
+it("groups repeated tool names", () => {
+  expect(toolList(["get_project", "get_project", "list_projects"])).toBe(
+    "get_project ×2, list_projects",
   );
 });

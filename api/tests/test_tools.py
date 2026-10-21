@@ -47,6 +47,7 @@ async def test_search_returns_only_passages_above_threshold() -> None:
     assert "weak" not in str(result.return_value)
     assert list(deps.seen) == ["good"]
     assert _meta(result).count == 1
+    assert _meta(result).passage_ids == ["good"]
     assert len(_meta(result).hits) == 3
     assert deps.best_score == THRESHOLD + 0.2
 
@@ -70,6 +71,7 @@ async def test_get_project_makes_its_passages_citable() -> None:
     result = await get_project(_ctx(deps), "devconverter")
     assert 'id="devconverter"' in str(result.return_value)
     assert "devconverter" in deps.seen
+    assert _meta(result).passage_ids == ["devconverter"]
 
 
 async def test_get_unknown_project_fails_softly() -> None:

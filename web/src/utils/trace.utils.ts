@@ -77,11 +77,7 @@ export function buildTrace(events: StreamEvent[]): Trace {
         break;
       case "tool.completed":
         closeSpan(spans, (span) => span.tool === event.tool, t_ms);
-        break;
-      case "retrieval.completed":
-        for (const passage of event.passages) {
-          if (passage.above_threshold) retrieved.add(passage.chunk_id);
-        }
+        for (const id of event.passage_ids) retrieved.add(id);
         break;
       case "generation.started":
         spans.push({ stage: "stream", start: t_ms, end: null });

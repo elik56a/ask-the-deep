@@ -84,6 +84,9 @@ class ToolCompleted(_Model):
     ok: bool
     result_count: int
     duration_ms: int
+    # Passages this call gave the model, so the browser can show which
+    # citations came from this run (search results and project reads alike).
+    passage_ids: list[str]
 
 
 class RetrievalStarted(_Model):

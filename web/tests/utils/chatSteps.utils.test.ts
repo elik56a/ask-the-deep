@@ -23,6 +23,7 @@ const found = (result_count: number, ok = true) =>
     ok,
     result_count,
     duration_ms: 200,
+    passage_ids: [],
   });
 const writing = at({
   type: "generation.started",

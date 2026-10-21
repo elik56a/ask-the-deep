@@ -38,6 +38,7 @@ class ToolMeta:
     count: int
     query: str | None = None
     hits: list[Hit] = field(default_factory=list)
+    passage_ids: list[str] = field(default_factory=list)
 
 
 def format_passages(chunks: list[Chunk]) -> str:
@@ -77,7 +78,13 @@ async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn
     ctx.deps.best_score = max([ctx.deps.best_score, *(h.similarity for h in hits)])
     return ToolReturn(
         return_value=format_passages(accepted) if accepted else _NOTHING_FOUND,
-        metadata=ToolMeta(ok=True, count=len(accepted), query=query, hits=hits),
+        metadata=ToolMeta(
+            ok=True,
+            count=len(accepted),
+            query=query,
+            hits=hits,
+            passage_ids=[c.chunk_id for c in accepted],
+        ),
     )
 
 
@@ -108,7 +115,12 @@ async def get_project(ctx: RunContext[AgentDeps], name: str) -> ToolReturn:
     _read(ctx.deps, chunks)
     return ToolReturn(
         return_value=format_passages(chunks) if chunks else f"No project named {name}.",
-        metadata=ToolMeta(ok=bool(chunks), count=len(chunks), query=name),
+        metadata=ToolMeta(
+            ok=bool(chunks),
+            count=len(chunks),
+            query=name,
+            passage_ids=[c.chunk_id for c in chunks],
+        ),
     )
 
 

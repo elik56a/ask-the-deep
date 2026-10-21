@@ -74,6 +74,7 @@ export interface ToolCompleted {
   ok: boolean;
   result_count: number;
   duration_ms: number;
+  passage_ids: string[];
 }
 export interface RetrievalStarted {
   type: "retrieval.started";

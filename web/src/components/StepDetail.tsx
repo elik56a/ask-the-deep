@@ -7,6 +7,7 @@ import { HOOD_COPY } from "#/constants/hood.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { Lang } from "#/types/i18n.types";
 import { formatInt, formatMs, formatUsd } from "#/utils/format.utils";
+import { toolList } from "#/utils/stepText.utils";
 import { fill } from "#/utils/toolSteps.utils";
 
 interface StepDetailProps {
@@ -87,7 +88,7 @@ export function StepDetail({
               <>
                 {copy.decidedTools}{" "}
                 <strong className="font-semibold text-accent">
-                  {event.tools.join(", ")}
+                  {toolList(event.tools)}
                 </strong>
               </>
             ) : (

@@ -44,7 +44,13 @@ SAMPLES: list[Event] = [
         rejected=None,
     ),
     ToolCalled(tool="search_knowledge", args={"query": "q"}),
-    ToolCompleted(tool="search_knowledge", ok=True, result_count=2, duration_ms=5),
+    ToolCompleted(
+        tool="search_knowledge",
+        ok=True,
+        result_count=2,
+        duration_ms=5,
+        passage_ids=["a#0"],
+    ),
     RetrievalStarted(query="q"),
     RetrievalCompleted(
         passages=[

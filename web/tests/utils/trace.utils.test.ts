@@ -64,6 +64,15 @@ const finish = [
     ok: true,
     result_count: 1,
     duration_ms: 239,
+    passage_ids: ["skills.md#a"],
+  }),
+  at(1045, {
+    type: "tool.completed",
+    tool: "get_project",
+    ok: true,
+    result_count: 1,
+    duration_ms: 2,
+    passage_ids: ["projects/x.md#a"],
   }),
   at(1050, { type: "llm.started", call: 2 }),
   at(1051, {
@@ -120,8 +129,11 @@ it("closes every span and takes the server's totals at the end", () => {
   });
 });
 
-it("keeps only passages that passed the gate as retrieved", () => {
-  expect(buildTrace([...start, ...finish]).retrieved).toEqual(["skills.md#a"]);
+it("counts every passage a tool gave the model as retrieved", () => {
+  expect(buildTrace([...start, ...finish]).retrieved).toEqual([
+    "skills.md#a",
+    "projects/x.md#a",
+  ]);
 });
 
 it("returns an empty trace before any event", () => {

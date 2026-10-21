@@ -21,6 +21,7 @@ const completed = (
   ok,
   result_count,
   duration_ms: 5,
+  passage_ids: [],
 });
 
 const TOOLS = [

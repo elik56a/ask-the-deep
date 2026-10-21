@@ -45,6 +45,7 @@ export const EVENT_SAMPLES: {
     ok: true,
     result_count: 1,
     duration_ms: 233,
+    passage_ids: ["skills.md#a"],
   },
   "retrieval.started": { type: "retrieval.started", query: "skills" },
   "retrieval.completed": {

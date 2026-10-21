@@ -242,6 +242,7 @@ class _ToolTracker:
                 ok=meta.ok,
                 result_count=meta.count,
                 duration_ms=round((time.monotonic() - started) * 1000),
+                passage_ids=meta.passage_ids,
             )
         )
         return steps

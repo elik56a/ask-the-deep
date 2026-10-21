@@ -8,7 +8,16 @@ function choice(result: LlmCompleted, copy: StepCopy): string {
   if (result.decision === "text") return copy.choseText;
   return result.tools.includes(SEARCH_TOOL)
     ? copy.choseSearch
-    : fill(copy.choseTool, { tool: result.tools.join(", ") });
+    : fill(copy.choseTool, { tool: toolList(result.tools) });
+}
+
+/** Tool names with repeats grouped: "get_project ×2, list_projects". */
+export function toolList(tools: string[]): string {
+  const counts = new Map<string, number>();
+  for (const tool of tools) counts.set(tool, (counts.get(tool) ?? 0) + 1);
+  return [...counts]
+    .map(([tool, n]) => (n > 1 ? `${tool} ×${n}` : tool))
+    .join(", ");
 }
 
 /** The stage label and the plain-language title of a dive step; `ended` once the run is over. */

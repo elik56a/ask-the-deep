@@ -136,6 +136,7 @@ it("closes a model call and a tool call with their results", () => {
       ok: true,
       result_count: 0,
       duration_ms: 1,
+      passage_ids: [],
     },
     { type: "llm.started", call: 2 },
   ];
