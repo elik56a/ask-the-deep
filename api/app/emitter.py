@@ -55,6 +55,11 @@ def safe_fields(event: Event) -> dict[str, object]:
     return fields
 
 
+def tool_type(tool: str) -> str:
+    """The Langfuse observation type of a tool's span."""
+    return _TOOL_TYPES.get(tool, "tool")
+
+
 def _attribute(value: object) -> AttributeValue:
     if isinstance(value, str | bool | int | float):
         return value
@@ -146,7 +151,7 @@ class Emitter:
                 )
                 span.end(end_time=at)
             case ToolCalled(tool=tool):
-                span = self._child(tool, at, _TOOL_TYPES.get(tool, "tool"))
+                span = self._child(tool, at, tool_type(tool))
                 span.set_attribute("args", MASKED)
                 self._open.setdefault(tool, []).append(span)
             case RetrievalCompleted():
