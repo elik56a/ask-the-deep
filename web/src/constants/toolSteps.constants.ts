@@ -27,7 +27,7 @@ export const TOOL_STEPS: Record<Lang, Partial<Record<string, ToolStepCopy>>> = {
     },
     contact_info: {
       running: "Getting contact details…",
-      done: "Ready",
+      done: "Got his contact details",
     },
   },
   he: {
@@ -55,7 +55,7 @@ export const TOOL_STEPS: Record<Lang, Partial<Record<string, ToolStepCopy>>> = {
     },
     contact_info: {
       running: "מביא פרטי יצירת קשר…",
-      done: "מוכן",
+      done: "התקבלו פרטי יצירת הקשר",
     },
   },
 };
