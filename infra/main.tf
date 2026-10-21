@@ -58,10 +58,15 @@ variable "embedding_model" {
   default = "google:gemini-embedding-001"
 }
 
-variable "github_repo" {
+variable "github_subject" {
   type        = string
-  default     = "elik56a/portfolio-chat"
-  description = "The only repo whose main branch may deploy (GitHub OIDC)."
+  default     = "repo:elik56a@44751346/portfolio-chat@1424784352"
+  description = <<-EOT
+    The only repo whose main branch may deploy, as GitHub's OIDC subject prefix.
+    The repo uses immutable subjects (owner and repo ids), so a renamed or
+    re-created repo can't inherit the role. See
+    `gh api repos/OWNER/REPO/actions/oidc/customization/sub`.
+  EOT
 }
 
 variable "lwa_layer_version" {
@@ -455,7 +460,7 @@ resource "aws_iam_role" "deploy" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = "${var.github_subject}:ref:refs/heads/main"
         }
       }
     }]
