@@ -2,6 +2,7 @@
 
 Run: `uv run --env-file .env python -m app.evals.run [--quick] [--type T] [--only ids]`.
 `--quick` runs the 8 `QUICK` cases (one or two per type, about 4 minutes).
+Exits 1 when fewer than EVAL_MIN_PASS_RATE of the graded cases pass.
 Each case goes through the full pipeline in-process (no rate limit, budget or
 stats, so the site's counters stay clean), then gets graded:
 - in code: the answer kind is one the case accepts, the answer cites one of
@@ -15,6 +16,7 @@ import argparse
 import asyncio
 import logging
 import os
+import sys
 from collections import Counter
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -230,6 +232,13 @@ def failed(report_case: ReportCase[GoldenCase, Run, None]) -> dict[str, str]:
     return problems
 
 
+def score(report: EvaluationReport[GoldenCase, Run, None]) -> tuple[int, int]:
+    """Passed and graded cases. A case that never got an answer (provider
+    quota, crash) isn't graded: it says nothing about answer quality."""
+    graded = [rc for rc in report.cases if rc.output.kind != "error"]
+    return sum(not failed(rc) for rc in graded), len(graded)
+
+
 def _print(report: EvaluationReport[GoldenCase, Run, None], settings: Settings) -> None:
     by_type: Counter[str] = Counter()
     passed: Counter[str] = Counter()
@@ -263,7 +272,7 @@ def _pick(cases: list[GoldenCase], args: argparse.Namespace) -> list[GoldenCase]
     return cases
 
 
-async def main(args: argparse.Namespace) -> None:
+async def main(args: argparse.Namespace) -> int:
     settings = get_settings()
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.ERROR)
@@ -284,6 +293,11 @@ async def main(args: argparse.Namespace) -> None:
         )
         report = await evaluate(cases, services, settings)
     _print(report, settings)
+    passed, graded = score(report)
+    rate = passed / graded if graded else 0.0
+    minimum = settings.eval_min_pass_rate
+    print(f"  pass rate {rate:.0%} of {graded} graded (minimum {minimum:.0%})")
+    return 0 if rate >= minimum else 1
 
 
 if __name__ == "__main__":
@@ -292,4 +306,4 @@ if __name__ == "__main__":
     parser.add_argument("--quick", action="store_true", help="the 8 QUICK cases")
     parser.add_argument("--only", help="comma-separated case ids")
     parser.add_argument("--type", help="only cases of this type, e.g. trap")
-    asyncio.run(main(parser.parse_args()))
+    sys.exit(asyncio.run(main(parser.parse_args())))

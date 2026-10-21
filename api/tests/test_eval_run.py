@@ -2,6 +2,7 @@ from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.models.test import TestModel
+from pydantic_evals import Case, Dataset
 
 from app.agent.chat_agent import agent
 from app.agent.judge import judge, judge_agent, judge_prompt
@@ -9,6 +10,7 @@ from app.config import Settings
 from app.evals.golden import GoldenCase, load_golden
 from app.evals.run import (
     QUICK,
+    CodeChecks,
     Run,
     cites_expected,
     cites_retrieved,
@@ -16,6 +18,7 @@ from app.evals.run import (
     failed,
     kind_ok,
     run_case,
+    score,
     with_retries,
 )
 from app.rag.retrieval import Hit
@@ -125,6 +128,8 @@ async def test_a_report_grades_each_case_in_code_and_by_the_judge() -> None:
         "facts",
     }
     assert failed(case) == {}
+    assert score(report) == (1, 1)
+    assert score(wrong) == (0, 1)
     assert failed(wrong.cases[0]) == {
         "kind": "got smalltalk",
         "facts": "no employer named",
@@ -156,3 +161,13 @@ async def test_the_judge_waits_out_a_rate_limit() -> None:
 def test_the_quick_set_is_real_golden_cases() -> None:
     ids = {c.id for c in load_golden()}
     assert set(QUICK) <= ids
+
+
+async def test_a_case_with_no_answer_is_not_graded() -> None:
+    async def quota(case: GoldenCase) -> Run:
+        return Run(kind="error")
+
+    dataset = Dataset[GoldenCase, Run, None](
+        name="t", cases=[Case(name="a", inputs=CASE)], evaluators=[CodeChecks()]
+    )
+    assert score(await dataset.evaluate(quota, progress=False)) == (0, 0)

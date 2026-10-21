@@ -82,6 +82,8 @@ class Settings(BaseSettings):
     eval_pause_s: float = 0.0
     eval_retry_wait_s: float = 30.0
     eval_retries: int = 3
+    # Below this share of graded cases passing, the eval run fails (and CI alerts).
+    eval_min_pass_rate: float = 0.85
     # Salt for hashing visitor IPs. Production reads the real one from SSM.
     ip_hash_salt: SecretStr = SecretStr("local-dev-salt")
     # Set in production: requests without CloudFront's secret header are refused.

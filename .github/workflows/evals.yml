@@ -1,7 +1,8 @@
 name: Evals
 
-# Only when something the evals measure changes: the agent, prompts, retrieval,
-# the knowledge files or the golden set. Other changes skip the model calls.
+# Pushes and PRs run the quick set, only when something the evals measure
+# changes: the agent, prompts, retrieval, the knowledge files or the golden set.
+# Every night (and by hand) the full set runs; a failed run is GitHub's alert.
 on:
   push:
     branches: [main]
@@ -26,6 +27,8 @@ on:
       - api/pyproject.toml
       - data/knowledge/**
       - .github/workflows/evals.yml
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -41,6 +44,7 @@ jobs:
   evals:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: api
@@ -71,4 +75,6 @@ jobs:
       - run: uv sync --locked
       - run: uv run python -m app.rag.ingest
       - run: uv run python -m app.rag.recall
-      - run: uv run python -m app.evals.run --quick
+      - run: uv run python -m app.evals.run $SET
+        env:
+          SET: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && '--quick' || '' }}
