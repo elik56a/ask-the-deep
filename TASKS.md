@@ -12,8 +12,8 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 17 | [x] |
 | P2 Control & security | 13 | 11 | [ ] |
-| P3 Transparency & observability | 15 | 10 | [ ] |
-| P4 Evals in CI | 9 | 0 | [ ] |
+| P3 Transparency & observability | 15 | 14 | [x] |
+| P4 Evals in CI | 9 | 1 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
 ---
@@ -125,7 +125,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P3.2** SSE in the Vercel AI SDK UI message stream protocol (v1 header; answer as text parts, every other event as a persistent `data-event` part) via Pydantic AI's typed chunks (`api/app/stream.py`); AI SDK pinned `ai@7.0.143`, `@ai-sdk/react@4.0.147`; contract test feeds a captured real stream (`web/tests/fixtures/chat-stream.sse`, recapture when the stream changes) through the SDK's own parsers
 - [x] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level — `app/logs.py`, `LOG_JSON` (on in Lambda); each event line has request_id, stage, outcome
 - [x] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4) — `app/tracing.py` + stage spans in `app/emitter.py` (guardrails, a generation per model call with model, tokens and cost, a span per tool), sent at the end of each request; checked on Langfuse Cloud (US) with a synthetic run: types, tokens and cost arrive, no input/output
-- [~] **P3.5** Cost calc (done in P1.12 via genai-prices → `usage.reported`; trace still to do) from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.
+- [x] **P3.5** Cost calc (done in P1.12 via genai-prices → `usage.reported`; in the trace as `cost_details` on each model-call span, equal per call — checked by the P3.14 gate) from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.
 - [x] **P3.6** Prompt caching for the system prompt and fixed instructions — Gemini implicit caching, prompt kept cache-friendly, real `prompt_cache_hit`; no explicit cache (prefix ≈740 tokens, below the minimum) (ADR 0015)
 - [x] **P3.7** Public stats endpoint: question count, avg cost, latency, "no info" rate — aggregated, anonymous, no exact budget — `GET /api/stats` (`app/control/stats.py`): this month's question count, average cost and latency, no-info rate from 4 DynamoDB counters; never the total spend
 - [ ] **P3.8** Sentry on API and web — skipped for now (free Developer plan fits; needs two DSNs)
@@ -134,8 +134,8 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 ### Client
 - [x] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`. Invisible Turnstile → session; a rejected session re-runs the check. UI defaults to English with a he/en switch (remembered in `localStorage`)
-- [~] **P3.12** (built: `chatSteps()` + `ChatSteps` + `usePacedCount`; to verify against a live run) Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
-- [~] **P3.13** (design: ADR 0009, now restyled as the sea dive in P5.17–P5.27, prototype [The Dive](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` ✓, `HoodPanel` with clock, meters, trace waterfall, event cards, retrieval gate and linked source chips ✓, panel reveal (FLIP) + "Show the process" switch ✓; to verify against a live run) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
+- [x] **P3.12** (built: `chatSteps()` + `ChatSteps` + `usePacedCount`; verified on live v4 streams (he answered, en off-topic) through the AI SDK: steps in he/en, "no info" variant; contact step now says "Got his contact details"; visual check comes with the dive port) Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
+- [x] **P3.13** (design: ADR 0009, now restyled as the sea dive in P5.17–P5.27, prototype [The Dive](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` ✓, `HoodPanel` with clock, meters, trace waterfall, event cards, retrieval gate and linked source chips ✓, panel reveal (FLIP) + "Show the process" switch ✓; verified on live v4 streams: waterfall, totals, TTFT, retrieved ids and citations correct; visual check comes with the dive port) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
 - [x] **P3.15** One event per LLM call: `llm.started` + `llm.completed` (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
 - [x] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans — `uv run --env-file .env python -m app.trace_gate [api_url]` (`app/trace_gate.py`): 3/3 live requests (en answered, he, off-topic) match stage for stage, tokens and cost included, no span with input/output. FastAPI ≥0.146 adds its own HTTP spans (method, route, status; no IP or body) above `chat`. The run's answer problems (off-topic answered, Hebrew name transliterated, extra `contact_info`) are fixed in ADR 0016 (prompt v4 + first search also uses the visitor's words)
 
@@ -145,7 +145,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 
 **Gate:** the build fails if a trap is answered with a guess or recall drops.
 
-- [ ] **P4.1** Golden set YAML, written by hand, 30–50 Qs: language, type (answerable / trap / ambiguous / off-topic / injection), required facts, expected chunk
+- [x] **P4.1** Golden set YAML, written by hand, 30–50 Qs: language, type (answerable / trap / ambiguous / off-topic / injection), required facts, expected chunk — `api/evals/golden.yaml`: 49 cases (25 answerable, 9 trap, 4 ambiguous, 4 off-topic, 4 injection, 3 small talk; 31 en / 18 he), each with accepted answer kinds, facts, must-not claims, passages and expected tools; loaded and checked by `app/evals/golden.py` (`tests/test_golden.py` also checks every passage id against the local corpus)
 - [ ] **P4.2** Eval runner (pytest + Pydantic Evals) with a Gemini LLM judge: groundedness, accuracy, refusal correctness
 - [ ] **P4.3** CI: retrieval evals + an E2E subset on every PR
 - [ ] **P4.4** Nightly full eval run + alert on a quality drop
