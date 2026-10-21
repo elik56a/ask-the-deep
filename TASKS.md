@@ -12,7 +12,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 17 | [x] |
 | P2 Control & security | 13 | 10 | [ ] |
-| P3 Transparency & observability | 15 | 2 | [ ] |
+| P3 Transparency & observability | 15 | 3 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
@@ -121,7 +121,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** every panel event matches a trace in Langfuse.
 
 ### Server
-- [ ] **P3.1** Single `Emitter`: one call fans out to SSE + OTel span + structlog. `text.delta` goes to SSE only. Errors emit only the public message. — _Done when_ grep finds no direct stream writes outside Emitter
+- [x] **P3.1** Single `Emitter`: one call fans out to SSE + OTel span + structlog. `text.delta` goes to SSE only. Errors emit only the public message. — _Done when_ grep finds no direct stream writes outside Emitter — `app/emitter.py`: span event + structlog line per event, visitor-derived fields masked; `test_only_the_emitter_creates_stream_events`
 - [x] **P3.2** SSE in the Vercel AI SDK UI message stream protocol (v1 header; answer as text parts, every other event as a persistent `data-event` part) via Pydantic AI's typed chunks (`api/app/stream.py`); AI SDK pinned `ai@7.0.143`, `@ai-sdk/react@4.0.147`; contract test feeds a captured real stream (`web/tests/fixtures/chat-stream.sse`, recapture when the stream changes) through the SDK's own parsers
 - [ ] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level
 - [ ] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4)
