@@ -13,7 +13,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P1 RAG core | 18 | 17 | [x] |
 | P2 Control & security | 13 | 11 | [ ] |
 | P3 Transparency & observability | 15 | 14 | [x] |
-| P4 Evals in CI | 9 | 1 | [ ] |
+| P4 Evals in CI | 9 | 2 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
 ---
@@ -146,7 +146,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** the build fails if a trap is answered with a guess or recall drops.
 
 - [x] **P4.1** Golden set YAML, written by hand, 30–50 Qs: language, type (answerable / trap / ambiguous / off-topic / injection), required facts, expected chunk — `api/evals/golden.yaml`: 49 cases (25 answerable, 9 trap, 4 ambiguous, 4 off-topic, 4 injection, 3 small talk; 31 en / 18 he), each with accepted answer kinds, facts, must-not claims, passages and expected tools; loaded and checked by `app/evals/golden.py` (`tests/test_golden.py` also checks every passage id against the local corpus)
-- [ ] **P4.2** Eval runner (pytest + Pydantic Evals) with a Gemini LLM judge: groundedness, accuracy, refusal correctness
+- [x] **P4.2** Eval runner (pytest + Pydantic Evals) with a Gemini LLM judge: groundedness, accuracy, refusal correctness — `uv run --env-file .env python -m app.evals.run [--type T] [--only ids]` (`app/evals/run.py`, judge in `app/agent/judge.py`): runs each case in-process through the real pipeline (no rate limit/budget/stats), code checks (answer kind, cites an expected passage, cites only retrieved passages) + one judge call (required facts, forbidden claims, groundedness); retries 429s, `EVAL_PAUSE_S` paces the free tier. First run 33/49 → fixes in ADR 0017 → 41/49 with 6 quota errors, all 8 pass on re-run
 - [ ] **P4.3** CI: retrieval evals + an E2E subset on every PR
 - [ ] **P4.4** Nightly full eval run + alert on a quality drop
 - [ ] **P4.9** Tool-trajectory evals: for each golden question, did the agent call the expected tools (and not more than needed)?

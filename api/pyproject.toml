@@ -27,6 +27,7 @@ dev = [
     "boto3-stubs[dynamodb,ssm]>=1.43.114",
     "httpx>=0.28.1",
     "mypy>=2.4.0",
+    "pydantic-evals==2.57.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.17.1",

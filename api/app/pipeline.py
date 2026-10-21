@@ -47,6 +47,7 @@ _NO_INFORMATION = {
 _GENERATION_FAILED = "Something went wrong while writing the answer. Please try again."
 _TIMED_OUT = "That took too long. Please try again."
 _EXCERPT_CHARS = 200
+SMALL_TALK = "Small talk, no facts needed"
 _NOT_VERIFIED = ErrorEvent(
     code="human_check_required",
     message="Please confirm you're human, then ask again.",
@@ -147,7 +148,7 @@ def _decision(answer: Answer | None, deps: AgentDeps) -> DecisionMade:
     if answer is None or answer.kind == "no_information":
         action, reason = "no_information", "The tools found no information to answer"
     elif answer.kind == "smalltalk":
-        action, reason = "answer", "Small talk, no facts needed"
+        action, reason = "answer", SMALL_TALK
     else:
         action = "answer"
         reason = f"Answered from {deps.successful_tools} successful tool result(s)"

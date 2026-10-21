@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncIterator
 
 from pydantic_ai.exceptions import ModelHTTPError
@@ -8,7 +9,12 @@ from pydantic_ai.messages import (
     UserPromptPart,
 )
 from pydantic_ai.models.fallback import FallbackModel
-from pydantic_ai.models.function import AgentInfo, DeltaToolCalls, FunctionModel
+from pydantic_ai.models.function import (
+    AgentInfo,
+    DeltaToolCall,
+    DeltaToolCalls,
+    FunctionModel,
+)
 from pydantic_ai.usage import RequestUsage
 
 from app.agent.chat_agent import (
@@ -109,6 +115,30 @@ async def test_stops_a_model_that_keeps_calling_tools() -> None:
     tool_calls = [s for s in steps if isinstance(s, ToolCompleted)]
     assert len(tool_calls) <= Settings().agent_max_tool_calls
     assert _finished(steps).answer is None
+
+
+async def test_the_last_allowed_call_can_only_answer() -> None:
+    offered: list[list[str]] = []
+
+    async def searcher(
+        messages: list[ModelMessage], info: AgentInfo
+    ) -> AsyncIterator[DeltaToolCalls]:
+        offered.append([t.name for t in info.function_tools])
+        name, args = SEARCH if info.function_tools else VALID
+        if name == "answer":
+            name = info.output_tools[0].name
+        yield {0: DeltaToolCall(name=name, json_args=json.dumps(args))}
+
+    with agent.override(model=FunctionModel(stream_function=searcher)):
+        steps = [s async for s in run_agent("Where?", make_deps(RETRIEVER), [])]
+
+    max_requests = Settings().agent_max_requests
+    assert len(offered) == max_requests
+    assert all(offered[: max_requests - 1])
+    assert offered[-1] == []
+    answer = _finished(steps).answer
+    assert answer is not None
+    assert answer.citations == ["work"]
 
 
 async def test_backup_model_answers_when_the_main_one_fails() -> None:

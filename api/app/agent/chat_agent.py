@@ -2,7 +2,8 @@
 
 If the main model fails (provider error), a backup model takes over when
 LLM_FALLBACK_MODEL is set. Limits cap how many model and tool calls one
-question may use. The answer is
+question may use; on the last allowed model call the tools are hidden, so
+the model answers from what it has found instead of searching on. The answer is
 structured (kind, citations, text) and checked in code: it may cite only
 passages a tool returned, and an "answered" reply needs at least one tool
 result. A failed check makes the model retry once; after that, no answer.
@@ -27,6 +28,7 @@ from pydantic_ai import (
     RunContext,
     UsageLimits,
 )
+from pydantic_ai.capabilities import PrepareTools
 from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import (
     ModelMessage,
@@ -41,6 +43,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.models.fallback import FallbackModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.result import AgentStream
+from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.usage import RunUsage
 
 from app.agent.tools import TOOLS, AgentDeps, ToolMeta
@@ -102,7 +105,22 @@ AgentStep = (
     | AgentFinished
 )
 
-agent = Agent(output_type=Answer, deps_type=AgentDeps, tools=TOOLS, retries=1)
+
+def _last_call_answers(
+    ctx: RunContext[AgentDeps], tool_defs: list[ToolDefinition]
+) -> list[ToolDefinition]:
+    # A model that keeps searching would hit the request limit and lose an
+    # answer it already has, so the last allowed call can only answer.
+    return [] if ctx.run_step >= ctx.deps.settings.agent_max_requests else tool_defs
+
+
+agent = Agent(
+    output_type=Answer,
+    deps_type=AgentDeps,
+    tools=TOOLS,
+    retries=1,
+    capabilities=[PrepareTools(_last_call_answers)],
+)
 _TOOL_NAMES = {tool.name for tool in TOOLS}
 
 

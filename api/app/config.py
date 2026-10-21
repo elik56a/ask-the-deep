@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     dynamodb_table: str | None = None
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
-    rules_version: str = "v4"
+    rules_version: str = "v5"
     # Cosine similarity a passage needs to reach the model; set from measured
     # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
     retrieval_threshold: float = 0.57
@@ -76,6 +76,12 @@ class Settings(BaseSettings):
     # JSON log lines (production) instead of readable ones; also turns off
     # uvicorn's access log, which prints visitor IPs.
     log_json: bool = False
+    # Answer evals (P4.2). The judge defaults to the answering model.
+    eval_judge_model: str | None = None
+    # Pause between cases and before retrying one that failed (free-tier 429s).
+    eval_pause_s: float = 0.0
+    eval_retry_wait_s: float = 30.0
+    eval_retries: int = 3
     # Salt for hashing visitor IPs. Production reads the real one from SSM.
     ip_hash_salt: SecretStr = SecretStr("local-dev-salt")
     # Set in production: requests without CloudFront's secret header are refused.
