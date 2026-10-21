@@ -21,6 +21,7 @@ from app.pipeline import Services, run_pipeline
 from app.rag.db import create_pool
 from app.rag.embeddings import query_embedder
 from app.rag.retrieval import HybridRetriever
+from app.ssm import load_ssm_secrets
 from app.stream import HEADERS, ui_message_stream
 
 _services: Services | None = None
@@ -29,8 +30,10 @@ _turnstile: Turnstile | None = None
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """On startup, load the search index and open the GitHub and DynamoDB clients."""
+    """On startup, load secrets and the search index, and open the clients."""
     global _services, _turnstile
+    if load_ssm_secrets():
+        get_settings.cache_clear()
     settings = get_settings()
     async with (
         create_pool(settings) as pool,

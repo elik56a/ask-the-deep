@@ -43,7 +43,7 @@ provider "aws" {
 locals {
   name       = "portfolio-chat-${terraform.workspace}"
   ssm_prefix = "/portfolio-chat/${terraform.workspace}"
-  secrets    = ["DATABASE_URL", "LLM_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
+  secrets    = ["DATABASE_URL", "GOOGLE_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
 }
 
 data "aws_caller_identity" "me" {}
@@ -189,7 +189,8 @@ resource "aws_dynamodb_table" "counters" {
   }
 }
 
-# Secrets: created empty, values set by hand so they never touch state or the repo
+# Secrets: created empty, values set by hand so they never touch state or the repo.
+# Each name is the env var the API reads; it loads them at cold start (app/ssm.py).
 
 resource "aws_ssm_parameter" "secret" {
   for_each = toset(local.secrets)

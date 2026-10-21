@@ -21,7 +21,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "boto3-stubs[dynamodb]>=1.43.114",
+    "boto3-stubs[dynamodb,ssm]>=1.43.114",
     "httpx>=0.28.1",
     "mypy>=2.4.0",
     "pytest>=9.1.1",
