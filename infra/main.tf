@@ -74,6 +74,15 @@ variable "lwa_layer_version" {
   default = 24
 }
 
+# CloudFront only takes certificates from us-east-1.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+  default_tags {
+    tags = { project = "portfolio-chat", env = terraform.workspace }
+  }
+}
+
 provider "aws" {
   region = var.region
   default_tags {
@@ -82,6 +91,8 @@ provider "aws" {
 }
 
 locals {
+  # Custom domain per environment (DNS at Cloudflare); none = cloudfront.net only.
+  domain     = lookup({ staging = "eliyahukriel.dev" }, terraform.workspace, "")
   name       = "portfolio-chat-${terraform.workspace}"
   ssm_prefix = "/portfolio-chat/${terraform.workspace}"
   secrets    = ["DATABASE_URL", "GOOGLE_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
@@ -363,9 +374,41 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
+  aliases = local.domain == "" ? [] : [local.domain]
+
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = local.domain == ""
+    acm_certificate_arn            = local.domain == "" ? null : aws_acm_certificate_validation.site[0].certificate_arn
+    ssl_support_method             = local.domain == "" ? null : "sni-only"
+    minimum_protocol_version       = local.domain == "" ? null : "TLSv1.2_2021"
   }
+}
+
+# HTTPS for the custom domain. The DNS records that prove ownership are added
+# by hand at Cloudflare (see the certificate_dns output); apply waits for them.
+resource "aws_acm_certificate" "site" {
+  count             = local.domain == "" ? 0 : 1
+  provider          = aws.us_east_1
+  domain_name       = local.domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_acm_certificate_validation" "site" {
+  count           = local.domain == "" ? 0 : 1
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.site[0].arn
+}
+
+output "certificate_dns" {
+  description = "Add at Cloudflare as DNS-only CNAMEs to prove the domain is ours."
+  value = local.domain == "" ? [] : [
+    for o in aws_acm_certificate.site[0].domain_validation_options :
+    { name = o.resource_record_name, type = o.resource_record_type, value = o.resource_record_value }
+  ]
 }
 
 # Cost alarm (the first two AWS budgets are free)
