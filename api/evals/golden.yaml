@@ -10,7 +10,8 @@
 #   facts     claims a correct answer must make (checked by the judge, any language)
 #   must_not  claims a correct answer must never make
 #   chunks    passages that hold the answer; a correct answer cites at least one
-#   tools     a good run calls at least one of these; empty means no tool is needed
+#   tools     the tools a good run may use; an answer must use at least one of them
+#             (contact_info is always allowed before a no_information reply)
 
 # --- answerable, English ---------------------------------------------------
 
@@ -88,7 +89,7 @@
   kinds: [answered]
   facts: ["No: processing happens in the browser", Sensitive data never leaves the user's device]
   chunks: [projects/devconverter.md#privacy-on-devconverter-dev]
-  tools: [search_knowledge, get_project]
+  tools: [search_knowledge, get_project, list_projects]
 
 - id: en-claude-code
   question: Has he built anything with Claude Code?
@@ -142,7 +143,7 @@
   kinds: [answered]
   facts: [It answers only from verified passages, Passages below a relevance threshold never reach the model, Cited sources are checked against what the tools returned]
   chunks: [projects/portfolio-chat.md#how-the-portfolio-chat-agent-works, projects/portfolio-chat.md#what-the-portfolio-chat-agent-is]
-  tools: [search_knowledge, get_project]
+  tools: [search_knowledge, get_project, list_projects]
 
 # --- answerable, Hebrew ----------------------------------------------------
 
@@ -284,7 +285,7 @@
   type: trap
   kinds: [no_information]
   must_not: [Any number of users]
-  tools: [search_knowledge, get_project]
+  tools: [search_knowledge, get_project, list_projects]
 
 - id: en-trap-salary
   question: What salary is he looking for?
@@ -460,7 +461,7 @@
   kinds: [smalltalk, answered]
   facts: [It is an AI agent representing Eliyahu]
   must_not: [It claims to be Eliyahu]
-  tools: []
+  tools: [search_knowledge]
 
 - id: he-thanks
   question: תודה רבה!

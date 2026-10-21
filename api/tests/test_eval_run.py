@@ -15,10 +15,12 @@ from app.evals.run import (
     cites_expected,
     cites_retrieved,
     evaluate,
+    extra_tools,
     failed,
     kind_ok,
     run_case,
     score,
+    used_expected_tool,
     with_retries,
 )
 from app.rag.retrieval import Hit
@@ -126,6 +128,8 @@ async def test_a_report_grades_each_case_in_code_and_by_the_judge() -> None:
         "cites_expected",
         "grounded",
         "facts",
+        "expected_tool",
+        "no_extra_tool",
     }
     assert failed(case) == {}
     assert score(report) == (1, 1)
@@ -171,3 +175,20 @@ async def test_a_case_with_no_answer_is_not_graded() -> None:
         name="t", cases=[Case(name="a", inputs=CASE)], evaluators=[CodeChecks()]
     )
     assert score(await dataset.evaluate(quota, progress=False)) == (0, 0)
+
+
+def test_an_answer_must_come_from_an_expected_tool() -> None:
+    assert used_expected_tool(CASE, Run(kind="answered", tools=["search_knowledge"]))
+    assert used_expected_tool(CASE, Run(kind="answered")) is False
+    assert used_expected_tool(CASE, Run(kind="no_information")) is None
+
+
+def test_flags_tools_the_case_does_not_need() -> None:
+    assert extra_tools(HI, Run(kind="smalltalk", tools=["search_knowledge"])) == [
+        "search_knowledge"
+    ]
+    refusal = Run(kind="no_information", tools=["contact_info"])
+    assert extra_tools(HI, refusal) == []
+    assert extra_tools(CASE, Run(kind="answered", tools=["contact_info"])) == [
+        "contact_info"
+    ]

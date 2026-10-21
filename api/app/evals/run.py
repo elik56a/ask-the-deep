@@ -6,7 +6,8 @@ Exits 1 when fewer than EVAL_MIN_PASS_RATE of the graded cases pass.
 Each case goes through the full pipeline in-process (no rate limit, budget or
 stats, so the site's counters stay clean), then gets graded:
 - in code: the answer kind is one the case accepts, the answer cites one of
-  the expected passages, and it cites only passages a tool returned;
+  the expected passages, and it cites only passages a tool returned; an
+  answer used one of the case's tools and no tool the case doesn't need (P4.9);
 - by the judge model (`app/agent/judge.py`): required facts present, forbidden
   claims absent, statements about Eliyahu grounded in the passages.
 This makes real model calls: about 3 per case plus one judge call.
@@ -126,6 +127,21 @@ def cites_retrieved(run: Run) -> bool:
     return set(run.citations) <= set(run.retrieved)
 
 
+def used_expected_tool(case: GoldenCase, run: Run) -> bool | None:
+    """An answer comes from one of the case's tools, not from memory."""
+    if run.kind != "answered" or not case.tools:
+        return None
+    return bool(set(run.tools) & set(case.tools))
+
+
+def extra_tools(case: GoldenCase, run: Run) -> list[str]:
+    """Tools the case doesn't need; contact_info is fine before "no information"."""
+    allowed = set(case.tools)
+    if run.kind == "no_information":
+        allowed.add("contact_info")
+    return sorted(set(run.tools) - allowed)
+
+
 @dataclass
 class CodeChecks(Evaluator[GoldenCase, Run, None]):
     """The checks that need no model."""
@@ -140,6 +156,12 @@ class CodeChecks(Evaluator[GoldenCase, Run, None]):
         }
         if (expected := cites_expected(case, run)) is not None:
             results["cites_expected"] = expected
+        if (tool := used_expected_tool(case, run)) is not None:
+            results["expected_tool"] = EvaluationReason(
+                tool, reason=f"used {run.tools}"
+            )
+        extra = extra_tools(case, run)
+        results["no_extra_tool"] = EvaluationReason(not extra, reason=f"also {extra}")
         return results
 
 
@@ -261,6 +283,12 @@ def _print(report: EvaluationReport[GoldenCase, Run, None], settings: Settings) 
         print(f"  {kind:<11} {passed[kind]}/{by_type[kind]}")
     print(f"  {'all':<11} {sum(passed.values())}/{sum(by_type.values())}")
     print(f"  answer cost ${cost:.4f} (judge calls not included)")
+    calls = [rc.output.model_calls for rc in report.cases if rc.output.kind != "error"]
+    capped = sum(c >= settings.agent_max_requests for c in calls)
+    if calls:
+        print(
+            f"  model calls {sum(calls) / len(calls):.1f} per case, {capped} at the cap"
+        )
 
 
 def _pick(cases: list[GoldenCase], args: argparse.Namespace) -> list[GoldenCase]:

@@ -13,7 +13,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P1 RAG core | 18 | 17 | [x] |
 | P2 Control & security | 13 | 11 | [ ] |
 | P3 Transparency & observability | 15 | 14 | [x] |
-| P4 Evals in CI | 9 | 4 | [ ] |
+| P4 Evals in CI | 9 | 5 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
 ---
@@ -149,7 +149,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P4.2** Eval runner (pytest + Pydantic Evals) with a Gemini LLM judge: groundedness, accuracy, refusal correctness — `uv run --env-file .env python -m app.evals.run [--type T] [--only ids]` (`app/evals/run.py`, judge in `app/agent/judge.py`): runs each case in-process through the real pipeline (no rate limit/budget/stats), code checks (answer kind, cites an expected passage, cites only retrieved passages) + one judge call (required facts, forbidden claims, groundedness); retries 429s, `EVAL_PAUSE_S` paces the free tier. First run 33/49 → fixes in ADR 0017 → 41/49 with 6 quota errors, all 8 pass on re-run
 - [x] **P4.3** CI: retrieval evals + an E2E subset on every PR — `.github/workflows/evals.yml`: ingests the committed public corpus (ADR 0018) into a throwaway Postgres, runs `app.rag.recall` and `app.evals.run --quick` (~5 min on the free tier); runs only when the agent, prompts, retrieval, golden set or corpus change (or by hand), skipped on fork PRs; `GOOGLE_API_KEY` secret set. First run green
 - [x] **P4.4** Nightly full eval run + alert on a quality drop — `evals.yml` runs the full golden set at 03:00 UTC (and on manual dispatch); the runner exits 1 when fewer than `EVAL_MIN_PASS_RATE` (85%) of graded cases pass, cases lost to the provider quota aren't graded; GitHub emails on the failed run
-- [ ] **P4.9** Tool-trajectory evals: for each golden question, did the agent call the expected tools (and not more than needed)?
+- [x] **P4.9** Tool-trajectory evals: for each golden question, did the agent call the expected tools (and not more than needed)? — code checks in `app/evals/run.py`: `expected_tool` (an answer used one of the case's tools) and `no_extra_tool` (no tool the case doesn't need; `contact_info` allowed before no_information); the summary adds model calls per case and how many hit the cap
 - [ ] **P4.5** Quality gate: fail on a trap guess, a non-retrieved citation, or recall < target
 - [ ] **P4.6** Rule: changes to model/prompt/corpus can't merge without a green eval (CODEOWNERS or path-filtered required check)
 - [ ] **P4.7** Publish the last eval run (date, count, score) as a static JSON for the site
