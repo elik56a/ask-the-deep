@@ -1,6 +1,6 @@
 # 0004. Knowledge base stays out of git; ingestion runs locally
 
-Date: 2026-10-18 · Status: accepted
+Date: 2026-10-18 · Status: accepted; git part superseded by 0018
 
 ## Context
 

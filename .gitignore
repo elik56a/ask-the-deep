@@ -14,8 +14,8 @@ dist/
 
 
 
-# Knowledge base stays local; ingestion runs from this machine (ADR 0004)
-data/knowledge/
+# Private knowledge files stay local; public ones are committed (ADR 0018)
+data/knowledge/faq.md
 
 # Locally installed Claude Code skills
 .claude/skills/
