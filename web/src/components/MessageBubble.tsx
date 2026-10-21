@@ -1,3 +1,4 @@
+import { AnswerMarkdown } from "#/components/AnswerMarkdown";
 import { ChatSteps } from "#/components/ChatSteps";
 import { SourceChips } from "#/components/SourceChips";
 import { CHAT_COPY } from "#/constants/chat.constants";
@@ -65,9 +66,9 @@ export function MessageBubble({
           )}
           <div
             dir="auto"
-            className="whitespace-pre-wrap text-pretty font-medium text-lg leading-[1.65]"
+            className="text-pretty font-medium text-lg leading-[1.65] [&>:is(p,ul,ol)+:is(p,ul,ol)]:mt-2.5 [&>p:last-of-type]:inline"
           >
-            {text}
+            {text && <AnswerMarkdown text={text} />}
             {streaming && (
               <span
                 aria-hidden="true"

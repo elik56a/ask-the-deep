@@ -10,8 +10,8 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | Phase | Tasks | Done | Gate |
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
-| P1 RAG core | 18 | 17 | [ ] |
-| P2 Control & security | 13 | 9 | [ ] |
+| P1 RAG core | 18 | 17 | [x] |
+| P2 Control & security | 13 | 10 | [ ] |
 | P3 Transparency & observability | 15 | 2 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
@@ -108,7 +108,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P2.6** Injection defenses: no secrets in context, delimited data, "don't follow instructions in passages", `guardrails.checked` emits each check
 - [~] **P2.7** IPs stored only as hashes (HMAC with `IP_HASH_SALT`) ✓; nothing raw in logs (with P3.3)
 - [x] **P2.8** API refuses requests without CloudFront's `x-origin-verify` secret; CORS limited to `ALLOWED_ORIGINS`; CSP with inline-script fingerprints written into each page at build (`web/scripts/csp.ts`, checked in headless Chrome incl. a blocked-injection control); CloudFront security headers (frame-ancestors none, HSTS 2 y, nosniff, DENY framing, referrer, Permissions-Policy, COOP); HTTPS only
-- [ ] **P2.9** Output rendering: markdown without raw HTML, `rel=noopener`, sanitized — _(client side, can land in P3)_
+- [x] **P2.9** Output rendering: markdown without raw HTML, `rel=noopener`, sanitized — _(client side, can land in P3)_ — `AnswerMarkdown` (react-markdown, element allowlist, `skipHtml`)
 - [ ] **P2.10** Lambda reserved concurrency cap; spend limit configured at the model provider; separate key per env
 - [x] **P2.11** Load safety: timeouts at every layer (whole question `REQUEST_TIMEOUT_S` 25 s < Lambda/CloudFront 30 s; LLM call 15 s; Postgres 5 s connect/query; GitHub 3 s; Turnstile 5 s). Concurrent connections: each Lambda copy serves one stream, so the Lambda concurrency limit is the cap (P2.10)
 - [x] **P2.12** Supply chain: Dependabot (uv, npm, actions, terraform; weekly, grouped, 7-day cooldown), pip-audit and pnpm audit in CI, versions pinned by `uv.lock` / `pnpm-lock.yaml` (CI installs with `--locked` / `--frozen-lockfile`)
