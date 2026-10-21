@@ -1,4 +1,5 @@
 from mypy_boto3_dynamodb.service_resource import Table
+from structlog.testing import capture_logs
 
 from app.config import Settings
 from app.control.budget import DynamoBudget, NoBudget, budget, micro_usd
@@ -77,3 +78,15 @@ async def test_refuses_when_dynamodb_fails(counters: Table) -> None:
 
 def test_no_table_means_no_budget() -> None:
     assert isinstance(budget(Settings(dynamodb_table=None)), NoBudget)
+
+
+async def test_warns_once_when_the_day_crosses_80_percent(counters: Table) -> None:
+    caps = DynamoBudget(counters, CAPS, Clock())
+    with capture_logs() as logs:
+        await caps.record("a", 0.03)
+        await caps.record("b", 0.03)
+        await caps.record("c", 0.025)
+        await caps.record("d", 0.005)
+    assert [(log["event"], log["cap"]) for log in logs] == [
+        ("budget_80_percent", "day")
+    ]

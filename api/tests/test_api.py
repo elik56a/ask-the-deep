@@ -63,6 +63,19 @@ def test_chat_streams_in_the_ai_sdk_format() -> None:
     assert events[-1]["type"] == "request.finished"
 
 
+def test_stats_are_public_and_anonymous() -> None:
+    response = client.get("/api/stats")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "public, max-age=60"
+    assert set(response.json()) == {
+        "month",
+        "questions",
+        "avg_cost_usd",
+        "avg_latency_ms",
+        "no_info_rate",
+    }
+
+
 def test_health() -> None:
     assert client.get("/api/health").json() == {
         "status": "ok",

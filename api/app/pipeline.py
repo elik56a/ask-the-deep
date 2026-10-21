@@ -6,11 +6,12 @@ doing in real time.
 """
 
 import asyncio
-import logging
 import re
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from uuid import uuid4
+
+import structlog
 
 from app.agent.chat_agent import AgentFinished, Answer, PastMessage, run_agent
 from app.agent.github import GitHubActivity
@@ -18,6 +19,7 @@ from app.agent.tools import AgentDeps
 from app.config import Settings
 from app.control.budget import Budget
 from app.control.rate_limit import RateLimiter
+from app.control.stats import Stats
 from app.emitter import Emitter
 from app.events import (
     Citation,
@@ -35,7 +37,7 @@ from app.events import (
 from app.rag.corpus import Chunk
 from app.rag.retrieval import Retriever
 
-logger = logging.getLogger(__name__)
+_log = structlog.get_logger("pipeline")
 
 _HEBREW = re.compile(r"[֐-׿]")
 _NO_INFORMATION = {
@@ -69,6 +71,7 @@ class Services:
     github: GitHubActivity
     limiter: RateLimiter
     budget: Budget
+    stats: Stats
 
 
 async def _with_deadline[T](
@@ -217,7 +220,9 @@ async def run_pipeline(
         return
     except Exception as exc:
         # The type only: provider messages can echo conversation text.
-        logger.warning("generation failed: %s", type(exc).__name__)
+        _log.warning(
+            "generation_failed", request_id=em.request_id, error=type(exc).__name__
+        )
         finished = None
     if finished is None:
         yield em.emit(ErrorEvent(code="generation_failed", message=_GENERATION_FAILED))
@@ -245,4 +250,7 @@ async def run_pipeline(
         )
     )
     no_info = answer is None or answer.kind == "no_information"
+    await services.stats.record(
+        no_info=no_info, cost_usd=finished.cost_usd, latency_ms=em.elapsed_ms()
+    )
     yield em.emit(RequestFinished(outcome="no_information" if no_info else "answered"))

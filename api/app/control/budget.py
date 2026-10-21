@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol
 
+import structlog
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import Settings
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from mypy_boto3_dynamodb.service_resource import Table
 
 _DAY = 24 * 3600
+# Share of a cap at which an alert goes out (P3.9; CloudWatch alarm on this log).
+WARN_SHARE = 0.8
+_log = structlog.get_logger("budget")
 
 
 def micro_usd(usd: float) -> int:
@@ -92,11 +96,16 @@ class DynamoBudget:
             return
         caps = self._caps(visitor)
         try:
-            await asyncio.gather(
+            totals = await asyncio.gather(
                 *(increment(self._table, c.pk, c.expires_at, amount) for c in caps)
             )
         except (BotoCoreError, ClientError):
             return
+        # The month and day caps (not per visitor) alert once, as they cross 80%.
+        for cap, total in zip(caps[:2], totals[:2], strict=True):
+            warn_at = cap.limit * WARN_SHARE
+            if total - amount < warn_at <= total:
+                _log.warning("budget_80_percent", cap=cap.pk.split("#")[1])
 
 
 class NoBudget:

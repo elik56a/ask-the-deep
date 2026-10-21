@@ -290,8 +290,11 @@ async def _answer_steps(
                     attempt.rejected = problem
                     held = True
                     continue
+                # Gemini caches repeated prompt prefixes on its own (implicit
+                # caching, ADR 0015); this reports whether it did in this run.
                 yield GenerationStarted(
-                    context_chunks=len(deps.seen), prompt_cache_hit=False
+                    context_chunks=len(deps.seen),
+                    prompt_cache_hit=stream.usage.cache_read_tokens > 0,
                 )
             if len(partial.text) > shown:
                 yield TextDelta(text=partial.text[shown:])

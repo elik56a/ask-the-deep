@@ -11,8 +11,8 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | --- | --- | --- | --- |
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 17 | [x] |
-| P2 Control & security | 13 | 10 | [ ] |
-| P3 Transparency & observability | 15 | 3 | [ ] |
+| P2 Control & security | 13 | 11 | [ ] |
+| P3 Transparency & observability | 15 | 9 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
@@ -106,7 +106,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [x] **P2.4** Spend caps + kill switch (ADR 0008): `MONTHLY_BUDGET_USD` $5, `DAILY_BUDGET_USD` $0.50, `VISITOR_DAILY_BUDGET_USD` $0.05; `budget` guardrail → `budget_exhausted` message; cost recorded after each answer — _Deps: P2.2_
 - [x] **P2.5** Input cap (`MAX_INPUT_CHARS`), output cap (`MAX_OUTPUT_TOKENS`); client sends the session history ≤ `MAX_HISTORY_MESSAGES` (20), server enforces
 - [x] **P2.6** Injection defenses: no secrets in context, delimited data, "don't follow instructions in passages", `guardrails.checked` emits each check
-- [~] **P2.7** IPs stored only as hashes (HMAC with `IP_HASH_SALT`) ✓; nothing raw in logs (with P3.3)
+- [x] **P2.7** IPs stored only as hashes (HMAC with `IP_HASH_SALT`) ✓; nothing raw in logs (with P3.3) ✓ — uvicorn's access log (prints IPs) is off when `LOG_JSON` is on
 - [x] **P2.8** API refuses requests without CloudFront's `x-origin-verify` secret; CORS limited to `ALLOWED_ORIGINS`; CSP with inline-script fingerprints written into each page at build (`web/scripts/csp.ts`, checked in headless Chrome incl. a blocked-injection control); CloudFront security headers (frame-ancestors none, HSTS 2 y, nosniff, DENY framing, referrer, Permissions-Policy, COOP); HTTPS only
 - [x] **P2.9** Output rendering: markdown without raw HTML, `rel=noopener`, sanitized — _(client side, can land in P3)_ — `AnswerMarkdown` (react-markdown, element allowlist, `skipHtml`)
 - [~] **P2.10** Lambda reserved concurrency cap; spend limit configured at the model provider; separate key per env — app loads `/portfolio-chat/<env>/*` from SSM at cold start (`app/ssm.py`), concurrency via `lambda_concurrency` (ADR 0014). Left, by hand: a Google key per env in SSM and a spend limit in each Google project
@@ -123,14 +123,14 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 ### Server
 - [x] **P3.1** Single `Emitter`: one call fans out to SSE + OTel span + structlog. `text.delta` goes to SSE only. Errors emit only the public message. — _Done when_ grep finds no direct stream writes outside Emitter — `app/emitter.py`: span event + structlog line per event, visitor-derived fields masked; `test_only_the_emitter_creates_stream_events`
 - [x] **P3.2** SSE in the Vercel AI SDK UI message stream protocol (v1 header; answer as text parts, every other event as a persistent `data-event` part) via Pydantic AI's typed chunks (`api/app/stream.py`); AI SDK pinned `ai@7.0.143`, `@ai-sdk/react@4.0.147`; contract test feeds a captured real stream (`web/tests/fixtures/chat-stream.sse`, recapture when the stream changes) through the SDK's own parsers
-- [ ] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level
-- [ ] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4)
+- [x] **P3.3** structlog JSON: request_id, stage, outcome; no conversation content at info level — `app/logs.py`, `LOG_JSON` (on in Lambda); each event line has request_id, stage, outcome
+- [x] **P3.4** Langfuse Cloud integration via OTel: span per stage, tokens, cost; question and answer text masked (D4) — `app/tracing.py` + stage spans in `app/emitter.py` (guardrails, a generation per model call with model, tokens and cost, a span per tool), sent at the end of each request; checked on Langfuse Cloud (US) with a synthetic run: types, tokens and cost arrive, no input/output
 - [~] **P3.5** Cost calc (done in P1.12 via genai-prices → `usage.reported`; trace still to do) from the pricing table (input/output, cached-token discount) → `usage.reported` + trace. Same number in both places.
-- [ ] **P3.6** Prompt caching for the system prompt and fixed instructions
-- [ ] **P3.7** Public stats endpoint: question count, avg cost, latency, "no info" rate — aggregated, anonymous, no exact budget
-- [ ] **P3.8** Sentry on API and web
-- [ ] **P3.9** Alerts: 80% of daily cap, error-rate rise, latency breach
-- [ ] **P3.10** Privacy check: no question or answer text in logs, traces or DynamoDB (test asserts it)
+- [x] **P3.6** Prompt caching for the system prompt and fixed instructions — Gemini implicit caching, prompt kept cache-friendly, real `prompt_cache_hit`; no explicit cache (prefix ≈740 tokens, below the minimum) (ADR 0015)
+- [x] **P3.7** Public stats endpoint: question count, avg cost, latency, "no info" rate — aggregated, anonymous, no exact budget — `GET /api/stats` (`app/control/stats.py`): this month's question count, average cost and latency, no-info rate from 4 DynamoDB counters; never the total spend
+- [ ] **P3.8** Sentry on API and web — skipped for now (free Developer plan fits; needs two DSNs)
+- [x] **P3.9** Alerts: 80% of daily cap, error-rate rise, latency breach — the API logs `budget_80_percent` as a day or month cap crosses 80%; Terraform: CloudWatch metric filters on the JSON logs + 3 alarms (≥1 budget warning / 5 min, ≥ `alert_errors` (3) errors / 15 min, average latency ≥ `alert_latency_ms` (15 s) / 15 min) → SNS email to `budget_email`. Live check after the first deploy (P2.13)
+- [x] **P3.10** Privacy check: no question or answer text in logs, traces or DynamoDB (test asserts it) — `tests/test_privacy.py`: a full run with the real DynamoDB counters; the question, search query and answer words appear in none of logs, traces or the table (fails if masking is removed)
 
 ### Client
 - [x] **P3.11** Chat with `useChat`: streaming, suggested questions, permanent "AI agent representing Eliyahu" label; the session's conversation lives in `sessionStorage` (survives refresh, gone when the tab closes), trimmed to the last `MAX_HISTORY_MESSAGES`. Invisible Turnstile → session; a rejected session re-runs the check. UI defaults to English with a he/en switch (remembered in `localStorage`)

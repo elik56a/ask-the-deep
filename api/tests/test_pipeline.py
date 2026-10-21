@@ -13,6 +13,7 @@ from app.rag.retrieval import Hit
 from tests.fakes import (
     FakeBudget,
     FakeLimiter,
+    FakeStats,
     StubRetriever,
     Turn,
     make_chunk,
@@ -166,6 +167,23 @@ async def test_records_what_each_answer_cost() -> None:
         e.event.model_dump() for e in events if e.event.type == "usage.reported"
     )
     assert budget.spent == [("visitor", usage["cost_usd"])]
+
+
+async def test_records_each_finished_question_in_the_stats() -> None:
+    stats = FakeStats()
+    events = await _run("Where?", services=make_services(RELEVANT, stats=stats))
+    usage = next(
+        e.event.model_dump() for e in events if e.event.type == "usage.reported"
+    )
+    assert stats.recorded == [(False, usage["cost_usd"])]
+
+
+async def test_blocked_questions_are_not_counted() -> None:
+    stats = FakeStats()
+    await _run(
+        "Where?", services=make_services(RELEVANT, FakeBudget(False), stats=stats)
+    )
+    assert stats.recorded == []
 
 
 async def test_visitor_without_a_session_must_pass_the_human_check() -> None:

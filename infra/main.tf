@@ -22,6 +22,18 @@ variable "monthly_budget_usd" {
   default = 5
 }
 
+variable "alert_errors" {
+  type        = number
+  default     = 3
+  description = "Questions ending in an error within 15 minutes that send an alert."
+}
+
+variable "alert_latency_ms" {
+  type        = number
+  default     = 15000
+  description = "Average answer time over 15 minutes above which an alert goes out."
+}
+
 variable "lambda_concurrency" {
   type        = number
   default     = -1
@@ -153,6 +165,7 @@ resource "aws_lambda_function" "api" {
       PORT                    = "8080"
       DYNAMODB_TABLE          = aws_dynamodb_table.counters.name
       SSM_PREFIX              = local.ssm_prefix
+      LOG_JSON                = "true"
       ORIGIN_VERIFY_SECRET    = random_password.origin_verify.result
     }
   }
@@ -340,6 +353,62 @@ resource "aws_budgets_budget" "monthly" {
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.budget_email]
   }
+}
+
+# Alerts (P3.9): read from the API's JSON logs, sent by email
+
+locals {
+  metrics_namespace = "PortfolioChat/${terraform.workspace}"
+  log_metrics = {
+    BudgetWarnings = { pattern = "{ $.event = \"budget_80_percent\" }", value = "1" }
+    Errors         = { pattern = "{ $.event = \"request.finished\" && $.outcome = \"error\" }", value = "1" }
+    LatencyMs      = { pattern = "{ $.event = \"usage.reported\" }", value = "$.latency_ms" }
+  }
+  alarms = {
+    budget-80 = { metric = "BudgetWarnings", stat = "Sum", period = 300, threshold = 1, about = "A spend cap (day or month) passed 80%." }
+    errors    = { metric = "Errors", stat = "Sum", period = 900, threshold = var.alert_errors, about = "Questions are ending in errors." }
+    slow      = { metric = "LatencyMs", stat = "Average", period = 900, threshold = var.alert_latency_ms, about = "Answers are slow." }
+  }
+}
+
+resource "aws_sns_topic" "alerts" {
+  name = "${local.name}-alerts"
+}
+
+# AWS emails a confirmation link first; alerts arrive only after it is clicked.
+resource "aws_sns_topic_subscription" "alerts_email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.budget_email
+}
+
+resource "aws_cloudwatch_log_metric_filter" "api" {
+  for_each       = local.log_metrics
+  name           = "${local.name}-${each.key}"
+  log_group_name = aws_cloudwatch_log_group.api.name
+  pattern        = each.value.pattern
+
+  metric_transformation {
+    name      = each.key
+    namespace = local.metrics_namespace
+    value     = each.value.value
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "api" {
+  for_each            = local.alarms
+  alarm_name          = "${local.name}-${each.key}"
+  alarm_description   = each.value.about
+  namespace           = local.metrics_namespace
+  metric_name         = each.value.metric
+  statistic           = each.value.stat
+  period              = each.value.period
+  evaluation_periods  = 1
+  threshold           = each.value.threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  depends_on          = [aws_cloudwatch_log_metric_filter.api]
 }
 
 output "site_url" {

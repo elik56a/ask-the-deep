@@ -1,12 +1,13 @@
 """The HTTP server: receives questions and streams events back as SSE."""
 
+import asyncio
 import hmac
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -17,12 +18,15 @@ from app.config import Settings, get_settings
 from app.control.budget import budget
 from app.control.rate_limit import client_ip, hash_ip, rate_limiter
 from app.control.session import Sessions, Turnstile
+from app.control.stats import PublicStats, stats
+from app.logs import configure_logging
 from app.pipeline import Services, run_pipeline
 from app.rag.db import create_pool
 from app.rag.embeddings import query_embedder
 from app.rag.retrieval import HybridRetriever
 from app.ssm import load_ssm_secrets
 from app.stream import HEADERS, ui_message_stream
+from app.tracing import configure_tracing, flush_traces
 
 _services: Services | None = None
 _turnstile: Turnstile | None = None
@@ -35,6 +39,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if load_ssm_secrets():
         get_settings.cache_clear()
     settings = get_settings()
+    configure_logging(settings.log_json)
+    configure_tracing(settings)
     async with (
         create_pool(settings) as pool,
         github_client(settings.github_timeout_s) as http,
@@ -50,6 +56,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             ),
             limiter=rate_limiter(settings),
             budget=budget(settings),
+            stats=stats(settings),
         )
         yield
     _services = _turnstile = None
@@ -134,6 +141,18 @@ def health(services: Annotated[Services, Depends(get_services)]) -> dict[str, st
     return {"status": "ok", "corpus_version": services.retriever.corpus_version}
 
 
+@app.get("/api/stats")
+async def public_stats(
+    services: Annotated[Services, Depends(get_services)], response: Response
+) -> PublicStats:
+    """This month's anonymous usage: questions, averages and the no-info rate."""
+    summary = await services.stats.read()
+    if summary is None:
+        raise HTTPException(status_code=503, detail="Stats are unavailable")
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return summary
+
+
 @app.post("/api/session")
 async def start_session(
     request: SessionRequest,
@@ -170,5 +189,15 @@ async def chat(
         request.history,
     )
     return StreamingResponse(
-        ui_message_stream(events), media_type="text/event-stream", headers=HEADERS
+        _flush_after(ui_message_stream(events)),
+        media_type="text/event-stream",
+        headers=HEADERS,
     )
+
+
+async def _flush_after(chunks: AsyncIterator[str]) -> AsyncIterator[str]:
+    # The browser already has every event; the stream stays open until the
+    # trace is sent, so Lambda can't freeze with spans still unsent.
+    async for chunk in chunks:
+        yield chunk
+    await asyncio.to_thread(flush_traces)

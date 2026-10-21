@@ -71,8 +71,11 @@ class Settings(BaseSettings):
     turnstile_timeout_s: float = 5.0
     langfuse_public_key: SecretStr | None = None
     langfuse_secret_key: SecretStr | None = None
-    langfuse_host: str = "https://cloud.langfuse.com"
+    langfuse_base_url: str = "https://cloud.langfuse.com"
     allowed_origins: list[str] = ["http://localhost:5173"]
+    # JSON log lines (production) instead of readable ones; also turns off
+    # uvicorn's access log, which prints visitor IPs.
+    log_json: bool = False
     # Salt for hashing visitor IPs. Production reads the real one from SSM.
     ip_hash_salt: SecretStr = SecretStr("local-dev-salt")
     # Set in production: requests without CloudFront's secret header are refused.

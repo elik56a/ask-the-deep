@@ -15,6 +15,7 @@ from app.agent.github import GITHUB_API, GitHubActivity
 from app.agent.tools import AgentDeps
 from app.config import Settings
 from app.control.rate_limit import NoRateLimit
+from app.control.stats import PublicStats, summarize
 from app.pipeline import Services
 from app.rag.corpus import Chunk
 from app.rag.retrieval import Hit, tokenize
@@ -138,6 +139,28 @@ class FakeBudget:
         self.spent.append((visitor, cost_usd))
 
 
+class FakeStats:
+    """Remembers every finished question it was told about."""
+
+    def __init__(self) -> None:
+        self.recorded: list[tuple[bool, float]] = []
+
+    async def record(self, *, no_info: bool, cost_usd: float, latency_ms: int) -> None:
+        self.recorded.append((no_info, cost_usd))
+
+    async def read(self) -> PublicStats | None:
+        n = len(self.recorded)
+        return summarize(
+            "2026-10",
+            {
+                "questions": n,
+                "no_info": sum(no_info for no_info, _ in self.recorded),
+                "cost_micro_usd": 0,
+                "latency_ms": 0,
+            },
+        )
+
+
 class FakeLimiter:
     """Allows or refuses every key, or only keys starting with `block_prefix`."""
 
@@ -155,10 +178,12 @@ def make_services(
     retriever: StubRetriever,
     budget: FakeBudget | None = None,
     limiter: FakeLimiter | NoRateLimit | None = None,
+    stats: FakeStats | None = None,
 ) -> Services:
     return Services(
         retriever=retriever,
         github=fake_github(),
         limiter=limiter or NoRateLimit(),
         budget=budget or FakeBudget(),
+        stats=stats or FakeStats(),
     )
