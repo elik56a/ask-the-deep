@@ -220,7 +220,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
 
 ### Launch
 - [ ] **P5.13** Playwright E2E: chat flow, panel, RTL, error states (runs on staging in CI)
-- [ ] **P5.14** CD: deploy staging → Playwright → promote prod. Ingestion runs locally against Neon, not in CI (ADR 0004)
+- [~] **P5.14** CD: deploy staging → Playwright → promote prod. Ingestion runs locally against Neon, not in CI (ADR 0004) — staging done: Terraform state in S3 (`portfolio-chat-tfstate-…`, lockfile), staging applied (https://dad2ak3fgy80f.cloudfront.net), secrets in SSM, corpus ingested into Neon (Frankfurt; the Lambda uses the direct endpoint because the pooler rejects the `statement_timeout` startup option), `scripts/deploy.sh` (arm64 zip without boto3, S3 sync, CloudFront invalidation), `deploy.yml` deploys to staging after green CI on main via a GitHub OIDC role. Left: Playwright (P5.13) and prod
 - [ ] **P5.15** Domain + production deploy; register the site in Cloudflare Turnstile (domain or the `cloudfront.net` address) and set the real site key + `TURNSTILE_SECRET_KEY`
 - [ ] **P5.16** Real-world cap test on production (rate limit, kill switch, provider limit) **before** sharing the link
 

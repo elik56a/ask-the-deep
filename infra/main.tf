@@ -1,5 +1,13 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.10"
+  # Shared state, so CI can deploy too; workspaces live under env:/<name>/.
+  # The bucket is created once by hand (versioned, private).
+  backend "s3" {
+    bucket       = "portfolio-chat-tfstate-052407073487"
+    key          = "portfolio-chat.tfstate"
+    region       = "eu-central-1"
+    use_lockfile = true
+  }
   required_providers {
     aws     = { source = "hashicorp/aws", version = "~> 6.0" }
     archive = { source = "hashicorp/archive", version = "~> 2.4" }
@@ -38,6 +46,22 @@ variable "lambda_concurrency" {
   type        = number
   default     = -1
   description = "Reserved concurrency cap, -1 for none. Reserving needs an account quota above 10, since AWS keeps 10 unreserved; at quota 10 the account itself caps Lambda at 10."
+}
+
+variable "llm_model" {
+  type    = string
+  default = "google:gemini-3.5-flash-lite"
+}
+
+variable "embedding_model" {
+  type    = string
+  default = "google:gemini-embedding-001"
+}
+
+variable "github_repo" {
+  type        = string
+  default     = "elik56a/portfolio-chat"
+  description = "The only repo whose main branch may deploy (GitHub OIDC)."
 }
 
 variable "lwa_layer_version" {
@@ -166,6 +190,8 @@ resource "aws_lambda_function" "api" {
       DYNAMODB_TABLE          = aws_dynamodb_table.counters.name
       SSM_PREFIX              = local.ssm_prefix
       LOG_JSON                = "true"
+      LLM_MODEL               = var.llm_model
+      EMBEDDING_MODEL         = var.embedding_model
       ORIGIN_VERIFY_SECRET    = random_password.origin_verify.result
     }
   }
@@ -409,6 +435,65 @@ resource "aws_cloudwatch_metric_alarm" "api" {
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   depends_on          = [aws_cloudwatch_log_metric_filter.api]
+}
+
+# CI deploy role: GitHub Actions on main may update this environment's code
+# and site, nothing else. The OIDC provider is one per account, created once
+# by hand (aws iam create-open-id-connect-provider).
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
+resource "aws_iam_role" "deploy" {
+  name = "${local.name}-deploy"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "deploy" {
+  name = "deploy"
+  role = aws_iam_role.deploy.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["lambda:UpdateFunctionCode", "lambda:GetFunction", "lambda:GetFunctionConfiguration"]
+        Resource = aws_lambda_function.api.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = aws_s3_bucket.site.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:DeleteObject"]
+        Resource = "${aws_s3_bucket.site.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudfront:CreateInvalidation"]
+        Resource = aws_cloudfront_distribution.cdn.arn
+      },
+    ]
+  })
+}
+
+output "deploy_role_arn" {
+  value = aws_iam_role.deploy.arn
 }
 
 output "site_url" {
