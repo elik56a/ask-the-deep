@@ -77,6 +77,8 @@ class Settings(BaseSettings):
     # uvicorn's access log, which prints visitor IPs.
     log_json: bool = False
     # Answer evals (P4.2). The judge defaults to the answering model.
+    # A key from a separate Google project, so evals never use the site's quota.
+    google_eval_api_key: SecretStr | None = None
     eval_judge_model: str | None = None
     # Pause between cases and before retrying one that failed (free-tier 429s).
     eval_pause_s: float = 0.0

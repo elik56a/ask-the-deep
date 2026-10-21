@@ -223,9 +223,12 @@ async def run_pipeline(
         yield em.emit(RequestFinished(outcome="error"))
         return
     except Exception as exc:
-        # The type only: provider messages can echo conversation text.
+        # Type and HTTP status only: provider messages can echo conversation text.
         _log.warning(
-            "generation_failed", request_id=em.request_id, error=type(exc).__name__
+            "generation_failed",
+            request_id=em.request_id,
+            error=type(exc).__name__,
+            status=getattr(exc, "status_code", None),
         )
         finished = None
     if finished is None:

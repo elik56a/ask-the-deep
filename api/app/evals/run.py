@@ -316,6 +316,8 @@ def _pick(cases: list[GoldenCase], args: argparse.Namespace) -> list[GoldenCase]
 
 async def main(args: argparse.Namespace) -> int:
     settings = get_settings()
+    if settings.google_eval_api_key:
+        os.environ["GOOGLE_API_KEY"] = settings.google_eval_api_key.get_secret_value()
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(logging.ERROR)
     )
