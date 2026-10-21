@@ -59,6 +59,34 @@ async def test_search_with_no_good_passage_is_not_evidence() -> None:
     assert deps.successful_tools == 0
 
 
+async def test_first_search_also_searches_the_visitors_words() -> None:
+    givers = Hit(make_chunk("givers", "Eliyahu at Givers"), THRESHOLD + 0.1, 0.03)
+    retriever = StubRetriever(
+        [], by_query={"מה הוא בנה בגיברס?": [givers, RETRIEVER.hits[0]]}
+    )
+    deps = make_deps(retriever)
+    deps.question = "מה הוא בנה בגיברס?"
+
+    first = await search_knowledge(_ctx(deps), "Gibs")
+    await search_knowledge(_ctx(deps), "Givers projects")
+
+    assert retriever.queries == ["Gibs", "מה הוא בנה בגיברס?", "Givers projects"]
+    assert _meta(first).passage_ids == ["givers", "good"]
+
+
+async def test_merged_searches_keep_each_passage_once_with_its_best_score() -> None:
+    weaker = Hit(RETRIEVER.hits[0].chunk, THRESHOLD + 0.05, 0.01)
+    retriever = StubRetriever(
+        [], by_query={"work": [weaker], "where does he work?": RETRIEVER.hits[:1]}
+    )
+    deps = make_deps(retriever)
+    deps.question = "where does he work?"
+
+    result = await search_knowledge(_ctx(deps), "work")
+
+    assert _meta(result).hits == RETRIEVER.hits[:1]
+
+
 async def test_lists_projects_from_metadata() -> None:
     result = await list_projects(_ctx(make_deps(RETRIEVER)))
     assert "DevConverter" in str(result.return_value)

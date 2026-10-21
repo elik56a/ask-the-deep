@@ -4,6 +4,7 @@ Each tool returns text for the model plus `ToolMeta` for the app. The model
 never sees `ToolMeta`; the pipeline turns it into events for the browser.
 """
 
+import asyncio
 from dataclasses import dataclass, field
 
 from pydantic_ai import RunContext, Tool, ToolReturn
@@ -20,11 +21,13 @@ _NOTHING_FOUND = "No relevant passages found."
 class AgentDeps:
     """What the tools need for one request. `seen` collects every passage a tool
     returned, so the answer may only cite passages the agent actually read.
+    `question` is the visitor's own words, searched once with the first query.
     """
 
     retriever: Retriever
     github: GitHubActivity
     settings: Settings
+    question: str | None = None
     seen: dict[str, Chunk] = field(default_factory=dict)
     successful_tools: int = 0
     best_score: float = 0.0
@@ -65,6 +68,22 @@ def _projects(deps: AgentDeps) -> dict[str, list[Chunk]]:
     return by_title
 
 
+def _take_question(deps: AgentDeps) -> list[str]:
+    question, deps.question = deps.question, None
+    return [question] if question else []
+
+
+def _merge(results: list[list[Hit]]) -> list[Hit]:
+    """One list of hits, each passage once with its best similarity."""
+    best: dict[str, Hit] = {}
+    for hits in results:
+        for hit in hits:
+            known = best.get(hit.chunk.chunk_id)
+            if known is None or hit.similarity > known.similarity:
+                best[hit.chunk.chunk_id] = hit
+    return list(best.values())
+
+
 async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn:
     """Search Eliyahu's knowledge base (experience, projects, skills, profile, FAQ).
 
@@ -72,7 +91,14 @@ async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn
     part of a multi-part question. Returns passages with ids you can cite.
     """
     settings = ctx.deps.settings
-    hits = await ctx.deps.retriever.search(query, settings.retrieval_top_k)
+    # The model sometimes rewrites a name ("גיברס" → "Gibs"); searching the
+    # visitor's own words too means a bad rewrite can't hide the right passages.
+    queries = [query, *_take_question(ctx.deps)]
+    hits = _merge(
+        await asyncio.gather(
+            *(ctx.deps.retriever.search(q, settings.retrieval_top_k) for q in queries)
+        )
+    )
     accepted = [h.chunk for h in hits if h.similarity >= settings.retrieval_threshold]
     _read(ctx.deps, accepted)
     ctx.deps.best_score = max([ctx.deps.best_score, *(h.similarity for h in hits)])

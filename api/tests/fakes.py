@@ -46,12 +46,19 @@ async def fake_query_embedder(query: str) -> list[float]:
 
 
 class StubRetriever:
-    def __init__(self, hits: list[Hit]) -> None:
+    """Returns `hits` for any query, or `by_query[query]` when given."""
+
+    def __init__(
+        self, hits: list[Hit], by_query: dict[str, list[Hit]] | None = None
+    ) -> None:
         self.hits = hits
+        self.by_query = by_query or {}
+        self.queries: list[str] = []
         self.corpus_version = "stub-version"
 
     async def search(self, query: str, top_k: int) -> list[Hit]:
-        return self.hits[:top_k]
+        self.queries.append(query)
+        return self.by_query.get(query, self.hits)[:top_k]
 
     def passages(self) -> list[Chunk]:
         return [h.chunk for h in self.hits]

@@ -12,7 +12,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P0 Foundations | 15 | 15 | [x] |
 | P1 RAG core | 18 | 17 | [x] |
 | P2 Control & security | 13 | 11 | [ ] |
-| P3 Transparency & observability | 15 | 9 | [ ] |
+| P3 Transparency & observability | 15 | 10 | [ ] |
 | P4 Evals in CI | 9 | 0 | [ ] |
 | P5 Design & launch | 24 | 11 | [ ] |
 
@@ -137,7 +137,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 - [~] **P3.12** (built: `chatSteps()` + `ChatSteps` + `usePacedCount`; to verify against a live run) Progress timeline: a step appears only when its event arrives; min 300 ms per step without delaying the answer; collapses to "Done in X s"; texts in he/en translation file; single aria-live line; "no info" + error variants
 - [~] **P3.13** (design: ADR 0009, now restyled as the sea dive in P5.17–P5.27, prototype [The Dive](https://claude.ai/artifact/FHyvs4SJQtqSCevMiwQCmz); `buildTrace()` ✓, `HoodPanel` with clock, meters, trace waterfall, event cards, retrieval gate and linked source chips ✓, panel reveal (FLIP) + "Show the process" switch ✓; to verify against a live run) "Under the hood" panel = the expanded timeline: chunk cards with score bar + threshold line (incl. rejected passages), decision reason, cost/time badges, source chips that open the passage
 - [x] **P3.15** One event per LLM call: `llm.started` + `llm.completed` (model actually used, tokens, cost, ms, decision: tool call or final answer, fallback used) — the panel's core "watch" view
-- [ ] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans
+- [x] **P3.14** Gate test: for N requests, the panel's event list == the Langfuse trace spans — `uv run --env-file .env python -m app.trace_gate [api_url]` (`app/trace_gate.py`): 3/3 live requests (en answered, he, off-topic) match stage for stage, tokens and cost included, no span with input/output. FastAPI ≥0.146 adds its own HTTP spans (method, route, status; no IP or body) above `chat`. The run's answer problems (off-topic answered, Hebrew name transliterated, extra `contact_info`) are fixed in ADR 0016 (prompt v4 + first search also uses the visitor's words)
 
 ---
 

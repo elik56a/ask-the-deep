@@ -201,7 +201,10 @@ async def run_pipeline(
         return
 
     deps = AgentDeps(
-        retriever=services.retriever, github=services.github, settings=settings
+        retriever=services.retriever,
+        github=services.github,
+        settings=settings,
+        question=question,
     )
     ttft_ms: int | None = None
     finished: AgentFinished | None = None
