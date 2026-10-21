@@ -7,9 +7,11 @@ export const BASE_POLICY: Record<string, string[]> = {
   "script-src": ["'self'", CLOUDFLARE_TURNSTILE],
   "frame-src": [CLOUDFLARE_TURNSTILE],
   "style-src": ["'self'", "'unsafe-inline'"],
-  "img-src": ["'self'", "data:"],
-  "font-src": ["'self'"],
-  "connect-src": ["'self'"],
+  // blob: is how the 3D model loader hands out a model's embedded textures;
+  // data: fonts are small font files Vite inlines. Neither can run code.
+  "img-src": ["'self'", "data:", "blob:"],
+  "font-src": ["'self'", "data:"],
+  "connect-src": ["'self'", "blob:"],
 };
 
 export const INLINE_SCRIPT =
