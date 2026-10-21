@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 11 | [ ] |
 | P3 Transparency & observability | 15 | 14 | [x] |
 | P4 Evals in CI | 9 | 6 | [ ] |
-| P5 Design & launch | 24 | 11 | [ ] |
+| P5 Design & launch | 35 | 12 | [ ] |
 
 ---
 
@@ -162,7 +162,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** production site live; rate limit and kill switch verified on prod; Playwright passes in Hebrew and English; Lighthouse accessibility ≥ 95.
 
 ### Design system
-- [ ] **P5.1** Tokens as CSS vars + Tailwind config: one palette set by depth, light surface and dark deep, no theme switch (ADR 0010); Heebo + JetBrains Mono; type scale 14/16/20/28/40
+- [ ] **P5.1** Tokens as CSS vars + Tailwind config: one palette set by depth, light surface and dark deep, no theme switch (ADR 0010); Archivo (wide for display) + IBM Plex Mono for numbers and labels, Heebo for Hebrew (ADR 0019); type scale 14/16/20/28/40
 - [ ] **P5.2** Radix-based components: message bubble (`dir=auto`), source chip, timeline, chunk card, badges, mode toggle, AI label
 - [ ] **P5.3** All states: empty, loading, streaming, no info, rate-limited, budget exhausted, error
 - [ ] **P5.4** Motion: 150–250 ms stage entry, streaming caret, `prefers-reduced-motion`
@@ -217,6 +217,21 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
   - the theme switch (ADR 0010): `ThemeSwitch.tsx`, `useTheme.ts`, `theme.constants.ts`, `theme.utils.ts` (+ tests), `theme.types.ts`, the boot script in `__root.tsx`
 
   _Done when_ there is nothing left that imports them, and the lint, type and test commands pass
+
+### Dive v3
+UI only: API, events and pipeline are unchanged. Prototype: [The Dive v3](https://claude.ai/artifact/Qw56GwMHcf9HEgjP4N823X), the approved reference (ADR 0019). It includes everything from [v2](https://claude.ai/artifact/VLpm612BxMQKPTzkJaTv3e). Build in this order.
+
+- [x] **P5.28** ADR 0019 "Dive v3": paced dive, the answer at the seabed, pre-dive check, Archivo + IBM Plex Mono, sources on GitHub, 21 models with a weight budget — _Done when_ the ADR is committed and P5.1 matches
+- [ ] **P5.29** Type: `@fontsource-variable/archivo` (width + weight axes) and `@fontsource/ibm-plex-mono` replace Instrument Serif and JetBrains Mono; `--font-display`, `--font-sans`, `--font-mono` and a `--wide` stretch token in `styles.css`. The hero becomes "Ask about **me**" (300 and 800, wide) with one short line that hides once there is a conversation; the top-left brand pill goes — _Done when_ no serif is left, Hebrew renders in Heebo, and the CSP still passes
+- [ ] **P5.30** Paced player: `useReplay` plays the real events at about 30 s per dive with Pause, 2× and Skip, and `useDiveFollow` glides with it. Step title and narration stream word by word with their space reserved, so cards never resize; reduced motion shows the words at once. The HUD and receipt keep the server times — _Done when_ tests cover the pace timing and the word split, and a live run plays at pace
+- [ ] **P5.31** The process is the hero: the console is hidden during the dive, the current step is large and narrated, and the chat comes back 4.5 s after the seabed report with the question and the answer. "Stay at the surface" still answers in place — _Done when_ a live run shows no chat until the seabed
+- [ ] **P5.32** Pre-dive check (`PreDiveCheck`): a dive-watch gauge with 60 ticks and a filling ring, 4 check tiles (3 on a replay), then a 3·2·1 countdown (2·1 on a replay). Descend / Not now / Esc over a translucent blurred scrim, HUD hidden. A follow-up shows the earlier messages it carries. Copy in he/en — _Done when_ the keyboard path works (focus moves in and returns), and reduced motion skips the countdown animation
+- [ ] **P5.33** Conversation thread: one dive per question, "Watch again ↺" on each answer, "New conversation" clears it. Each turn: the question, the answer with avatars (Eliyahu's photo with an AI badge, a visitor placeholder), "Sources the answer used", the chips, and one meta line (dive N · time · calls · cost). Follow-ups become one sideways-scrolling row of small pills. A new turn scrolls so its question is never cut. The question field takes focus on load and on return (fine pointer only) — _Done when_ tests cover the meta line and the turn order, and the thread works in he and en
+- [ ] **P5.34** Sources on GitHub: `SourceChips` become links to the knowledge file at the passage's heading anchor (base URL in `constants/`), each with a file icon, in one sideways-scrolling row; a shared tooltip shows the passage on hover and focus — _Done when_ a test checks that every passage id in `data/knowledge` matches a GitHub heading anchor
+- [ ] **P5.35** Seabed landing and chat states: the dive sinks past the report and lands on the sand, and scroll stops there. The view lifts, the fog thins, the floodlight comes up, and the diver hovers to the inline-end. The console is `full` at the bottom centre; scrolling up or "Reread the dive" folds it to a glass "Open chat" pill; the pill opens a compact side panel in place; "Seabed ↓" or scrolling back onto the sand restores it. One header row with a ⋯ menu (Reread the dive, Stay at the surface, New conversation). A bottom sheet on mobile — _Done when_ every state change works at 1440 px and 375 px and the hero is never covered
+- [ ] **P5.36** Dive computer: water temperature and pressure (`1 + m/10` atm) from `depth.utils.ts`, in the HUD and the mobile strip — _Done when_ unit tests cover both
+- [ ] **P5.37** A fuller sea: the v2 surface (swell, clouds, dive boat) and 21 models by depth, each licence re-checked as CC BY or CC0 and credited in `models.constants.ts`, shrunk with gltf-transform, and loaded zone by zone; seabed props on both sides of the chat. The step cards carry no drawn decorations — _Done when_ every credit links to its source, there is no console error, and the models stay inside the ADR 0019 budget
+- [ ] **P5.38** v3 pass on mobile, RTL and accessibility — _Done when_ axe passes in he and en at 375 px and 1440 px, reduced motion and no-WebGL are checked, and P5.13 covers the veil, the pace controls and the chat states
 
 ### Launch
 - [ ] **P5.13** Playwright E2E: chat flow, panel, RTL, error states (runs on staging in CI)
