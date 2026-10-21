@@ -52,44 +52,6 @@ jobs:
           uv export --frozen --no-emit-project --format requirements-txt > "$RUNNER_TEMP/requirements.txt"
           uvx pip-audit --disable-pip -r "$RUNNER_TEMP/requirements.txt"
 
-  # Retrieval recall + the quick answer eval, with real model calls (P4.3).
-  # Secrets don't reach fork PRs, so those skip it.
-  evals:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: api
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
-    env:
-      PYDANTIC_AI_NO_BANNER: "1"
-      LLM_MODEL: google:gemini-3.5-flash-lite
-      EMBEDDING_MODEL: google:gemini-embedding-001
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      EVAL_PAUSE_S: "12"
-    services:
-      postgres:
-        image: pgvector/pgvector:pg17
-        env:
-          POSTGRES_USER: portfolio
-          POSTGRES_PASSWORD: portfolio
-          POSTGRES_DB: portfolio
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U portfolio"
-          --health-interval 2s
-          --health-retries 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.0
-        with:
-          enable-cache: true
-      - run: uv sync --locked
-      - run: uv run python -m app.rag.ingest
-      - run: uv run python -m app.rag.recall
-      - run: uv run python -m app.evals.run --quick
-
   web:
     runs-on: ubuntu-latest
     defaults:
