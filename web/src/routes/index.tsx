@@ -89,16 +89,7 @@ function Home() {
   return (
     <>
       <SeaScene canvasRef={seaCanvas} />
-      <header className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-between gap-2 lg:inset-x-8 [&>*]:pointer-events-auto">
-        <p className="glass flex items-center gap-2.5 rounded-full py-1.5 ps-2 pe-3">
-          <span
-            aria-hidden="true"
-            className="size-5.5 rounded-full border border-line-strong bg-[radial-gradient(circle_at_50%_35%,var(--color-haze)_0_34%,transparent_36%),linear-gradient(180deg,transparent_52%,var(--color-accent)_52%_58%,transparent_58%)]"
-          />
-          <span className="font-display text-xl italic leading-none rtl:not-italic">
-            {PAGE_COPY[lang].title}
-          </span>
-        </p>
+      <header className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-end gap-2 lg:inset-x-8 [&>*]:pointer-events-auto">
         <LangSwitch lang={lang} onToggle={toggle} />
       </header>
       <section aria-label={PAGE_COPY[lang].title} className="relative h-svh">

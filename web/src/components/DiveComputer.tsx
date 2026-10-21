@@ -58,7 +58,7 @@ export function DiveComputer({
           {formatInt(meters)}
           <small className="ms-1 text-base text-muted">m</small>
         </p>
-        <p className="font-display text-lg italic leading-none lg:mt-1 rtl:not-italic">
+        <p className="font-display font-semibold font-stretch-expanded text-[0.9375rem] text-accent leading-[1.1] lg:mt-1">
           {meters > 0 ? dive.zones[zoneAt(meters).id] : dive.surface}
         </p>
       </div>

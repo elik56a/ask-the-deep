@@ -14,7 +14,7 @@ Each task: **ID** · what · _Done when_ · _Deps_. Phase gates come from the sp
 | P2 Control & security | 13 | 11 | [ ] |
 | P3 Transparency & observability | 15 | 14 | [x] |
 | P4 Evals in CI | 9 | 6 | [ ] |
-| P5 Design & launch | 35 | 12 | [ ] |
+| P5 Design & launch | 35 | 13 | [ ] |
 
 ---
 
@@ -222,7 +222,7 @@ UI only: API, events and pipeline are unchanged. Prototype: [The Dive](https://c
 UI only: API, events and pipeline are unchanged. Prototype: [The Dive v3](https://claude.ai/artifact/Qw56GwMHcf9HEgjP4N823X), the approved reference (ADR 0019). It includes everything from [v2](https://claude.ai/artifact/VLpm612BxMQKPTzkJaTv3e). Build in this order.
 
 - [x] **P5.28** ADR 0019 "Dive v3": paced dive, the answer at the seabed, pre-dive check, Archivo + IBM Plex Mono, sources on GitHub, 21 models with a weight budget — _Done when_ the ADR is committed and P5.1 matches
-- [ ] **P5.29** Type: `@fontsource-variable/archivo` (width + weight axes) and `@fontsource/ibm-plex-mono` replace Instrument Serif and JetBrains Mono; `--font-display`, `--font-sans`, `--font-mono` and a `--wide` stretch token in `styles.css`. The hero becomes "Ask about **me**" (300 and 800, wide) with one short line that hides once there is a conversation; the top-left brand pill goes — _Done when_ no serif is left, Hebrew renders in Heebo, and the CSP still passes
+- [x] **P5.29** Type: `@fontsource-variable/archivo` (width + weight axes) and `@fontsource/ibm-plex-mono` replace Instrument Serif and JetBrains Mono; `--font-display`, `--font-sans`, `--font-mono` and a `--wide` stretch token in `styles.css`. The hero becomes "Ask about **me**" (300 and 800, wide) with one short line that hides once there is a conversation; the top-left brand pill goes — _Done when_ no serif is left, Hebrew renders in Heebo, and the CSP still passes
 - [ ] **P5.30** Paced player: `useReplay` plays the real events at about 30 s per dive with Pause, 2× and Skip, and `useDiveFollow` glides with it. Step title and narration stream word by word with their space reserved, so cards never resize; reduced motion shows the words at once. The HUD and receipt keep the server times — _Done when_ tests cover the pace timing and the word split, and a live run plays at pace
 - [ ] **P5.31** The process is the hero: the console is hidden during the dive, the current step is large and narrated, and the chat comes back 4.5 s after the seabed report with the question and the answer. "Stay at the surface" still answers in place — _Done when_ a live run shows no chat until the seabed
 - [ ] **P5.32** Pre-dive check (`PreDiveCheck`): a dive-watch gauge with 60 ticks and a filling ring, 4 check tiles (3 on a replay), then a 3·2·1 countdown (2·1 on a replay). Descend / Not now / Esc over a translucent blurred scrim, HUD hidden. A follow-up shows the earlier messages it carries. Copy in he/en — _Done when_ the keyboard path works (focus moves in and returns), and reduced motion skips the countdown animation

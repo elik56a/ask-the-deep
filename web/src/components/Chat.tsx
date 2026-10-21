@@ -47,7 +47,7 @@ export function Chat({
       className="flex min-h-0 flex-col gap-3.5 rounded-3xl border border-accent/34 bg-surface/93 p-4.5 shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-accent)_8%,transparent),0_30px_80px_-24px_var(--color-case)] backdrop-blur-lg"
     >
       {messages.length === 0 && (
-        <h2 className="font-display text-title italic leading-[1.05] rtl:not-italic">
+        <h2 className="font-bold font-display font-stretch-expanded text-2xl leading-[1.1] tracking-[-0.02em]">
           {copy.consoleTitle}
         </h2>
       )}

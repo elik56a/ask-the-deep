@@ -21,9 +21,9 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     answerLabel: "Answer",
     hideThread: "Hide the conversation",
     showThread: "Show the conversation",
-    introTitle: ["Ask about ", "Eliyahu's", " work"],
+    introTitle: ["Ask about ", "me", ""],
     introBody:
-      "An AI agent answers from Eliyahu's own notes. Send a question and we dive: every model call, search and score shows up at its depth.",
+      "My AI agent answers from my own notes. Ask, and watch every step on the way down.",
     steps: {
       checked: "Checked your question",
       blocked: "A safety check stopped this question",
@@ -63,9 +63,9 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     answerLabel: "תשובה",
     hideThread: "הסתרת השיחה",
     showThread: "הצגת השיחה",
-    introTitle: ["שאלו על העבודה של ", "אליהו", ""],
+    introTitle: ["שאלו ", "עליי", ""],
     introBody:
-      "סוכן AI עונה מתוך הרשימות של אליהו. שולחים שאלה וצוללים: כל קריאה למודל, כל חיפוש וכל ציון מופיעים בעומק שלהם.",
+      "סוכן ה-AI שלי עונה מתוך הרשימות שלי. שואלים, וצופים בכל צעד בדרך למטה.",
     steps: {
       checked: "השאלה נבדקה",
       blocked: "בדיקת בטיחות עצרה את השאלה",

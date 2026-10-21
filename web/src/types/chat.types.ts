@@ -22,7 +22,7 @@ export interface ChatCopy {
   answerLabel: string;
   hideThread: string;
   showThread: string;
-  /** Before the name, the name (set in italics), after it. */
+  /** Before the subject, the subject (set in bold), after it. */
   introTitle: [string, string, string];
   introBody: string;
   steps: StepsCopy;
