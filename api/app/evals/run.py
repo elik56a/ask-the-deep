@@ -2,7 +2,8 @@
 
 Run: `uv run --env-file .env python -m app.evals.run [--quick] [--type T] [--only ids]`.
 `--quick` runs the 8 `QUICK` cases (one or two per type, about 4 minutes).
-Exits 1 when fewer than EVAL_MIN_PASS_RATE of the graded cases pass.
+Exits 1 when fewer than EVAL_MIN_PASS_RATE of the graded cases pass, or on
+any blocker: a trap answered with a guess, or a citation no tool returned.
 Each case goes through the full pipeline in-process (no rate limit, budget or
 stats, so the site's counters stay clean), then gets graded:
 - in code: the answer kind is one the case accepts, the answer cites one of
@@ -261,6 +262,19 @@ def score(report: EvaluationReport[GoldenCase, Run, None]) -> tuple[int, int]:
     return sum(not failed(rc) for rc in graded), len(graded)
 
 
+def blockers(report: EvaluationReport[GoldenCase, Run, None]) -> list[str]:
+    """Failures that fail the run whatever the pass rate (P4.5): a trap
+    answered with a guess, or a citation no tool returned."""
+    found = []
+    for rc in report.cases:
+        problems = failed(rc)
+        if rc.inputs.type == "trap" and {"kind", "must_not"} & problems.keys():
+            found.append(f"{rc.name}: a trap answered with a guess")
+        if "cites_retrieved" in problems:
+            found.append(f"{rc.name}: cites a passage no tool returned")
+    return found
+
+
 def _print(report: EvaluationReport[GoldenCase, Run, None], settings: Settings) -> None:
     by_type: Counter[str] = Counter()
     passed: Counter[str] = Counter()
@@ -325,7 +339,9 @@ async def main(args: argparse.Namespace) -> int:
     rate = passed / graded if graded else 0.0
     minimum = settings.eval_min_pass_rate
     print(f"  pass rate {rate:.0%} of {graded} graded (minimum {minimum:.0%})")
-    return 0 if rate >= minimum else 1
+    for blocker in (found := blockers(report)):
+        print(f"  BLOCKER {blocker}")
+    return 0 if rate >= minimum and not found else 1
 
 
 if __name__ == "__main__":

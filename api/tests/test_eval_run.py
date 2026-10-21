@@ -12,6 +12,7 @@ from app.evals.run import (
     QUICK,
     CodeChecks,
     Run,
+    blockers,
     cites_expected,
     cites_retrieved,
     evaluate,
@@ -191,4 +192,27 @@ def test_flags_tools_the_case_does_not_need() -> None:
     assert extra_tools(HI, refusal) == []
     assert extra_tools(CASE, Run(kind="answered", tools=["contact_info"])) == [
         "contact_info"
+    ]
+
+
+async def test_a_guessed_trap_blocks_the_run() -> None:
+    trap = GoldenCase(
+        id="en-trap",
+        question="When did he work at Google?",
+        language="en",
+        type="trap",
+        kinds=["no_information"],
+        must_not=["He worked at Google"],
+    )
+    guess = Run(kind="answered", citations=["faq"], retrieved=["work"])
+
+    async def task(case: GoldenCase) -> Run:
+        return guess
+
+    dataset = Dataset[GoldenCase, Run, None](
+        name="t", cases=[Case(name="en-trap", inputs=trap)], evaluators=[CodeChecks()]
+    )
+    assert blockers(await dataset.evaluate(task, progress=False)) == [
+        "en-trap: a trap answered with a guess",
+        "en-trap: cites a passage no tool returned",
     ]

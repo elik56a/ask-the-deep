@@ -84,6 +84,8 @@ class Settings(BaseSettings):
     eval_retries: int = 3
     # Below this share of graded cases passing, the eval run fails (and CI alerts).
     eval_min_pass_rate: float = 0.85
+    # Retrieval recall@k below this fails the recall run (ADR 0011 gate).
+    retrieval_min_recall: float = 0.9
     # Salt for hashing visitor IPs. Production reads the real one from SSM.
     ip_hash_salt: SecretStr = SecretStr("local-dev-salt")
     # Set in production: requests without CloudFront's secret header are refused.

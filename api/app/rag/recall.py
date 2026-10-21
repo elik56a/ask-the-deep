@@ -4,10 +4,12 @@ Run: `uv run --env-file .env python -m app.rag.recall`. It searches every
 question in `evals/retrieval.yaml` against the ingested passages and prints
 recall@k per language, the misses, and the similarity scores of right and
 wrong passages (the numbers the threshold is calibrated from, P1.11).
+Exits 1 when recall is below RETRIEVAL_MIN_RECALL (the P4.5 gate).
 """
 
 import asyncio
 import statistics
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -114,14 +116,18 @@ def _print(report: RecallReport, top_k: int, threshold: float) -> None:
     )
 
 
-async def main() -> None:
+async def main() -> int:
     settings = get_settings()
     async with create_pool(settings) as pool:
         retriever = await HybridRetriever.load(pool, query_embedder(settings))
         report = await measure(retriever, load_questions(), settings.retrieval_top_k)
     print(f"{settings.embedding_model} · corpus {retriever.corpus_version}")
     _print(report, settings.retrieval_top_k, settings.retrieval_threshold)
+    if report.mean_recall() < settings.retrieval_min_recall:
+        print(f"BLOCKER recall below {settings.retrieval_min_recall:.0%}")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(asyncio.run(main()))
