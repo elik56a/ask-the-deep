@@ -31,13 +31,27 @@ export const FLOOR_M: Record<StepKind, number> = {
 };
 
 // The diver rides at 30% of the viewport height; the latest step is followed to this line.
-export const DIVER_LINE = 0.3;
+export const DIVER_LINE = 0.26;
 // three.js units of camera travel per zone.
 export const WORLD_PER_ZONE = 60;
 export const SEA_MAX_PIXEL_RATIO = 1.75;
 // Scroll speed caps in px per second: following a step, and the ascent.
 export const FOLLOW_SPEED = 1600;
 export const ASCEND_SPEED = 3400;
+// "Seabed ↓" glides back down this fast, and harder, than the dive's own follow.
+export const RUSH_SPEED = 9000;
+// After a skip the view snaps to the newest step while the log settles.
+export const SNAP_MS = 800;
+
+// Landed (the sand with the full chat): the 3D view lifts this share of the screen so the seabed
+// shows above the chat, the fog thins by this share, and the lander's lights come up.
+export const LAND_LIFT = 0.32;
+export const LAND_FOG_CUT = 0.62;
+// The sand lies this far below the report card.
+export const BED_BELOW_PX = 160;
+// A lander's floodlight and a warm fill on the seabed (sRGB hex; three converts them).
+export const FLOOD_COLOR = 0xd9efff;
+export const WARM_COLOR = 0xffc98a;
 // Rail ticks between zone borders.
 export const RAIL_TICKS = 3;
 

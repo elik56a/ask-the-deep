@@ -14,13 +14,21 @@ export interface ChatRequestBody {
   session: string;
 }
 
+/** The chat at the seabed: full at the bottom centre, a pill while rereading, or a side panel opened from it. */
+export type ChatState = "full" | "pill" | "side";
+
 export interface ChatCopy {
   agentLabel: string;
   stayAtSurface: string;
   consoleTitle: string;
   answerLabel: string;
-  hideThread: string;
-  showThread: string;
+  stayHint: string;
+  menu: string;
+  reread: string;
+  openChat: string;
+  minimize: string;
+  seabed: string;
+  surface: string;
   /** Before the subject, the subject (set in bold), after it. */
   introTitle: [string, string, string];
   introBody: string;

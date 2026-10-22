@@ -102,10 +102,10 @@ it("eases from 0 to 1 and clamps", () => {
 });
 
 it("measures the dive from the diver line, not the top of the screen", () => {
-  expect(diveOffset(0, 1000, 1000)).toBe(-700);
-  expect(diveOffset(700, 1000, 1000)).toBe(0);
+  expect(diveOffset(0, 1000, 1000)).toBe(-740);
+  expect(diveOffset(740, 1000, 1000)).toBe(0);
   expect(zoneLabel(diveOffset(0, 1000, 1000))).toBe("surface");
-  expect(zoneLabel(diveOffset(700 + ZONE_PX, 1000, 1000))).toBe("twilight");
+  expect(zoneLabel(diveOffset(740 + ZONE_PX, 1000, 1000))).toBe("twilight");
   expect(diveOffset(5000, Number.POSITIVE_INFINITY, 1000)).toBe(
     Number.NEGATIVE_INFINITY,
   );

@@ -2,9 +2,17 @@ interface AvatarProps {
   /** The agent's face carries its name for screen readers; the visitor's is decoration. */
   label?: string;
   badge?: boolean;
+  small?: boolean;
+  /** A pulsing dot: the agent is still there to answer. */
+  live?: boolean;
 }
 
-export function Avatar({ label, badge = true }: AvatarProps) {
+export function Avatar({
+  label,
+  badge = true,
+  small = false,
+  live = false,
+}: AvatarProps) {
   if (label === undefined) {
     return (
       <span
@@ -22,7 +30,9 @@ export function Avatar({ label, badge = true }: AvatarProps) {
     );
   }
   return (
-    <span className="relative grid size-8 flex-none place-items-center">
+    <span
+      className={`relative grid flex-none place-items-center ${small ? "size-6" : "size-8"}`}
+    >
       <img
         src="/eliyahu.jpg"
         alt={label}
@@ -37,6 +47,12 @@ export function Avatar({ label, badge = true }: AvatarProps) {
         >
           AI
         </b>
+      )}
+      {live && (
+        <span
+          aria-hidden="true"
+          className="absolute -end-px -bottom-px size-2.25 animate-[pulse_2.4s_var(--ease-out)_infinite] rounded-full bg-glow shadow-[0_0_0_2px_var(--color-surface),0_0_8px_var(--color-glow)] motion-reduce:animate-none"
+        />
       )}
     </span>
   );

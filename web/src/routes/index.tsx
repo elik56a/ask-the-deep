@@ -14,9 +14,10 @@ import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
+import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import { REVEAL_AFTER_SKIP_MS, REVEAL_MS } from "#/constants/pace.constants";
 import { PREDIVE_COPY } from "#/constants/predive.constants";
-import { DIVE_COPY } from "#/constants/sea.constants";
+import { BED_BELOW_PX, DIVE_COPY, DIVER_LINE } from "#/constants/sea.constants";
 import { useAskFocus } from "#/hooks/useAskFocus";
 import { useChatSession } from "#/hooks/useChatSession";
 import { useDiveFollow } from "#/hooks/useDiveFollow";
@@ -27,6 +28,7 @@ import { useProcessPreference } from "#/hooks/useProcessPreference";
 import { useSea } from "#/hooks/useSea";
 import { useSeaEvents } from "#/hooks/useSeaEvents";
 import { useSession } from "#/hooks/useSession";
+import type { ChatState } from "#/types/chat.types";
 import type { PreDivePlan } from "#/types/predive.types";
 import type { DiveMode } from "#/types/sea.types";
 import type { ThreadTurn } from "#/types/thread.types";
@@ -68,10 +70,24 @@ function Home() {
   const trace = buildTrace(player.events);
   const ended =
     steps.at(-1)?.kind === "seabed" || steps.at(-1)?.kind === "abort";
-  const follow = useDiveFollow(mode, water, layout.tops.at(-1) ?? null, () => {
-    setMode("rest");
-    sea.current?.reset();
-  });
+  // The sand lies below the report; at the seabed the dive follows down to it and scroll stops there.
+  const onSand = steps.at(-1)?.kind === "seabed";
+  const bed = layout.bottom + BED_BELOW_PX;
+  const floor = onSand ? bed : layout.bottom;
+  const [chatState, setChatState] = useState<ChatState>("full");
+  const follow = useDiveFollow(
+    mode,
+    water,
+    mode === "reveal" && onSand ? bed : (layout.tops.at(-1) ?? null),
+    () => {
+      setMode("rest");
+      sea.current?.reset();
+    },
+    // Scrolling away from the sand folds the chat so the log is in full view.
+    () => {
+      if (mode === "reveal") setChatState((c) => (c === "full" ? "pill" : c));
+    },
+  );
   useSeaEvents(sea, player.events, steps, layout.tops, mode === "dive");
   const dive = DIVE_COPY[lang];
 
@@ -80,12 +96,53 @@ function Home() {
   useEffect(() => {
     if (mode !== "dive" || !(landed || chat.failed)) return;
     const timer = setTimeout(
-      () => setMode("reveal"),
+      () => {
+        setChatState("full");
+        setMode("reveal");
+      },
       player.skipped ? REVEAL_AFTER_SKIP_MS : REVEAL_MS,
     );
     return () => clearTimeout(timer);
   }, [mode, landed, chat.failed, player.skipped]);
   useAskFocus(mode, "question", "reveal-title");
+
+  useEffect(() => {
+    sea.current?.landed(mode === "reveal" && chatState === "full");
+  }, [sea, mode, chatState]);
+  useEffect(() => {
+    if (mode === "reveal" && onSand) sea.current?.seabed(bed);
+  }, [sea, mode, onSand, bed]);
+
+  // Back down onto the sand, by scroll or a wheel past the end, the full chat returns.
+  const { resume, rush } = follow;
+  useEffect(() => {
+    if (mode !== "reveal") return;
+    let prev = scrollY;
+    const atSand = () =>
+      scrollY >= document.documentElement.scrollHeight - innerHeight - 24;
+    const onScroll = () => {
+      if (scrollY > prev && atSand()) {
+        resume();
+        setChatState("full");
+      }
+      prev = scrollY;
+    };
+    const onWheel = (event: WheelEvent) => {
+      const inChat =
+        event.target instanceof Element &&
+        event.target.closest("[data-console]");
+      if (event.deltaY > 0 && atSand() && !inChat) {
+        rush();
+        setChatState("full");
+      }
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("wheel", onWheel, { passive: true });
+    return () => {
+      removeEventListener("scroll", onScroll);
+      removeEventListener("wheel", onWheel);
+    };
+  }, [mode, resume, rush]);
 
   useEffect(() => {
     document.documentElement.toggleAttribute("data-diving", diving);
@@ -136,6 +193,23 @@ function Home() {
     startDive();
   }
 
+  function land() {
+    follow.rush();
+    setChatState("full");
+  }
+
+  function reread() {
+    follow.pause();
+    setChatState("pill");
+    const top = water.current
+      ? water.current.getBoundingClientRect().top + scrollY
+      : 0;
+    scrollTo({
+      top: top + (layout.tops.at(-1) ?? 0) - innerHeight * DIVER_LINE,
+      behavior: matchMedia(REDUCED_MOTION_QUERY).matches ? "auto" : "smooth",
+    });
+  }
+
   function cancelDive() {
     setPlan(null);
     setMode("rest");
@@ -163,8 +237,11 @@ function Home() {
       </section>
       <div
         hidden={mode === "intro" || mode === "dive" || mode === "ascend"}
-        data-diving={diving || undefined}
-        className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120`}
+        data-console
+        data-chat={mode === "reveal" ? chatState : undefined}
+        // At the seabed: full at the bottom centre (a sheet on small screens), its height capped so
+        // ~96px clears the report card; a pill or a compact side panel at the inline-end.
+        className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
       >
         <h2 id="reveal-title" tabIndex={-1} className="sr-only">
           {dive.back.title}
@@ -179,7 +256,11 @@ function Home() {
           onFocusChunk={setFocusChunk}
           stayAtSurface={!process.show}
           onStayAtSurface={stay}
-          collapsible={diving}
+          state={mode === "reveal" ? chatState : null}
+          onStateChange={setChatState}
+          onSurface={() => setMode("ascend")}
+          onReread={reread}
+          onLand={land}
           freshDive={mode === "reveal" ? (shown?.dive ?? null) : stayFresh}
           onWatch={replay}
           onNewConversation={newConversation}
@@ -197,7 +278,7 @@ function Home() {
         <main
           ref={water}
           className="relative min-h-svh overflow-clip"
-          style={{ height: `calc(${layout.bottom}px + 80svh)` }}
+          style={{ height: `calc(${floor}px + ${(1 - DIVER_LINE) * 100}svh)` }}
         >
           {mode === "dive" && (
             <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
@@ -256,7 +337,10 @@ function Home() {
           serverDone={player.serverDone}
           onPause={player.setPaused}
           onSpeed={player.setSpeed}
-          onSkip={player.skip}
+          onSkip={() => {
+            player.skip();
+            follow.jump();
+          }}
         />
       )}
       {mode === "dive" && !follow.following && (

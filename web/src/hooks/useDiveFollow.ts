@@ -10,6 +10,8 @@ import {
   ASCEND_SPEED,
   DIVER_LINE,
   FOLLOW_SPEED,
+  RUSH_SPEED,
+  SNAP_MS,
 } from "#/constants/sea.constants";
 import type { DiveMode } from "#/types/sea.types";
 
@@ -28,16 +30,21 @@ const SCROLL_KEYS = [
  * speed cap so a burst of events reads as a descent, not a jump. Any scroll
  * by the visitor pauses following until `resume`. In "ascend" it glides to
  * the top and calls `onSurfaced`. Uses `scrollTo`, never `scrollIntoView`.
+ * Scrolling inside the chat (`[data-console]`) is not scrolling the dive; any other scroll by the
+ * visitor also calls `onUserScroll`.
  */
 export function useDiveFollow(
   mode: DiveMode,
   waterRef: RefObject<HTMLElement | null>,
   target: number | null,
   onSurfaced: () => void,
+  onUserScroll?: () => void,
 ) {
   const [following, setFollowing] = useState(true);
-  const latest = useRef({ target, following, onSurfaced });
-  latest.current = { target, following, onSurfaced };
+  const latest = useRef({ target, following, onSurfaced, onUserScroll });
+  latest.current = { target, following, onSurfaced, onUserScroll };
+  const rushing = useRef(false);
+  const snapUntil = useRef(0);
 
   useEffect(() => {
     if (mode === "dive" || mode === "reveal") setFollowing(true);
@@ -49,14 +56,15 @@ export function useDiveFollow(
     let glideY = scrollY;
     let last = 0;
     let frame = 0;
-    const glide = (to: number, speed: number, dt: number) => {
+    const glide = (to: number, speed: number, dt: number, gain = 2.4) => {
       if (Math.abs(scrollY - glideY) > 3) glideY = scrollY;
       const gap = to - glideY;
       if (Math.abs(gap) < 0.5) return;
-      glideY += reduced.matches
-        ? gap
-        : Math.sign(gap) *
-          Math.min(Math.abs(gap) * Math.min(1, dt * 2.4), speed * dt);
+      glideY +=
+        reduced.matches || performance.now() < snapUntil.current
+          ? gap
+          : Math.sign(gap) *
+            Math.min(Math.abs(gap) * Math.min(1, dt * gain), speed * dt);
       scrollTo(0, glideY);
     };
     const tick = (now: number) => {
@@ -73,11 +81,10 @@ export function useDiveFollow(
       } else if (on && step !== null && water) {
         const top = water.getBoundingClientRect().top + scrollY;
         const max = document.documentElement.scrollHeight - innerHeight;
-        glide(
-          Math.min(top + step - innerHeight * DIVER_LINE, max),
-          FOLLOW_SPEED,
-          dt,
-        );
+        const to = Math.min(top + step - innerHeight * DIVER_LINE, max);
+        const rush = rushing.current;
+        glide(to, rush ? RUSH_SPEED : FOLLOW_SPEED, dt, rush ? 6 : 2.4);
+        if (Math.abs(scrollY - to) < 2) rushing.current = false;
       }
       frame = requestAnimationFrame(tick);
     };
@@ -87,10 +94,17 @@ export function useDiveFollow(
 
   useEffect(() => {
     if (mode !== "dive" && mode !== "reveal") return;
-    const pause = () => setFollowing(false);
+    const pause = (event: Event) => {
+      const inChat =
+        event.target instanceof Element &&
+        event.target.closest("[data-console]");
+      if (inChat) return;
+      setFollowing(false);
+      latest.current.onUserScroll?.();
+    };
     const onKey = (event: KeyboardEvent) => {
       if (SCROLL_KEYS.includes(event.key) && event.target === document.body) {
-        pause();
+        pause(event);
       }
     };
     addEventListener("wheel", pause, { passive: true });
@@ -104,5 +118,14 @@ export function useDiveFollow(
   }, [mode]);
 
   const resume = useCallback(() => setFollowing(true), []);
-  return { following, resume };
+  const pause = useCallback(() => setFollowing(false), []);
+  const rush = useCallback(() => {
+    rushing.current = true;
+    setFollowing(true);
+  }, []);
+  const jump = useCallback(() => {
+    snapUntil.current = performance.now() + SNAP_MS;
+    setFollowing(true);
+  }, []);
+  return { following, resume, pause, rush, jump };
 }

@@ -6,10 +6,14 @@ import { MODEL_URL } from "#/constants/models.constants";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import {
   AMBIENT_KEYS,
+  FLOOD_COLOR,
   FOG_KEYS,
+  LAND_FOG_CUT,
+  LAND_LIFT,
   SEA_MAX_PIXEL_RATIO,
   SHAFT_KEYS,
   SUNLIGHT_KEYS,
+  WARM_COLOR,
   WATER_KEYS,
   WORLD_PER_ZONE,
   ZONE_PX,
@@ -345,6 +349,14 @@ function seabed(
   texture: Three.Texture,
 ) {
   const bed = new THREE.Group();
+  // A lander's floodlight, as on real deep-sea dives, so the seabed is seen and not guessed.
+  // No falloff: the old lights' falloff over these distances comes to about 0.64 and 0.61.
+  const flood = new THREE.SpotLight(FLOOD_COLOR, 0, 140, 0.85, 0.65, 0);
+  flood.position.set(4, 42, 6);
+  flood.target.position.set(0, 0, -22);
+  const warm = new THREE.PointLight(WARM_COLOR, 0, 40, 0);
+  warm.position.set(-6, 9, -16);
+  bed.add(flood, flood.target, warm);
   const geometry = keep(new THREE.PlaneGeometry(260, 200, 48, 40));
   geometry.rotateX(-Math.PI / 2);
   const p = geometry.attributes.position;
@@ -413,7 +425,7 @@ function seabed(
     bed.add(mark);
     return mark;
   });
-  return { bed, marks };
+  return { bed, marks, flood, warm };
 }
 
 /** Bounds of the animated pose; a skinned mesh's rest bounds can be far off. */
@@ -533,7 +545,7 @@ function createSea(
     true,
   );
   scene.add(snow, specks);
-  const { bed, marks } = seabed(THREE, keep, color, glow);
+  const { bed, marks, flood, warm } = seabed(THREE, keep, color, glow);
   const restBed = worldY(metersToPx(5600)) - 9;
   bed.position.y = restBed;
   scene.add(bed);
@@ -783,9 +795,16 @@ function createSea(
   let last = 0;
   let frame = 0;
   let lost = false;
+  let landed = false;
+  let landK = 0;
+  let lift = 0;
+  let liftSet = Number.NaN;
+  const hoverQ = new THREE.Quaternion();
+  const hoverAt = new THREE.Euler();
 
   function resize(): void {
     renderer.setSize(innerWidth, innerHeight, false);
+    liftSet = Number.NaN;
     camera.aspect = innerWidth / innerHeight;
     camera.fov = camera.aspect < 0.8 ? 70 : 55;
     camera.updateProjectionMatrix();
@@ -836,13 +855,21 @@ function createSea(
       const side = document.documentElement.dir === "rtl" ? -1 : 1;
       const restX = side * halfW * (wide ? 0.32 : 0.45);
       const restY = -1.25 + Math.sin(t * 0.7) * 0.2;
-      const diveX = wide ? 0.8 : 0;
+      const diveX = wide ? -1.4 * side : 0;
+      // Underwater the diver rides low in the frame, below the step cards, so they never cover it.
       diver.root.position.set(
         restX + (diveX - restX) * ease,
-        restY + (camY - 1.2 - restY) * ease,
+        restY + (camY - 2.1 - restY) * ease,
         -1 - 2 * ease,
       );
       diver.root.quaternion.slerpQuaternions(restQ, diveQ, ease);
+      // Landed: the diver hovers to the inline-end of the chat, turned towards it.
+      if (landK > 0.001 && wide) {
+        diver.root.position.x +=
+          (side * halfW * 0.88 - diver.root.position.x) * landK;
+        hoverQ.setFromEuler(hoverAt.set(0.12, -0.8 * side, 0));
+        diver.root.quaternion.slerp(hoverQ, landK);
+      }
       if (diver.action) diver.action.timeScale = 1 + ease * 0.6;
       diver.mixer.update(still);
     }
@@ -912,6 +939,23 @@ function createSea(
 
     pointer.x += (pointer.tx - pointer.x) * Math.min(dt * 3, 1);
     pointer.y += (pointer.ty - pointer.y) * Math.min(dt * 3, 1);
+    // Landed: the view lifts so the seabed shows above the chat; rereading looks like the way down.
+    const ease = reduced.matches ? 1 : Math.min(dt * 1.5, 1);
+    lift += ((landed ? innerHeight * LAND_LIFT : 0) - lift) * ease;
+    landK +=
+      ((landed ? 1 : 0) - landK) *
+      (reduced.matches ? 1 : Math.min(dt * 1.2, 1));
+    if (!(Math.abs(lift - liftSet) < 0.5)) {
+      liftSet = lift;
+      camera.setViewOffset(
+        innerWidth,
+        innerHeight,
+        0,
+        lift,
+        innerWidth,
+        innerHeight,
+      );
+    }
     const bob = under ? 0 : Math.sin(t * 0.7) * 0.14;
     camera.position.set(pointer.x * 0.9, camY + bob, 8);
     camera.lookAt(
@@ -925,7 +969,11 @@ function createSea(
     scene.background = under ? w : null;
     renderer.setClearColor(w);
     fog.color.copy(w);
-    fog.density = under ? keyframe(zone, FOG_KEYS) : 0;
+    fog.density = under
+      ? keyframe(zone, FOG_KEYS) * (1 - LAND_FOG_CUT * landK)
+      : 0;
+    flood.intensity = (3.2 + landK * 2.6) * 0.64 * LEGACY_LIGHT;
+    warm.intensity = (1.4 + landK * 1.2) * 0.61 * LEGACY_LIGHT;
     sea.material.uniforms.uUnder.value.copy(w);
     hemi.intensity =
       (under ? keyframe(zone, AMBIENT_KEYS) : 1.1) * LEGACY_LIGHT;
@@ -1053,6 +1101,10 @@ function createSea(
           2.6,
           0.6,
         );
+      },
+      landed(on) {
+        landed = on;
+        wake();
       },
       seabed(px) {
         bed.position.y = worldY(px) - 9;

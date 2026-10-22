@@ -32,6 +32,8 @@ export interface SeaControls {
   lanterns: (px: number, passages: SeaPassage[], threshold: number) => void;
   bubbles: (count: number) => void;
   seabed: (px: number) => void;
+  /** On the sand with the full chat: the view lifts, the water clears and the lights come up. */
+  landed: (on: boolean) => void;
 }
 
 export type DiveMode = "rest" | "intro" | "dive" | "reveal" | "ascend";
