@@ -152,6 +152,7 @@ function Home() {
   function startDive() {
     scrollTo(0, 0);
     sea.current?.reset();
+    sea.current?.loadDeep();
     player.start();
     setMode("dive");
   }

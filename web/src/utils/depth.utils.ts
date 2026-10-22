@@ -8,6 +8,7 @@ import {
   SURFACE_Y,
   WATER_TEMP_KEYS,
   WATERLINE_Y,
+  WORLD_PER_ZONE,
   ZONE_HEAD,
   ZONE_PX,
   ZONES,
@@ -115,6 +116,11 @@ export function depthReadout(meters: number, eye: number, airTemp: string) {
     temp: `${temp.toFixed(meters < 1000 ? 0 : 1)} °C`,
     pressure: `${meters < 100 ? atm.toFixed(1) : formatInt(atm)} atm`,
   };
+}
+
+/** The 3D camera height for a px offset down the water column. */
+export function worldY(px: number): number {
+  return WATERLINE_Y - (px / ZONE_PX) * WORLD_PER_ZONE;
 }
 
 export function smoothstep(k: number): number {

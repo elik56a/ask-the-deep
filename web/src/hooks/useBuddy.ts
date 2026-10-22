@@ -2,9 +2,7 @@ import { type RefObject, useEffect, useRef } from "react";
 import { MODEL_URL } from "#/constants/models.constants";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import { BUDDY_GROUND, BUDDY_KEY, BUDDY_SKY } from "#/constants/sea.constants";
-
-// Light intensities are tuned for three's old non-physical lights, like the sea's (see useSea).
-const LEGACY_LIGHT = Math.PI;
+import { LEGACY_LIGHT } from "#/constants/seaScene.constants";
 
 /**
  * The server's companion (P5.36): the sea's fish in its own small renderer, swimming hard while
@@ -26,7 +24,8 @@ export function useBuddy(
       import("three"),
       import("three/addons/loaders/GLTFLoader.js"),
       import("three/addons/utils/SkeletonUtils.js"),
-    ]).then(([THREE, { GLTFLoader }, { clone }]) => {
+      import("three/addons/libs/meshopt_decoder.module.js"),
+    ]).then(([THREE, { GLTFLoader }, { clone }, { MeshoptDecoder }]) => {
       if (disposed) return;
       let renderer: InstanceType<typeof THREE.WebGLRenderer>;
       try {
@@ -62,26 +61,29 @@ export function useBuddy(
         InstanceType<typeof THREE.AnimationMixer>["clipAction"]
       > | null = null;
 
-      new GLTFLoader().load(MODEL_URL.fish, (gltf) => {
-        if (disposed) return;
-        const model = clone(gltf.scene);
-        model.traverse((node) => {
-          node.frustumCulled = false;
+      new GLTFLoader()
+        .setMeshoptDecoder(MeshoptDecoder)
+        .load(MODEL_URL.fish, (gltf) => {
+          if (disposed) return;
+          const model = clone(gltf.scene);
+          model.traverse((node) => {
+            node.frustumCulled = false;
+          });
+          mixer = new THREE.AnimationMixer(model);
+          if (gltf.animations[0]) {
+            action = mixer.clipAction(gltf.animations[0]);
+            action.play();
+          }
+          mixer.update(0);
+          const box = new THREE.Box3().setFromObject(model, true);
+          const k =
+            2.6 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
+          model.scale.setScalar(k);
+          model.position
+            .copy(box.getCenter(new THREE.Vector3()))
+            .multiplyScalar(-k);
+          fish.add(model);
         });
-        mixer = new THREE.AnimationMixer(model);
-        if (gltf.animations[0]) {
-          action = mixer.clipAction(gltf.animations[0]);
-          action.play();
-        }
-        mixer.update(0);
-        const box = new THREE.Box3().setFromObject(model, true);
-        const k = 2.6 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        model.scale.setScalar(k);
-        model.position
-          .copy(box.getCenter(new THREE.Vector3()))
-          .multiplyScalar(-k);
-        fish.add(model);
-      });
 
       let pace = 0.6;
       let t = 0;

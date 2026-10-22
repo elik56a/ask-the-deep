@@ -34,6 +34,8 @@ export interface SeaControls {
   seabed: (px: number) => void;
   /** On the sand with the full chat: the view lifts, the water clears and the lights come up. */
   landed: (on: boolean) => void;
+  /** Starts loading the deep models and the seabed props, once. */
+  loadDeep: () => void;
 }
 
 export type DiveMode = "rest" | "intro" | "dive" | "reveal" | "ascend";

@@ -28,6 +28,7 @@ export function ModelCredits({ lang }: ModelCreditsProps) {
               {credit.title}
             </a>{" "}
             {copy.by} {credit.author}
+            {credit.cc0 && " (CC0)"}
           </li>
         ))}
       </ul>

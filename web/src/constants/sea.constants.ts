@@ -67,9 +67,6 @@ export const LAND_LIFT = 0.32;
 export const LAND_FOG_CUT = 0.62;
 // The sand lies this far below the report card.
 export const BED_BELOW_PX = 160;
-// A lander's floodlight and a warm fill on the seabed (sRGB hex; three converts them).
-export const FLOOD_COLOR = 0xd9efff;
-export const WARM_COLOR = 0xffc98a;
 // The server panel's fish, lit on its own (sRGB hex).
 export const BUDDY_SKY = 0xcfefff;
 export const BUDDY_GROUND = 0x06192f;
@@ -113,17 +110,17 @@ export const WATER_KEYS: [number, string][] = [
   [5, "--color-water-5"],
 ];
 export const FOG_KEYS: [number, number][] = [
-  [0, 0.02],
-  [1, 0.032],
-  [2.5, 0.05],
-  [5, 0.06],
+  [0, 0.018],
+  [1, 0.03],
+  [2.5, 0.045],
+  [5, 0.055],
 ];
 export const AMBIENT_KEYS: [number, number][] = [
   [0, 0.95],
-  [0.8, 0.45],
-  [1.6, 0.14],
-  [3, 0.05],
-  [5, 0.03],
+  [0.8, 0.5],
+  [1.6, 0.3],
+  [3, 0.24],
+  [5, 0.22],
 ];
 export const SUNLIGHT_KEYS: [number, number][] = [
   [0, 0.7],
@@ -131,9 +128,16 @@ export const SUNLIGHT_KEYS: [number, number][] = [
   [2, 0],
 ];
 export const SHAFT_KEYS: [number, number][] = [
-  [0, 0.13],
-  [0.7, 0.05],
-  [1, 0],
+  [0, 0.14],
+  [0.7, 0.06],
+  [1.1, 0],
+];
+// The camera's torch comes on below the twilight zone.
+export const TORCH_KEYS: [number, number][] = [
+  [0, 0],
+  [0.9, 0],
+  [1.4, 3.4],
+  [5, 4.2],
 ];
 
 export const DIVE_COPY: Record<Lang, DiveCopy> = {
