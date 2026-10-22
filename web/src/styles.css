@@ -122,3 +122,21 @@ body {
     animation: none;
   }
 }
+
+/* The chat rises once the view has nearly settled on the sand, so it never slides over the report. */
+.console-rise {
+  animation: console-rise 0.6s var(--ease-out) 0.7s backwards;
+}
+
+@keyframes console-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-rise {
+    animation: none;
+  }
+}

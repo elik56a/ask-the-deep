@@ -13,7 +13,9 @@ import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
+import { REVEAL_AFTER_SKIP_MS, REVEAL_MS } from "#/constants/pace.constants";
 import { DIVE_COPY } from "#/constants/sea.constants";
+import { useAskFocus } from "#/hooks/useAskFocus";
 import { useChatSession } from "#/hooks/useChatSession";
 import { useDiveFollow } from "#/hooks/useDiveFollow";
 import { useDiveLayout } from "#/hooks/useDiveLayout";
@@ -65,6 +67,18 @@ function Home() {
   const questions = chat.messages.filter((message) => message.role === "user");
   const question = questions.at(-1);
 
+  // The answer waits for the seabed: the chat comes back once the report has been read.
+  const landed = ended && !player.playing;
+  useEffect(() => {
+    if (mode !== "dive" || !(landed || chat.failed)) return;
+    const timer = setTimeout(
+      () => setMode("reveal"),
+      player.skipped ? REVEAL_AFTER_SKIP_MS : REVEAL_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [mode, landed, chat.failed, player.skipped]);
+  useAskFocus(mode, "question", "reveal-title");
+
   useEffect(() => {
     document.documentElement.toggleAttribute("data-diving", diving);
   }, [diving]);
@@ -94,16 +108,23 @@ function Home() {
   return (
     <>
       <SeaScene canvasRef={seaCanvas} />
-      <header className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-end gap-2 lg:inset-x-8 [&>*]:pointer-events-auto">
+      <header
+        inert={mode === "dive" || mode === "reveal"}
+        className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-end gap-2 transition-opacity duration-300 inert:opacity-0 lg:inset-x-8 [&>*]:pointer-events-auto"
+      >
         <LangSwitch lang={lang} onToggle={toggle} />
       </header>
       <section aria-label={PAGE_COPY[lang].title} className="relative h-svh">
         {!asked && <SurfaceHero lang={lang} />}
       </section>
       <div
+        hidden={mode === "dive" || mode === "ascend"}
         data-diving={diving || undefined}
-        className="fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120"
+        className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120`}
       >
+        <h2 id="reveal-title" tabIndex={-1} className="sr-only">
+          {dive.back.title}
+        </h2>
         <Chat
           lang={lang}
           messages={chat.messages}
@@ -201,6 +222,10 @@ function Home() {
           {dive.follow} ↓
         </Button>
       )}
+      <p className="sr-only" aria-live="polite">
+        {mode === "reveal" &&
+          (trace.outcome === "answered" ? dive.back.answered : dive.back.empty)}
+      </p>
       {!diving && <ModelCredits lang={lang} />}
     </>
   );

@@ -171,6 +171,11 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       " to answer you. The deeper we go, the further along the process is.",
     ],
     follow: "Follow the dive",
+    back: {
+      title: "Back from the seabed",
+      answered: "Back from the seabed. The answer is ready.",
+      empty: "Back from the seabed. The agent found nothing in the notes.",
+    },
     surface: "Surface",
     replay: "Replay the dive",
     playback: {
@@ -254,6 +259,11 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       " כדי לענות לך. ככל שצוללים עמוק יותר, התהליך מתקדם יותר.",
     ],
     follow: "לעקוב אחרי הצלילה",
+    back: {
+      title: "חזרנו מהקרקעית",
+      answered: "חזרנו מהקרקעית. התשובה מוכנה.",
+      empty: "חזרנו מהקרקעית. הסוכן לא מצא דבר ברשימות.",
+    },
     surface: "חזרה לפני המים",
     replay: "לצלול שוב",
     playback: {

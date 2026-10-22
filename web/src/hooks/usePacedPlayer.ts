@@ -43,6 +43,7 @@ export function usePacedPlayer(events: StreamEvent[]) {
   return {
     events: clock ? events.filter((_, i) => times[i] <= clock.v) : events,
     playing: clock !== null && !done,
+    skipped: clock?.v === Number.POSITIVE_INFINITY,
     paused: clock?.paused ?? false,
     speed: clock?.speed ?? 1,
     progress: clock && end > 0 ? Math.min(clock.v / end, 1) : 0,

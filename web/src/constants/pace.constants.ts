@@ -32,3 +32,7 @@ export const DELTA_SPAN = 0.8;
 export const PACE_TICK_MS = 100;
 
 export const SPEEDS = [1, 2] as const;
+
+// The chat returns this long after the seabed report, so the report is read first; a skip has already waited.
+export const REVEAL_MS = 4500;
+export const REVEAL_AFTER_SKIP_MS = 500;

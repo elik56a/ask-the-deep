@@ -34,7 +34,7 @@ export interface SeaControls {
   seabed: (px: number) => void;
 }
 
-export type DiveMode = "rest" | "dive" | "ascend";
+export type DiveMode = "rest" | "dive" | "reveal" | "ascend";
 
 /** One card in the dive log: the event that opened it and the one that closed it, if any. */
 export interface DiveStep {
@@ -121,6 +121,8 @@ export interface DiveCopy {
   /** Before the bold part, the bold part, after it. */
   guide: [string, string, string];
   follow: string;
+  /** At the seabed: the heading focus lands on, and what a screen reader hears by outcome. */
+  back: { title: string; answered: string; empty: string };
   surface: string;
   replay: string;
   playback: PlaybackCopy;

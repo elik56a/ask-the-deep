@@ -40,7 +40,7 @@ export function useDiveFollow(
   latest.current = { target, following, onSurfaced };
 
   useEffect(() => {
-    if (mode === "dive") setFollowing(true);
+    if (mode === "dive" || mode === "reveal") setFollowing(true);
   }, [mode]);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export function useDiveFollow(
   }, [mode, waterRef]);
 
   useEffect(() => {
-    if (mode !== "dive") return;
+    if (mode !== "dive" && mode !== "reveal") return;
     const pause = () => setFollowing(false);
     const onKey = (event: KeyboardEvent) => {
       if (SCROLL_KEYS.includes(event.key) && event.target === document.body) {
