@@ -8,12 +8,14 @@ import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
 import { ModelCredits } from "#/components/ModelCredits";
 import { PlaybackBar } from "#/components/PlaybackBar";
+import { PreDiveCheck } from "#/components/PreDiveCheck";
 import { Seabed } from "#/components/Seabed";
 import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
 import { REVEAL_AFTER_SKIP_MS, REVEAL_MS } from "#/constants/pace.constants";
+import { PREDIVE_COPY } from "#/constants/predive.constants";
 import { DIVE_COPY } from "#/constants/sea.constants";
 import { useAskFocus } from "#/hooks/useAskFocus";
 import { useChatSession } from "#/hooks/useChatSession";
@@ -25,9 +27,11 @@ import { useProcessPreference } from "#/hooks/useProcessPreference";
 import { useSea } from "#/hooks/useSea";
 import { useSeaEvents } from "#/hooks/useSeaEvents";
 import { useSession } from "#/hooks/useSession";
+import type { PreDivePlan } from "#/types/predive.types";
 import type { DiveMode } from "#/types/sea.types";
-import { messageEvents, messageText } from "#/utils/chat.utils";
+import { messageEvents, messageText, pastMessages } from "#/utils/chat.utils";
 import { diveSteps } from "#/utils/depth.utils";
+import { preDiveChecks } from "#/utils/predive.utils";
 import { buildTrace } from "#/utils/trace.utils";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -40,7 +44,8 @@ function Home() {
   const process = useProcessPreference();
   const asked = chat.messages.length > 0;
   const [mode, setMode] = useState<DiveMode>("rest");
-  const diving = mode !== "rest";
+  const [plan, setPlan] = useState<PreDivePlan | null>(null);
+  const diving = mode !== "rest" && mode !== "intro";
   const seaCanvas = useRef<HTMLCanvasElement>(null);
   const water = useRef<HTMLElement>(null);
   const log = useRef<HTMLOListElement>(null);
@@ -90,11 +95,39 @@ function Home() {
     setMode("dive");
   }
 
-  function ask(question: string) {
-    if (!question.trim() || chat.busy) return;
-    chat.send(question);
-    if (process.show) startDive();
-    else player.stop();
+  function ask(text: string) {
+    const question = text.trim();
+    if (!question || chat.busy || mode === "intro" || mode === "dive") return;
+    if (!process.show) {
+      chat.send(question);
+      player.stop();
+      return;
+    }
+    const prior = pastMessages(chat.messages);
+    setPlan({ question, replay: false, dive: questions.length + 1, prior });
+    setMode("intro");
+  }
+
+  function replay() {
+    if (!question) return;
+    const text = messageText(question);
+    setPlan({
+      question: text,
+      replay: true,
+      dive: questions.length,
+      prior: [],
+    });
+    setMode("intro");
+  }
+
+  function descend() {
+    if (plan && !plan.replay) chat.send(plan.question);
+    startDive();
+  }
+
+  function cancelDive() {
+    setPlan(null);
+    setMode("rest");
   }
 
   function stay(on: boolean) {
@@ -109,7 +142,7 @@ function Home() {
     <>
       <SeaScene canvasRef={seaCanvas} />
       <header
-        inert={mode === "dive" || mode === "reveal"}
+        inert={mode === "intro" || mode === "dive" || mode === "reveal"}
         className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-end gap-2 transition-opacity duration-300 inert:opacity-0 lg:inset-x-8 [&>*]:pointer-events-auto"
       >
         <LangSwitch lang={lang} onToggle={toggle} />
@@ -118,7 +151,7 @@ function Home() {
         {!asked && <SurfaceHero lang={lang} />}
       </section>
       <div
-        hidden={mode === "dive" || mode === "ascend"}
+        hidden={mode === "intro" || mode === "dive" || mode === "ascend"}
         data-diving={diving || undefined}
         className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120`}
       >
@@ -180,7 +213,7 @@ function Home() {
                     tops={layout.tops}
                     trace={trace}
                     onSurface={() => setMode("ascend")}
-                    onReplay={startDive}
+                    onReplay={replay}
                   />
                 )
               }
@@ -226,7 +259,22 @@ function Home() {
         {mode === "reveal" &&
           (trace.outcome === "answered" ? dive.back.answered : dive.back.empty)}
       </p>
-      {!diving && <ModelCredits lang={lang} />}
+      {plan && (
+        <PreDiveCheck
+          key={`${plan.dive}-${plan.replay}`}
+          lang={lang}
+          plan={plan}
+          checks={preDiveChecks(
+            PREDIVE_COPY[lang],
+            plan,
+            last ? messageEvents(last) : [],
+          )}
+          onDescend={descend}
+          onCancel={cancelDive}
+          onGone={() => setPlan(null)}
+        />
+      )}
+      {mode === "rest" && <ModelCredits lang={lang} />}
     </>
   );
 }

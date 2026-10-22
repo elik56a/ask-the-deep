@@ -140,3 +140,81 @@ body {
     animation: none;
   }
 }
+
+/* The pre-dive check (P5.32): the live sea stays visible behind a scrim that darkens downward,
+   like looking into the water before going in. Its parts rise in one after another. */
+.veil {
+  opacity: 0;
+  transition: opacity 0.7s ease;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-surface) 55%, transparent) 0%,
+    color-mix(in oklab, var(--color-surface) 86%, transparent) 42%,
+    color-mix(in oklab, var(--color-case) 96%, transparent) 100%
+  );
+  backdrop-filter: blur(12px) saturate(1.15);
+}
+
+.veil::backdrop {
+  background: transparent;
+}
+
+.veil[data-on] {
+  opacity: 1;
+}
+
+.veil-card > * {
+  opacity: 0;
+  translate: 0 10px;
+  transition:
+    opacity 0.45s var(--ease-out),
+    translate 0.45s var(--ease-out);
+}
+
+.veil[data-on] .veil-card > * {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.veil[data-on] .veil-card > :nth-child(2) {
+  transition-delay: 0.07s;
+}
+
+.veil[data-on] .veil-card > :nth-child(3) {
+  transition-delay: 0.14s;
+}
+
+.veil[data-on] .veil-card > :nth-child(4) {
+  transition-delay: 0.21s;
+}
+
+.veil[data-on] .veil-card > :nth-child(5) {
+  transition-delay: 0.28s;
+}
+
+.veil[data-on] .veil-card > :nth-child(n + 6) {
+  transition-delay: 0.35s;
+}
+
+.veil[data-ready] .descend {
+  animation: ready 1.4s var(--ease-out) infinite;
+}
+
+@keyframes ready {
+  50% {
+    box-shadow:
+      0 0 0 7px color-mix(in oklab, var(--color-glow) 14%, transparent),
+      0 0 48px -6px var(--color-glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veil,
+  .veil-card > * {
+    transition: none;
+  }
+
+  .veil[data-ready] .descend {
+    animation: none;
+  }
+}

@@ -34,13 +34,9 @@ export function messageText(message: ChatMessage): string {
     .join("");
 }
 
-export function chatRequestBody(
-  messages: ChatMessage[],
-  session: string,
-): ChatRequestBody {
-  const last = messages.at(-1);
-  const history = messages
-    .slice(0, -1)
+/** The earlier messages that travel with a question, as the API receives them. */
+export function pastMessages(messages: ChatMessage[]): PastMessage[] {
+  return messages
     .flatMap((message): PastMessage[] => {
       const text = messageText(message).slice(0, MAX_HISTORY_CHARS);
       return message.role !== "system" && text
@@ -48,6 +44,14 @@ export function chatRequestBody(
         : [];
     })
     .slice(-MAX_HISTORY_MESSAGES);
+}
+
+export function chatRequestBody(
+  messages: ChatMessage[],
+  session: string,
+): ChatRequestBody {
+  const last = messages.at(-1);
+  const history = pastMessages(messages.slice(0, -1));
   return { question: last ? messageText(last) : "", history, session };
 }
 

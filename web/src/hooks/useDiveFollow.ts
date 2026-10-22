@@ -44,7 +44,7 @@ export function useDiveFollow(
   }, [mode]);
 
   useEffect(() => {
-    if (mode === "rest") return;
+    if (mode === "rest" || mode === "intro") return;
     const reduced = matchMedia(REDUCED_MOTION_QUERY);
     let glideY = scrollY;
     let last = 0;

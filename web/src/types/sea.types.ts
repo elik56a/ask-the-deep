@@ -34,7 +34,7 @@ export interface SeaControls {
   seabed: (px: number) => void;
 }
 
-export type DiveMode = "rest" | "dive" | "reveal" | "ascend";
+export type DiveMode = "rest" | "intro" | "dive" | "reveal" | "ascend";
 
 /** One card in the dive log: the event that opened it and the one that closed it, if any. */
 export interface DiveStep {
