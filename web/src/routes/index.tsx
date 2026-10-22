@@ -29,9 +29,11 @@ import { useSeaEvents } from "#/hooks/useSeaEvents";
 import { useSession } from "#/hooks/useSession";
 import type { PreDivePlan } from "#/types/predive.types";
 import type { DiveMode } from "#/types/sea.types";
+import type { ThreadTurn } from "#/types/thread.types";
 import { messageEvents, messageText, pastMessages } from "#/utils/chat.utils";
 import { diveSteps } from "#/utils/depth.utils";
 import { preDiveChecks } from "#/utils/predive.utils";
+import { threadTurns } from "#/utils/thread.utils";
 import { buildTrace } from "#/utils/trace.utils";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -51,10 +53,13 @@ function Home() {
   const log = useRef<HTMLOListElement>(null);
   const sea = useSea(seaCanvas, water);
 
-  const last = chat.messages.at(-1);
-  const player = usePacedPlayer(
-    last?.role === "assistant" ? messageEvents(last) : [],
-  );
+  const turns = threadTurns(chat.messages);
+  // The dive on screen: the newest, or an earlier one picked with "Watch again"
+  const [watching, setWatching] = useState<number | null>(null);
+  const [stayFresh, setStayFresh] = useState<number | null>(null);
+  const shown = (watching ? turns[watching - 1] : turns.at(-1)) ?? null;
+  const shownEvents = shown?.answer ? messageEvents(shown.answer) : [];
+  const player = usePacedPlayer(shownEvents);
   const steps = diveSteps(player.events);
   const layout = useDiveLayout(
     log,
@@ -69,8 +74,6 @@ function Home() {
   });
   useSeaEvents(sea, player.events, steps, layout.tops, mode === "dive");
   const dive = DIVE_COPY[lang];
-  const questions = chat.messages.filter((message) => message.role === "user");
-  const question = questions.at(-1);
 
   // The answer waits for the seabed: the chat comes back once the report has been read.
   const landed = ended && !player.playing;
@@ -98,26 +101,34 @@ function Home() {
   function ask(text: string) {
     const question = text.trim();
     if (!question || chat.busy || mode === "intro" || mode === "dive") return;
+    setWatching(null);
     if (!process.show) {
       chat.send(question);
       player.stop();
+      setStayFresh(turns.length + 1);
       return;
     }
+    setStayFresh(null);
     const prior = pastMessages(chat.messages);
-    setPlan({ question, replay: false, dive: questions.length + 1, prior });
+    setPlan({ question, replay: false, dive: turns.length + 1, prior });
     setMode("intro");
   }
 
-  function replay() {
-    if (!question) return;
-    const text = messageText(question);
-    setPlan({
-      question: text,
-      replay: true,
-      dive: questions.length,
-      prior: [],
-    });
+  function replay(turn: ThreadTurn | null) {
+    if (!turn?.answer) return;
+    setWatching(turn.dive);
+    setStayFresh(null);
+    const question = messageText(turn.question);
+    setPlan({ question, replay: true, dive: turn.dive, prior: [] });
     setMode("intro");
+  }
+
+  function newConversation() {
+    chat.clear();
+    setWatching(null);
+    setStayFresh(null);
+    scrollTo(0, 0);
+    setMode("rest");
   }
 
   function descend() {
@@ -148,12 +159,12 @@ function Home() {
         <LangSwitch lang={lang} onToggle={toggle} />
       </header>
       <section aria-label={PAGE_COPY[lang].title} className="relative h-svh">
-        {!asked && <SurfaceHero lang={lang} />}
+        <SurfaceHero lang={lang} talked={asked} />
       </section>
       <div
         hidden={mode === "intro" || mode === "dive" || mode === "ascend"}
         data-diving={diving || undefined}
-        className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120`}
+        className={`${mode === "reveal" ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120`}
       >
         <h2 id="reveal-title" tabIndex={-1} className="sr-only">
           {dive.back.title}
@@ -161,7 +172,6 @@ function Home() {
         <Chat
           lang={lang}
           messages={chat.messages}
-          waiting={chat.waiting}
           canSend={Boolean(session.token) && !chat.busy}
           failed={chat.failed}
           onSend={ask}
@@ -170,6 +180,9 @@ function Home() {
           stayAtSurface={!process.show}
           onStayAtSurface={stay}
           collapsible={diving}
+          freshDive={mode === "reveal" ? (shown?.dive ?? null) : stayFresh}
+          onWatch={replay}
+          onNewConversation={newConversation}
         />
         {!session.token && (
           <HumanCheck
@@ -213,7 +226,7 @@ function Home() {
                     tops={layout.tops}
                     trace={trace}
                     onSurface={() => setMode("ascend")}
-                    onReplay={replay}
+                    onReplay={() => replay(shown)}
                   />
                 )
               }
@@ -234,8 +247,8 @@ function Home() {
       {mode === "dive" && player.playing && (
         <PlaybackBar
           lang={lang}
-          dive={questions.length}
-          question={question ? messageText(question) : ""}
+          dive={shown?.dive ?? 0}
+          question={shown ? messageText(shown.question) : ""}
           paused={player.paused}
           speed={player.speed}
           progress={player.progress}
@@ -264,11 +277,7 @@ function Home() {
           key={`${plan.dive}-${plan.replay}`}
           lang={lang}
           plan={plan}
-          checks={preDiveChecks(
-            PREDIVE_COPY[lang],
-            plan,
-            last ? messageEvents(last) : [],
-          )}
+          checks={preDiveChecks(PREDIVE_COPY[lang], plan, shownEvents)}
           onDescend={descend}
           onCancel={cancelDive}
           onGone={() => setPlan(null)}

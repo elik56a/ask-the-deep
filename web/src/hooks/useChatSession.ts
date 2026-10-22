@@ -8,7 +8,7 @@ import {
   MESSAGES_STORAGE_KEY,
 } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
-import { chatRequestBody, isChatMessages, isWaiting } from "#/utils/chat.utils";
+import { chatRequestBody, isChatMessages } from "#/utils/chat.utils";
 import { loadStored, saveStored } from "#/utils/storage.utils";
 
 export function useChatSession(
@@ -72,11 +72,16 @@ export function useChatSession(
     [busy, sendMessage],
   );
 
+  const clear = useCallback(() => {
+    setMessages([]);
+    saveStored("session", MESSAGES_STORAGE_KEY, []);
+  }, [setMessages]);
+
   return {
     messages,
     send,
+    clear,
     busy,
-    waiting: isWaiting(messages, status),
     failed: error !== undefined,
   };
 }

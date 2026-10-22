@@ -1,4 +1,3 @@
-import type { ChatStatus } from "ai";
 import {
   MAX_HISTORY_CHARS,
   MAX_HISTORY_MESSAGES,
@@ -60,20 +59,6 @@ export function messageError(message: ChatMessage): string | undefined {
     if (event.type === "error") return event.code;
   }
   return undefined;
-}
-
-export function isWaiting(
-  messages: ChatMessage[],
-  status: ChatStatus,
-): boolean {
-  if (status === "submitted") return true;
-  const last = messages.at(-1);
-  return (
-    status === "streaming" &&
-    last?.role === "assistant" &&
-    !messageText(last) &&
-    !messageError(last)
-  );
 }
 
 export function isChatMessages(value: unknown): value is ChatMessage[] {

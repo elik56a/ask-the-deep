@@ -14,7 +14,6 @@ import type { ChatMessage } from "#/types/chat.types";
 import {
   chatRequestBody,
   isChatMessages,
-  isWaiting,
   latestAnswer,
   messageCitations,
   messageError,
@@ -154,20 +153,6 @@ const errorMessage = (code: string): ChatMessage => ({
 it("finds the error code a blocked answer carries", () => {
   expect(messageError(errorMessage("rate_limited"))).toBe("rate_limited");
   expect(messageError(message("assistant", "hi"))).toBeUndefined();
-});
-
-it("waits until the answer starts or an error arrives", () => {
-  const question = message("user", "q");
-  const empty: ChatMessage = { id: "a", role: "assistant", parts: [] };
-  expect(isWaiting([question], "submitted")).toBe(true);
-  expect(isWaiting([question, empty], "streaming")).toBe(true);
-  expect(isWaiting([question, message("assistant", "a")], "streaming")).toBe(
-    false,
-  );
-  expect(isWaiting([question, errorMessage("timeout")], "streaming")).toBe(
-    false,
-  );
-  expect(isWaiting([question, empty], "ready")).toBe(false);
 });
 
 it("accepts only stored chats it can render", () => {

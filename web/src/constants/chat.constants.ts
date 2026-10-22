@@ -13,6 +13,9 @@ export const HUMAN_CHECK_REQUIRED = "human_check_required";
 // P3.12: each progress step stays on screen at least this long.
 export const STEP_MIN_MS = 300;
 
+// The answer types out at the seabed at this pace per word.
+export const TYPE_WORD_MS = 45;
+
 export const CHAT_COPY: Record<Lang, ChatCopy> = {
   en: {
     agentLabel: "AI agent representing Eliyahu",
@@ -24,17 +27,6 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     introTitle: ["Ask about ", "me", ""],
     introBody:
       "My AI agent answers from my own notes. Ask, and watch every step on the way down.",
-    steps: {
-      checked: "Checked your question",
-      blocked: "A safety check stopped this question",
-      writing: "Writing the answer…",
-      written: "Answer written",
-      noInfo: "Not in Eliyahu's notes",
-      stopped: "Stopped before finishing",
-      doneIn: "Done in {s} s",
-      showSteps: "Show steps",
-      hideSteps: "Hide steps",
-    },
     inputLabel: "Your question",
     placeholder: "Ask about Eliyahu's work, skills or projects…",
     send: "Send",
@@ -46,6 +38,13 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
       "How can I contact him?",
     ],
     thinking: "Thinking…",
+    threadLabel: "Conversation",
+    agentAvatar: "Eliyahu's AI agent",
+    sourcesUsed: "Sources the answer used",
+    meta: { dive: "Dive", stats: "{t} · {calls} model calls · {cost}" },
+    watchAgain: "Watch again ↺",
+    newConversation: "New conversation",
+    pending: "The agent is answering at the surface…",
     errors: {
       human_check_required: "Confirming you're human. Please ask again.",
       rate_limited: "Too many questions. Please wait a minute.",
@@ -66,17 +65,6 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     introTitle: ["שאלו ", "עליי", ""],
     introBody:
       "סוכן ה-AI שלי עונה מתוך הרשימות שלי. שואלים, וצופים בכל צעד בדרך למטה.",
-    steps: {
-      checked: "השאלה נבדקה",
-      blocked: "בדיקת בטיחות עצרה את השאלה",
-      writing: "כותב את התשובה…",
-      written: "התשובה נכתבה",
-      noInfo: "המידע לא נמצא ברשימות של אליהו",
-      stopped: "נעצר לפני הסוף",
-      doneIn: "הסתיים תוך {s} שניות",
-      showSteps: "הצגת השלבים",
-      hideSteps: "הסתרת השלבים",
-    },
     inputLabel: "השאלה שלך",
     placeholder: "אפשר לשאול על העבודה, הכישורים או הפרויקטים של אליהו…",
     send: "שליחה",
@@ -88,6 +76,13 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
       "איך אפשר ליצור איתו קשר?",
     ],
     thinking: "חושב…",
+    threadLabel: "השיחה",
+    agentAvatar: "סוכן ה-AI של אליהו",
+    sourcesUsed: "המקורות שהתשובה נשענת עליהם",
+    meta: { dive: "צלילה", stats: "{t} · {calls} קריאות למודל · {cost}" },
+    watchAgain: "לצפות שוב ↺",
+    newConversation: "שיחה חדשה",
+    pending: "הסוכן עונה על פני המים…",
     errors: {
       human_check_required: "מאמתים שמדובר באדם. אפשר לשאול שוב.",
       rate_limited: "יותר מדי שאלות. כדאי לחכות דקה.",
