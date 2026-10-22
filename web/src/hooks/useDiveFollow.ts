@@ -8,8 +8,12 @@ import {
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import {
   ASCEND_SPEED,
+  ASCENT_SLOW_GAIN,
+  ASCENT_SLOW_PX,
   DIVER_LINE,
+  FOLLOW_GAIN,
   FOLLOW_SPEED,
+  RUSH_GAIN,
   RUSH_SPEED,
   SNAP_MS,
 } from "#/constants/sea.constants";
@@ -56,7 +60,7 @@ export function useDiveFollow(
     let glideY = scrollY;
     let last = 0;
     let frame = 0;
-    const glide = (to: number, speed: number, dt: number, gain = 2.4) => {
+    const glide = (to: number, speed: number, dt: number, gain: number) => {
       if (Math.abs(scrollY - glideY) > 3) glideY = scrollY;
       const gap = to - glideY;
       if (Math.abs(gap) < 0.5) return;
@@ -73,7 +77,12 @@ export function useDiveFollow(
       const { target: step, following: on } = latest.current;
       const water = waterRef.current;
       if (mode === "ascend") {
-        glide(0, ASCEND_SPEED, dt);
+        glide(
+          0,
+          ASCEND_SPEED,
+          dt,
+          scrollY < ASCENT_SLOW_PX ? ASCENT_SLOW_GAIN : FOLLOW_GAIN,
+        );
         if (scrollY < 2) {
           latest.current.onSurfaced();
           return;
@@ -83,7 +92,12 @@ export function useDiveFollow(
         const max = document.documentElement.scrollHeight - innerHeight;
         const to = Math.min(top + step - innerHeight * DIVER_LINE, max);
         const rush = rushing.current;
-        glide(to, rush ? RUSH_SPEED : FOLLOW_SPEED, dt, rush ? 6 : 2.4);
+        glide(
+          to,
+          rush ? RUSH_SPEED : FOLLOW_SPEED,
+          dt,
+          rush ? RUSH_GAIN : FOLLOW_GAIN,
+        );
         if (Math.abs(scrollY - to) < 2) rushing.current = false;
       }
       frame = requestAnimationFrame(tick);
@@ -118,7 +132,6 @@ export function useDiveFollow(
   }, [mode]);
 
   const resume = useCallback(() => setFollowing(true), []);
-  const pause = useCallback(() => setFollowing(false), []);
   const rush = useCallback(() => {
     rushing.current = true;
     setFollowing(true);
@@ -127,5 +140,18 @@ export function useDiveFollow(
     snapUntil.current = performance.now() + SNAP_MS;
     setFollowing(true);
   }, []);
-  return { following, resume, pause, rush, jump };
+  /** Stops following and scrolls back up to the step at `stepTop`. */
+  const look = useCallback(
+    (stepTop: number) => {
+      setFollowing(false);
+      const water = waterRef.current;
+      const top = water ? water.getBoundingClientRect().top + scrollY : 0;
+      scrollTo({
+        top: top + stepTop - innerHeight * DIVER_LINE,
+        behavior: matchMedia(REDUCED_MOTION_QUERY).matches ? "auto" : "smooth",
+      });
+    },
+    [waterRef],
+  );
+  return { following, resume, rush, jump, look };
 }

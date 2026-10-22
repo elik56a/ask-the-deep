@@ -11,13 +11,19 @@ import {
 } from "#/constants/seaScene.constants";
 import type {
   Creature,
+  Drift,
+  DriftSpec,
   Height,
   Kit,
+  LifeGroup,
   Loaded,
+  PathSpec,
   Pool,
+  SwimPath,
 } from "#/types/seaScene.types";
 import { metersToPx, worldY } from "#/utils/depth.utils";
 import { oscillate } from "#/utils/ease.utils";
+import { bedSlots, members } from "#/utils/seaLife.utils";
 import { spreadAt } from "#/utils/spread.utils";
 import { driftPose, loopPose, pathPose } from "#/utils/swim.utils";
 import { waveAt } from "#/utils/wave.utils";
@@ -32,6 +38,45 @@ function heightAt(h: Height, i: number): number {
     : spreadAt(h.y, i, random());
 }
 
+function pathOf(path: PathSpec, i: number): SwimPath {
+  return {
+    y: heightAt(path, i),
+    r: spreadAt(path.r, i, random()),
+    speed: spreadAt(path.speed, i, random()),
+    phase: spreadAt(path.phase, i, random()),
+    z: spreadAt(path.z, i, random()),
+  };
+}
+
+function driftOf(drift: DriftSpec, i: number): Drift {
+  return {
+    x: spreadAt(drift.x, i, random()),
+    y: heightAt(drift, i),
+    z: spreadAt(drift.z, i, random()),
+    phase: spreadAt(drift.phase, i, random()),
+  };
+}
+
+/** A glowing lure on `c`; `light` too, on the first member only. */
+function addLure(
+  kit: Kit,
+  c: Creature,
+  lure: NonNullable<LifeGroup["lure"]>,
+  i: number,
+  light: Three.Light,
+): void {
+  const sprite = glowSprite(
+    kit,
+    kit.color("--color-glow"),
+    spreadAt(lure.size, i, random()),
+  );
+  sprite.position.set(...lure.at);
+  c.root.add(sprite);
+  if (i > 0) return;
+  light.position.set(...lure.at);
+  c.root.add(light);
+}
+
 /** The swimmers and drifters among `loaded`, each with a glowing lure if it has one. */
 export function placeLife(
   kit: Kit,
@@ -39,47 +84,15 @@ export function placeLife(
   loaded: Loaded,
   lureLight: Three.Light,
 ): Creature[] {
-  const out: Creature[] = [];
-  for (const group of SEA_LIFE) {
+  return members(SEA_LIFE).flatMap(({ group, i }) => {
     const gltf = loaded[group.model];
-    if (!gltf) continue;
-    for (let i = 0; i < (group.count ?? 1); i++) {
-      const c = spawn(gltf, spreadAt(group.length, i, random()), group, i);
-      const { path, drift, lure } = group;
-      if (path) {
-        c.path = {
-          y: heightAt(path, i),
-          r: spreadAt(path.r, i, random()),
-          speed: spreadAt(path.speed, i, random()),
-          phase: spreadAt(path.phase, i, random()),
-          z: spreadAt(path.z, i, random()),
-        };
-      }
-      if (drift) {
-        c.drift = {
-          x: spreadAt(drift.x, i, random()),
-          y: heightAt(drift, i),
-          z: spreadAt(drift.z, i, random()),
-          phase: spreadAt(drift.phase, i, random()),
-        };
-      }
-      if (lure) {
-        const sprite = glowSprite(
-          kit,
-          kit.color("--color-glow"),
-          spreadAt(lure.size, i, random()),
-        );
-        sprite.position.set(...lure.at);
-        c.root.add(sprite);
-        if (i === 0) {
-          lureLight.position.set(...lure.at);
-          c.root.add(lureLight);
-        }
-      }
-      out.push(c);
-    }
-  }
-  return out;
+    if (!gltf) return [];
+    const c = spawn(gltf, spreadAt(group.length, i, random()), group, i);
+    if (group.path) c.path = pathOf(group.path, i);
+    if (group.drift) c.drift = driftOf(group.drift, i);
+    if (group.lure) addLure(kit, c, group.lure, i, lureLight);
+    return [c];
+  });
 }
 
 /** The props on the sand, added to the seabed group. Returns the ones that animate. */
@@ -88,26 +101,20 @@ export function placeBed(
   loaded: Loaded,
   bed: Three.Group,
 ): Creature[] {
-  const life: Creature[] = [];
-  for (const prop of BED_PROPS) {
+  return bedSlots(BED_PROPS).flatMap(({ prop, place, i }) => {
     const gltf = loaded[prop.model];
-    if (!gltf) continue;
-    for (const place of prop.places) {
-      for (let i = 0; i < (prop.count ?? 1); i++) {
-        const c = spawn(gltf, spreadAt(prop.length, i, random()), prop, i);
-        const side = place.mirror && i % 2 === 0 ? -1 : 1;
-        bed.add(c.root);
-        c.root.position.set(
-          side * spreadAt(place.x, i, random()),
-          spreadAt(place.y, i, random()),
-          spreadAt(place.z, i, random()),
-        );
-        c.root.rotation.y = spreadAt(place.ry, i, random());
-        if (c.action) life.push(c);
-      }
-    }
-  }
-  return life;
+    if (!gltf) return [];
+    const c = spawn(gltf, spreadAt(prop.length, i, random()), prop, i);
+    const side = place.mirror && i % 2 === 0 ? -1 : 1;
+    bed.add(c.root);
+    c.root.position.set(
+      side * spreadAt(place.x, i, random()),
+      spreadAt(place.y, i, random()),
+      spreadAt(place.z, i, random()),
+    );
+    c.root.rotation.y = spreadAt(place.ry, i, random());
+    return c.action ? [c] : [];
+  });
 }
 
 /** Other divers on the way down, swimming flat with a torch each. */
@@ -126,9 +133,9 @@ export function placeOthers(
     });
     const light = new THREE.PointLight(
       torch.color,
-      torch.intensity * torch.falloff * LEGACY_LIGHT,
+      torch.intensity * LEGACY_LIGHT,
       torch.distance,
-      0,
+      torch.decay,
     );
     const beam = glowSprite(kit, torch.color, torch.beam, torch.beamOpacity);
     light.position.set(...torch.at);
@@ -219,12 +226,12 @@ export function subRig(kit: Kit) {
   const { THREE } = kit;
   const sub = new THREE.Group();
   const lit = [SUB.nose, SUB.top].map(
-    ({ color, intensity, falloff, distance, at }) => {
+    ({ color, intensity, distance, decay, at }) => {
       const light = new THREE.PointLight(
         color,
-        intensity * falloff * LEGACY_LIGHT,
+        intensity * LEGACY_LIGHT,
         distance,
-        0,
+        decay,
       );
       light.position.fromArray(at);
       return light;

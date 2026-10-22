@@ -12,3 +12,10 @@ export function streamTokens(text: string, start = 0): StreamToken[] {
         : { text: part, index: null },
     );
 }
+
+/** The word number after `text`, so the next line streams on from there. */
+export function streamEnd(text: string, start = 0): number {
+  return (
+    start + streamTokens(text).filter((token) => token.index !== null).length
+  );
+}

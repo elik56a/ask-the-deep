@@ -1,8 +1,15 @@
 import type { ChatMessage } from "#/types/chat.types";
-import type { ThreadTurn } from "#/types/thread.types";
+import type { ThreadTurn, TurnView } from "#/types/thread.types";
 import type { Trace } from "#/types/trace.types";
+import {
+  answerText,
+  messageCitations,
+  messageError,
+  messageEvents,
+} from "#/utils/chat.utils";
 import { formatMs, formatUsd } from "#/utils/format.utils";
 import { fill } from "#/utils/toolSteps.utils";
+import { buildTrace, traceMs } from "#/utils/trace.utils";
 
 /** Pairs each question with the answer that follows it: one turn, and one dive, per question. */
 export function threadTurns(messages: ChatMessage[]): ThreadTurn[] {
@@ -20,8 +27,21 @@ export function threadTurns(messages: ChatMessage[]): ThreadTurn[] {
 /** The quiet stats line under an answer: time, model calls and cost, from the run's own events. */
 export function turnMeta(template: string, trace: Trace): string {
   return fill(template, {
-    t: formatMs(trace.totals.latencyMs ?? trace.lastMs),
+    t: formatMs(traceMs(trace)),
     calls: String(trace.totals.modelCalls),
     cost: formatUsd(trace.totals.costUsd),
   });
+}
+
+/** Everything the turn's answer shows, read from its message. */
+export function turnView(turn: ThreadTurn): TurnView {
+  const events = turn.answer ? messageEvents(turn.answer) : [];
+  const trace = buildTrace(events);
+  return {
+    trace,
+    text: turn.answer ? answerText(turn.answer) : "",
+    error: turn.answer ? messageError(turn.answer) : undefined,
+    citations: messageCitations(events),
+    done: trace.outcome !== null,
+  };
 }

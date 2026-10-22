@@ -82,11 +82,11 @@ export function seabed(kit: Kit) {
     FLOOD.distance,
     FLOOD.angle,
     FLOOD.penumbra,
-    0,
+    FLOOD.decay,
   );
   flood.position.set(...FLOOD.position);
   flood.target.position.set(...FLOOD.target);
-  const warm = new THREE.PointLight(WARM.color, 0, WARM.distance, 0);
+  const warm = new THREE.PointLight(WARM.color, 0, WARM.distance, WARM.decay);
   warm.position.set(...WARM.position);
   bed.add(flood, flood.target, warm, sand(kit), ...rocks(kit));
   const glow = color("--color-glow");
@@ -111,10 +111,8 @@ export function seabed(kit: Kit) {
     bed,
     /** Landed (`landK` 1), the lights come up. */
     frame(t: number, landK: number): void {
-      flood.intensity =
-        (FLOOD.base + landK * FLOOD.landed) * FLOOD.falloff * LEGACY_LIGHT;
-      warm.intensity =
-        (WARM.base + landK * WARM.landed) * WARM.falloff * LEGACY_LIGHT;
+      flood.intensity = (FLOOD.base + landK * FLOOD.landed) * LEGACY_LIGHT;
+      warm.intensity = (WARM.base + landK * WARM.landed) * LEGACY_LIGHT;
       marks.forEach((mark, i) => {
         mark.material.opacity = oscillate(
           BED_MARKS.pulseBase,

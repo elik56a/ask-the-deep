@@ -1,6 +1,12 @@
 import { SEARCH_TOOL } from "#/constants/sea.constants";
-import type { LlmCompleted } from "#/generated/events.gen";
-import type { DiveStep, StepCopy, StepText } from "#/types/sea.types";
+import type { LlmCompleted, StreamEvent } from "#/generated/events.gen";
+import type {
+  DiveStep,
+  StepContext,
+  StepCopy,
+  StepText,
+} from "#/types/sea.types";
+import { formatMs } from "#/utils/format.utils";
 import { fill } from "#/utils/toolSteps.utils";
 
 function choice(result: LlmCompleted, copy: StepCopy): string {
@@ -25,12 +31,21 @@ export function stepText(
   step: DiveStep,
   copy: StepCopy,
   ended = false,
+  ctx: Pick<StepContext, "carried" | "retrieved"> = {
+    carried: 0,
+    retrieved: [],
+  },
 ): StepText {
   const { event } = step.event;
   const result = step.result?.event;
   switch (event.type) {
     case "request.started":
-      return { label: copy.request, title: copy.requestTitle };
+      return {
+        label: copy.request,
+        title: ctx.carried
+          ? fill(copy.requestCarried, { n: String(ctx.carried) })
+          : copy.requestTitle,
+      };
     case "guardrails.checked": {
       const n = String(event.checks.length);
       const p = String(event.checks.filter((check) => check.passed).length);
@@ -92,7 +107,14 @@ export function stepText(
       return {
         label: copy.sources,
         title: event.citations.length
-          ? fill(copy.sourcesChecked, { n: String(event.citations.length) })
+          ? fill(copy.sourcesChecked, {
+              m: String(
+                event.citations.filter((c) =>
+                  ctx.retrieved.includes(c.chunk_id),
+                ).length,
+              ),
+              n: String(event.citations.length),
+            })
           : copy.sourcesNone,
       };
     case "request.finished":
@@ -106,4 +128,16 @@ export function stepText(
     default:
       return { label: copy.error, title: copy.errorTitle };
   }
+}
+
+/** The events whose evidence shows under a step: a model call that has finished shows only its result. */
+export function stepEvidence(step: DiveStep, ended: boolean): StreamEvent[] {
+  const done =
+    step.event.event.type === "llm.started" && (step.result || ended);
+  return [...(done ? [] : [step.event]), ...(step.result ? [step.result] : [])];
+}
+
+/** The raw event behind a step, as the server sent it. */
+export function techLine(item: StreamEvent): string {
+  return `${item.event.type} · event #${item.seq} · server +${formatMs(item.t_ms)}`;
 }

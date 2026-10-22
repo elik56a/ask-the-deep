@@ -15,8 +15,17 @@ export function useSeaEvents(
   steps: DiveStep[],
   tops: number[],
   diving: boolean,
+  /** Answer words streamed so far; each one sends bubbles up. */
+  words: number,
 ): void {
   const seen = useRef<number | null>(null);
+  const bubbled = useRef(0);
+
+  useEffect(() => {
+    const fresh = words - bubbled.current;
+    bubbled.current = words;
+    if (diving && fresh > 0) sea.current?.bubbles(fresh * BUBBLES_PER_DELTA);
+  }, [sea, words, diving]);
 
   useEffect(() => {
     // A shorter list is a new run or a replay.
@@ -48,9 +57,6 @@ export function useSeaEvents(
           break;
         case "retrieval.completed":
           controls.lanterns(px(item), event.passages, event.threshold);
-          break;
-        case "text.delta":
-          controls.bubbles(BUBBLES_PER_DELTA);
           break;
         case "request.finished":
           controls.lamp(false);

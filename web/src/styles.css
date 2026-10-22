@@ -67,6 +67,7 @@
   --color-sand: #6b6250;
   --color-rock: #3a4645;
   --color-dust: #a89c80;
+  --color-black: #000;
 
   /* One family (ADR 0019): Archivo, wide for display; Heebo carries Hebrew. Mono only for numbers and labels. */
   --font-sans:
@@ -120,6 +121,141 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stream-word {
     animation: none;
+  }
+}
+
+/* Step cards (P5.39): a new card rises in; its safety checks tick in one by one. */
+.step-enter {
+  animation: step-enter 0.45s var(--ease-out) both;
+}
+
+@keyframes step-enter {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+.tick-in {
+  opacity: 0;
+  animation: tick-in 0.35s var(--ease-out) forwards;
+  animation-delay: calc(var(--i) * 260ms + 300ms);
+}
+
+@keyframes tick-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Breaking the surface on the way up: froth slides down the view as the water drains off (P5.40). */
+.foam {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-start: -70%;
+  block-size: 110%;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 .055' numOctaves='4' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .92 0 0 0 0 .97 0 0 0 0 .98 7 0 0 0 -3.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E")
+    center / cover,
+    linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in oklab, var(--color-foam) 30%, transparent) 55%,
+      color-mix(in oklab, var(--color-foam) 50%, transparent) 72%,
+      transparent
+    );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-black) 35%,
+    var(--color-black) 80%,
+    transparent
+  );
+}
+
+/* Retrieval scores fill one by one once the results card is in. */
+.bar-fill {
+  transform-origin: left;
+  animation: bar-fill 1.1s var(--ease-out) both;
+  animation-delay: calc(var(--i) * 160ms + 400ms);
+}
+
+[dir="rtl"] .bar-fill {
+  transform-origin: right;
+}
+
+@keyframes bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Light playing on the card in focus, as through water. */
+.caustic::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  background:
+    radial-gradient(
+      22% 16% at 22% 30%,
+      color-mix(in oklab, var(--color-text) 9%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      18% 22% at 68% 42%,
+      color-mix(in oklab, var(--color-glow) 10%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      26% 14% at 40% 72%,
+      color-mix(in oklab, var(--color-text) 7%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      14% 18% at 84% 78%,
+      color-mix(in oklab, var(--color-glow) 8%, transparent),
+      transparent 70%
+    );
+}
+
+[data-focus] > .caustic::before {
+  opacity: 1;
+  animation: caustic 18s ease-in-out infinite alternate;
+}
+
+@keyframes caustic {
+  from {
+    transform: translate(-6%, -4%) rotate(-4deg) scale(1);
+  }
+  to {
+    transform: translate(6%, 5%) rotate(5deg) scale(1.12);
+  }
+}
+
+@keyframes pulse-ring {
+  50% {
+    box-shadow:
+      0 0 0 9px color-mix(in oklab, var(--c) 8%, transparent),
+      0 0 20px var(--c);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-enter,
+  .tick-in,
+  .bar-fill,
+  [data-focus] > .caustic::before {
+    animation: none;
+    opacity: 1;
   }
 }
 

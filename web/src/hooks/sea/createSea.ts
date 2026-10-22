@@ -2,13 +2,14 @@ import type { RefObject } from "react";
 import type * as Three from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { MODEL_WAVES } from "#/constants/models.constants";
-import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
+import { EASE_OUT, REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import {
   FOG_KEYS,
   LAND_FOG_CUT,
   LAND_LIFT,
   SEA_MAX_PIXEL_RATIO,
   SURFACE_Y,
+  VIGNETTE_KEYS,
   ZONE_PX,
 } from "#/constants/sea.constants";
 import {
@@ -19,16 +20,20 @@ import {
   DIVER,
   DUST,
   EASE_RATE,
+  FOAM,
   LANDING_DUST,
   LEGACY_LIGHT,
   LIFT_EPSILON_PX,
+  LOG_SHIFT,
   LURE,
   MAX_FRAME_S,
   SEABED,
   SPLASH,
   STREAM_BUBBLES,
+  SURFACING,
   UNDER_Y,
   WAVES,
+  WET,
 } from "#/constants/seaScene.constants";
 import type { ModelId } from "#/types/models.types";
 import type {
@@ -45,10 +50,11 @@ import {
   worldY,
   zoneLabel,
 } from "#/utils/depth.utils";
-import { approach } from "#/utils/ease.utils";
+import { approach, clamp01 } from "#/utils/ease.utils";
 import { waveAt } from "#/utils/wave.utils";
 import { diverRig } from "./diver";
 import { glowTexture } from "./glow";
+import { legacyFalloff } from "./legacyFalloff";
 import {
   boatRig,
   placeBed,
@@ -98,8 +104,9 @@ export function createSea(
   host: HTMLElement,
   waterRef: RefObject<HTMLElement | null>,
 ): Sea | null {
-  // The palette was tuned without colour management, like the prototype.
+  // The palette and lights were tuned without colour management and with r128's falloff.
   THREE.ColorManagement.enabled = false;
+  legacyFalloff(THREE);
   const made = renderer(THREE, canvas);
   if (!made) return null;
   const gl = made;
@@ -154,7 +161,7 @@ export function createSea(
     color("--color-glow"),
     0,
     LURE.distance,
-    0,
+    LURE.decay,
   );
   const boat = boatRig(kit);
   const sub = subRig(kit);
@@ -202,6 +209,10 @@ export function createSea(
   let lampLevel = 0;
   let camY = SURFACE_Y;
   let wasUnder = false;
+  let wet = 0;
+  let shownVignette = -1;
+  const foam = host.querySelector<HTMLElement>("[data-foam]");
+  const vignette = host.querySelector<HTMLElement>("[data-vignette]");
   let landing: number | null = null;
   let zoneName = "";
   let clock = 0;
@@ -209,13 +220,17 @@ export function createSea(
   let frame = 0;
   let lost = false;
   let landed = false;
+  let shifted = false;
+  let shift = 0;
   let landK = 0;
   let lift = 0;
   let liftSet = Number.NaN;
+  let shiftSet = Number.NaN;
 
   function resize(): void {
     gl.setSize(innerWidth, innerHeight, false);
     liftSet = Number.NaN;
+    shiftSet = Number.NaN;
     camera.aspect = innerWidth / innerHeight;
     camera.fov =
       camera.aspect < CAMERA.narrowAspect ? CAMERA.narrowFov : CAMERA.fov;
@@ -238,12 +253,24 @@ export function createSea(
     pointer.y = approach(pointer.y, pointer.ty, EASE_RATE.pointer, dt);
     lift = ease(lift, landed ? innerHeight * LAND_LIFT : 0, EASE_RATE.lift);
     landK = ease(landK, landed ? 1 : 0, EASE_RATE.land);
-    if (!(Math.abs(lift - liftSet) < LIFT_EPSILON_PX)) {
+    const wide = innerWidth >= LOG_SHIFT.minWidth;
+    // The log sits at the inline start, so in RTL the free water is on the left.
+    const side = document.documentElement.dir === "rtl" ? -1 : 1;
+    const shiftTo =
+      shifted && wide
+        ? (side * (LOG_SHIFT.logStart + LOG_SHIFT.cardEnd)) / 2
+        : 0;
+    shift = ease(shift, shiftTo, EASE_RATE.lift);
+    const still =
+      Math.abs(lift - liftSet) < LIFT_EPSILON_PX &&
+      Math.abs(shift - shiftSet) < LIFT_EPSILON_PX;
+    if (!still) {
       liftSet = lift;
+      shiftSet = shift;
       camera.setViewOffset(
         innerWidth,
         innerHeight,
-        0,
+        -shift,
         lift,
         innerWidth,
         innerHeight,
@@ -269,12 +296,15 @@ export function createSea(
     gl.setClearColor(w);
     fog.color.copy(w);
     // Landed: the water clears, so the seabed reads instead of fading into the fog.
-    fog.density = under
-      ? keyframe(zone, FOG_KEYS) * (1 - LAND_FOG_CUT * landK)
-      : 0;
+    fog.density = keyframe(zone, FOG_KEYS) * (1 - LAND_FOG_CUT * landK) * wet;
     sea.material.uniforms.uUnder.value.copy(w);
     lampLevel = approach(lampLevel, lampOn ? 1 : 0, EASE_RATE.lamp, dt);
-    light.frame({ zone, under, lamp: lampLevel });
+    light.frame({ zone, under, wet, lamp: lampLevel });
+    const dim = Math.round(keyframe(zone, VIGNETTE_KEYS) * wet * 100) / 100;
+    if (vignette && dim !== shownVignette) {
+      shownVignette = dim;
+      vignette.style.opacity = String(dim);
+    }
   }
 
   function animate(dt: number, t: number, zone: number, under: boolean): void {
@@ -288,7 +318,7 @@ export function createSea(
     lureLight.intensity =
       (LURE.intensity + Math.sin(t * LURE.flickerRate) * LURE.flicker) *
       LEGACY_LIGHT;
-    rays.frame(zone, under, t);
+    rays.frame(zone, wet, t);
     drift.frame(t);
     floor.frame(t, landK);
     marks.frame(dt, t);
@@ -302,6 +332,30 @@ export function createSea(
     }
     bubbles.step(dt, BUBBLES.gravity);
     dust.step(dt, DUST.gravity);
+  }
+
+  // Breaking the surface on the way up: a burst of bubbles and the foam wash.
+  function surface(): void {
+    const s = SURFACING;
+    splashAt.set(0, camY + s.dy, s.z);
+    bubbles.emit(s.count, splashAt, s.spread, s.rise, s.sideways);
+    foam?.animate(
+      [
+        {
+          opacity: 0,
+          transform: `translateY(${FOAM.fromY})`,
+          easing: EASE_OUT,
+        },
+        {
+          opacity: FOAM.peak,
+          transform: `translateY(${FOAM.peakY})`,
+          offset: FOAM.peakAt,
+          easing: FOAM.easeIn,
+        },
+        { opacity: 0, transform: `translateY(${FOAM.toY})` },
+      ],
+      { duration: FOAM.durationMs },
+    );
   }
 
   function draw(dt: number): void {
@@ -322,7 +376,11 @@ export function createSea(
         SPLASH.sideways,
       );
     }
+    // Only a real ascent breaks the surface; the water closing (a new dive, Watch again) is not one.
+    if (!under && wasUnder && !quiet() && waterRef.current) surface();
     wasUnder = under;
+    const wetTo = clamp01((WET.dryY - camY) / WET.band);
+    wet = quiet() ? wetTo : approach(wet, wetTo, WET.rate, dt);
     if (zone > DEEP_LOAD_ZONE) loadDeep();
     aim(dt, t, under);
     shade(zone, under, dt);
@@ -407,6 +465,10 @@ export function createSea(
       },
       landed(on) {
         landed = on;
+        wake();
+      },
+      shifted(on) {
+        shifted = on;
         wake();
       },
       seabed(px) {

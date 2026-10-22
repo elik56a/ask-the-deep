@@ -86,3 +86,12 @@ export function isChatMessages(value: unknown): value is ChatMessage[] {
     )
   );
 }
+
+/** How many earlier messages went with `question`, as `pastMessages` sent them. */
+export function carriedWith(
+  messages: ChatMessage[],
+  question: ChatMessage,
+): number {
+  const at = messages.indexOf(question);
+  return at > 0 ? pastMessages(messages.slice(0, at)).length : 0;
+}

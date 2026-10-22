@@ -16,6 +16,11 @@ export function SeaScene({ canvasRef }: SeaSceneProps) {
         ref={canvasRef}
         className="block size-full opacity-0 transition-opacity duration-700 group-data-[gl=on]:opacity-100"
       />
+      <div data-foam className="foam" />
+      <div
+        data-vignette
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_50%_45%,transparent_48%,color-mix(in_oklab,var(--color-black)_70%,transparent)_100%)] opacity-0"
+      />
     </div>
   );
 }

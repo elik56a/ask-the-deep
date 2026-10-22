@@ -13,6 +13,7 @@ import {
 import type { ChatMessage } from "#/types/chat.types";
 import {
   answerText,
+  carriedWith,
   chatRequestBody,
   isChatMessages,
   latestAnswer,
@@ -173,4 +174,13 @@ it("drops the inline source marks from the answer the visitor reads", () => {
   expect(
     answerText(message("assistant", "A [link](https://x.dev) stays.")),
   ).toBe("A [link](https://x.dev) stays.");
+});
+
+it("counts the earlier messages a question carried, as they were sent", () => {
+  const first = message("user", "One?");
+  const empty = message("assistant", "");
+  const second = message("user", "Two?");
+  const messages = [first, empty, second];
+  expect(carriedWith(messages, first)).toBe(0);
+  expect(carriedWith(messages, second)).toBe(1);
 });

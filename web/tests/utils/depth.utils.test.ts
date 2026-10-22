@@ -11,6 +11,7 @@ import type { StreamEvent } from "#/generated/events.gen";
 import type { StepKind } from "#/types/sea.types";
 import {
   depthReadout,
+  diveEnd,
   diveOffset,
   diveSteps,
   floorPx,
@@ -210,4 +211,22 @@ it("reads the eye's height, the air's temperature and pressure above it", () => 
 it("sinks the eye from the boat to the waterline as the page scrolls", () => {
   expect(surfaceEye(0, -740)).toBe(SURFACE_Y);
   expect(surfaceEye(740, -0.0001)).toBeCloseTo(WATERLINE_Y);
+});
+
+it("ends on the sand after the report, and short of it on an abort", () => {
+  const steps = (types: StreamEvent["event"][]) =>
+    diveSteps(
+      types.map((event, seq) => ({ request_id: "r", seq, t_ms: seq, event })),
+    );
+  expect(diveEnd(steps([{ type: "llm.started", call: 1 }]))).toEqual({
+    ended: false,
+    onSand: false,
+  });
+  expect(
+    diveEnd(steps([{ type: "request.finished", outcome: "answered" }])),
+  ).toEqual({ ended: true, onSand: true });
+  expect(diveEnd(steps([{ type: "error", code: "x", message: "y" }]))).toEqual({
+    ended: true,
+    onSand: false,
+  });
 });

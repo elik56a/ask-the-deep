@@ -1,5 +1,10 @@
 import { expect, it } from "vitest";
-import { formatInt, formatMs, formatUsd } from "#/utils/format.utils";
+import {
+  formatInt,
+  formatMs,
+  formatTick,
+  formatUsd,
+} from "#/utils/format.utils";
 
 it("shows milliseconds under a second and seconds above", () => {
   expect(formatMs(803.4)).toBe("803 ms");
@@ -13,4 +18,10 @@ it("shows cost to a millionth of a dollar", () => {
 
 it("groups thousands", () => {
   expect(formatInt(3650)).toBe("3,650");
+});
+
+it("labels the time axis in whole seconds past one", () => {
+  expect(formatTick(0)).toBe("0");
+  expect(formatTick(500)).toBe("500 ms");
+  expect(formatTick(2000)).toBe("2 s");
 });

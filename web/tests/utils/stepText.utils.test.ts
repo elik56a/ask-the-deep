@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { DIVE_COPY, EVENTS_WITHOUT_STEP } from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import { diveSteps } from "#/utils/depth.utils";
-import { stepText, toolList } from "#/utils/stepText.utils";
+import {
+  stepEvidence,
+  stepText,
+  techLine,
+  toolList,
+} from "#/utils/stepText.utils";
 import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 const copy = DIVE_COPY.en.steps;
@@ -85,7 +90,7 @@ it("names the tool being run", () => {
 
 it("counts passages that clear the gate", () => {
   expect(text(EVENT_SAMPLES["retrieval.completed"]).title).toBe(
-    "Scored 2 passages, 1 good enough to use",
+    "1 of 2 passages are good enough to use",
   );
 });
 
@@ -103,7 +108,7 @@ it("explains the decision", () => {
 
 it("counts the checked sources", () => {
   expect(text(EVENT_SAMPLES["citations.attached"]).title).toBe(
-    "Checked 1 sources against the search",
+    "0 of 1 sources match this dive's search",
   );
 });
 
@@ -123,4 +128,27 @@ it("groups repeated tool names", () => {
   expect(toolList(["get_project", "get_project", "list_projects"])).toBe(
     "get_project ×2, list_projects",
   );
+});
+
+describe("stepEvidence", () => {
+  const [call] = diveSteps(
+    stream([EVENT_SAMPLES["llm.started"], EVENT_SAMPLES["llm.completed"]]),
+  );
+  const [waiting] = diveSteps(stream([EVENT_SAMPLES["llm.started"]]));
+
+  it("shows a finished model call by its result only", () => {
+    expect(stepEvidence(call, false).map((item) => item.event.type)).toEqual([
+      "llm.completed",
+    ]);
+  });
+
+  it("shows a model call still running, until the run ends", () => {
+    expect(stepEvidence(waiting, false)).toHaveLength(1);
+    expect(stepEvidence(waiting, true)).toEqual([]);
+  });
+});
+
+it("writes the raw event line", () => {
+  const [item] = stream([EVENT_SAMPLES["llm.started"]]);
+  expect(techLine(item)).toBe("llm.started · event #0 · server +0 ms");
 });

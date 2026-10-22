@@ -47,8 +47,9 @@ export function shafts({ THREE, keep, color, scene }: Kit) {
     return ray;
   });
   return {
-    frame(zone: number, under: boolean, t: number): void {
-      material.uniforms.uOpacity.value = under ? keyframe(zone, SHAFT_KEYS) : 0;
+    /** `wet` 0 above the water to 1 below it. */
+    frame(zone: number, wet: number, t: number): void {
+      material.uniforms.uOpacity.value = keyframe(zone, SHAFT_KEYS) * wet;
       for (const ray of rays) {
         ray.rotation.z = oscillate(
           SHAFTS.tilt,

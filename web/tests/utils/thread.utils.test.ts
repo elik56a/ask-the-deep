@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
-import { threadTurns, turnMeta } from "#/utils/thread.utils";
+import { threadTurns, turnMeta, turnView } from "#/utils/thread.utils";
 import { buildTrace } from "#/utils/trace.utils";
 import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
@@ -42,4 +42,19 @@ it("writes the stats line from the run's own totals", () => {
     `2.91 s · ${trace.totals.modelCalls} model calls · $0.000419`,
   );
   expect(turnMeta(CHAT_COPY.he.meta.stats, trace)).toContain("קריאות למודל");
+});
+
+it("reads a turn's answer: text, sources and whether the run ended", () => {
+  const pending = turnView({
+    dive: 1,
+    question: message("q", "user"),
+    answer: null,
+  });
+  expect(pending).toMatchObject({ text: "", citations: [], done: false });
+  const answered = turnView({
+    dive: 1,
+    question: message("q", "user"),
+    answer: message("a", "assistant"),
+  });
+  expect(answered.text).toBe("a");
 });

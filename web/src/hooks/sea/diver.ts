@@ -35,7 +35,7 @@ export function diverRig({ THREE, scene }: Kit) {
     DIVER_LAMP.color,
     0,
     DIVER_LAMP.distance,
-    0,
+    DIVER_LAMP.decay,
   );
   scene.add(lamp);
   let diver: Creature | null = null;
@@ -63,8 +63,7 @@ export function diverRig({ THREE, scene }: Kit) {
         diver.root.quaternion.slerp(hoverQ, pose.hover);
       }
       lamp.position.copy(diver.root.position).add(lampOffset);
-      lamp.intensity =
-        DIVER_LAMP.intensity * DIVER_LAMP.falloff * pose.ease * LEGACY_LIGHT;
+      lamp.intensity = DIVER_LAMP.intensity * pose.ease * LEGACY_LIGHT;
       if (diver.action) diver.action.timeScale = 1 + pose.ease * DIVER.kick;
       diver.mixer.update(dt);
     },

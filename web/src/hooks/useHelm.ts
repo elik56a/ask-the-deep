@@ -11,6 +11,7 @@ import {
   HELM_SPOKE,
   HELM_WOOD,
 } from "#/constants/predive.constants";
+import { legacyFalloff } from "#/hooks/sea/legacyFalloff";
 
 // Light intensities are tuned for three's old non-physical lights, like the sea's (see useSea).
 const LEGACY_LIGHT = Math.PI;
@@ -89,6 +90,7 @@ export function useHelm(
     // three.js loads lazily, as for the sea, so it never weighs on the first paint
     import("three").then((THREE) => {
       if (disposed) return;
+      legacyFalloff(THREE);
       let renderer: Three.WebGLRenderer;
       try {
         renderer = new THREE.WebGLRenderer({
@@ -111,13 +113,7 @@ export function useHelm(
       const key = new THREE.DirectionalLight(HELM_KEY, 2 * LEGACY_LIGHT);
       key.position.set(-2, 3, 4);
       scene.add(key);
-      // No falloff: the old lights' linear falloff at the wheel's distance comes to about 0.69
-      const rim = new THREE.PointLight(
-        HELM_RIM,
-        2.2 * 0.69 * LEGACY_LIGHT,
-        8,
-        0,
-      );
+      const rim = new THREE.PointLight(HELM_RIM, 2.2 * LEGACY_LIGHT, 8, 1);
       rim.position.set(1.6, -1.2, -1.5);
       scene.add(rim);
       const wheel = buildWheel(THREE, (item) => disposables.push(item));

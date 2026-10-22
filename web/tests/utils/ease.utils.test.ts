@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { approach, easeOutCubic, oscillate } from "#/utils/ease.utils";
+import { approach, clamp01, easeOutCubic, oscillate } from "#/utils/ease.utils";
 
 it("approaches the target and never overshoots", () => {
   expect(approach(0, 10, 2, 0.25)).toBe(5);
@@ -15,4 +15,8 @@ it("eases out and clamps", () => {
   expect(easeOutCubic(0)).toBe(0);
   expect(easeOutCubic(0.5)).toBe(0.875);
   expect(easeOutCubic(2)).toBe(1);
+});
+
+it("holds a value to [0, 1]", () => {
+  expect([-1, 0.4, 2].map(clamp01)).toEqual([0, 0.4, 1]);
 });

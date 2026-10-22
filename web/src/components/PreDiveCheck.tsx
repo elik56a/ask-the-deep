@@ -1,20 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Button } from "#/components/ui/button";
 import {
   COUNT_FROM,
   COUNT_MS,
-  FIRST_TICK_MS,
-  HELM_NOTCH,
   HELM_RING_R,
-  HOLD_MS,
   PREDIVE_COPY,
   REPLAY_COUNT_FROM,
-  TICK_MS,
-  VEIL_FADE_MS,
 } from "#/constants/predive.constants";
 import { useHelm } from "#/hooks/useHelm";
+import { usePreDiveClock } from "#/hooks/usePreDiveClock";
 import type { Lang } from "#/types/i18n.types";
 import type { PreDiveCheck as Check, PreDivePlan } from "#/types/predive.types";
+import {
+  cargoRows,
+  helmTurn,
+  veilProgress,
+  veilTitle,
+} from "#/utils/predive.utils";
 import { fill } from "#/utils/toolSteps.utils";
 
 interface PreDiveCheckProps {
@@ -38,65 +40,18 @@ export function PreDiveCheck({
   onGone,
 }: PreDiveCheckProps) {
   const copy = PREDIVE_COPY[lang];
-  const dialog = useRef<HTMLDialogElement>(null);
-  const go = useRef<HTMLButtonElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const timers = useRef<number[]>([]);
-  const actions = useRef({ onDescend, onGone });
-  actions.current = { onDescend, onGone };
-  const [on, setOn] = useState(false);
-  const [ticks, setTicks] = useState(0);
-  const [step, setStep] = useState(0);
-  const [spun, setSpun] = useState(false);
   const n = checks.length;
   const count = plan.replay ? REPLAY_COUNT_FROM : COUNT_FROM;
-
-  useHelm(
-    canvas,
-    ticks * HELM_NOTCH -
-      (step * n * HELM_NOTCH) / count +
-      (spun ? 2 * Math.PI : 0),
+  const { dialog, go, on, ticks, step, spun, descend } = usePreDiveClock(
+    n,
+    count,
+    onDescend,
+    onGone,
   );
-
-  const gone = useRef(false);
-  const leave = useRef(() => {
-    if (gone.current) return;
-    gone.current = true;
-    for (const timer of timers.current) clearTimeout(timer);
-    setOn(false);
-    actions.current.onDescend();
-    timers.current = [
-      window.setTimeout(() => actions.current.onGone(), VEIL_FADE_MS),
-    ];
-  });
-
-  useEffect(() => {
-    dialog.current?.showModal();
-    go.current?.focus({ preventScroll: true });
-    const frame = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setOn(true)),
-    );
-    const at = (ms: number, act: () => void) =>
-      timers.current.push(window.setTimeout(act, ms));
-    for (let i = 0; i < n; i++)
-      at(FIRST_TICK_MS + i * TICK_MS, () => setTicks(i + 1));
-    const ready = FIRST_TICK_MS + n * TICK_MS + HOLD_MS;
-    for (let k = 0; k < count; k++)
-      at(ready + k * COUNT_MS, () => setStep(k + 1));
-    at(ready + count * COUNT_MS, leave.current);
-    return () => {
-      cancelAnimationFrame(frame);
-      for (const timer of timers.current) clearTimeout(timer);
-    };
-  }, [n, count]);
-
+  useHelm(canvas, helmTurn(ticks, step, n, count, spun));
   const counting = step > 0;
-  const progress = counting ? (count - step) / count : ticks / n;
-  const title = plan.replay
-    ? fill(copy.title.replay, { n: String(plan.dive) })
-    : plan.prior.length
-      ? copy.title.again
-      : copy.title.first;
+  const progress = veilProgress(ticks, step, n, count);
 
   return (
     <dialog
@@ -162,7 +117,7 @@ export function PreDiveCheck({
           id="veil-title"
           className="text-balance font-bold font-display font-stretch-expanded text-[clamp(1.5rem,3vw,2rem)] leading-[1.1] tracking-[-0.02em]"
         >
-          {title}
+          {veilTitle(copy.title, plan)}
         </h2>
         <q
           dir="auto"
@@ -232,10 +187,7 @@ export function PreDiveCheck({
               </svg>
             </summary>
             <ol className="mt-2 flex flex-col gap-1.5 rounded-[14px] border border-line p-3.5 text-start">
-              {[
-                ...plan.prior,
-                { role: "user" as const, text: plan.question },
-              ].map((message, i) => (
+              {cargoRows(plan).map((message, i) => (
                 <li
                   // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed while the veil is open
                   key={i}
@@ -273,10 +225,7 @@ export function PreDiveCheck({
           <Button
             ref={go}
             size="lg"
-            onClick={() => {
-              setSpun(true);
-              leave.current();
-            }}
+            onClick={descend}
             className="descend min-h-13 rounded-[14px] px-7 font-[650] font-display text-base leading-none tracking-[-0.01em] [font-stretch:112%]"
           >
             {copy.descend}

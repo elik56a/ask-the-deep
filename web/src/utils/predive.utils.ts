@@ -1,5 +1,6 @@
-import { PACE_ESTIMATE_MS } from "#/constants/predive.constants";
+import { HELM_NOTCH, PACE_ESTIMATE_MS } from "#/constants/predive.constants";
 import type { StreamEvent } from "#/generated/events.gen";
+import type { PastMessage } from "#/types/chat.types";
 import type {
   PreDiveCheck,
   PreDiveCopy,
@@ -47,4 +48,43 @@ export function preDiveChecks(
     line(checks.unstored, {}),
     paced,
   ];
+}
+
+/** The veil's heading: a first dive, a follow-up, or a replay of dive n. */
+export function veilTitle(
+  title: PreDiveCopy["title"],
+  plan: PreDivePlan,
+): string {
+  if (plan.replay) return fill(title.replay, { n: String(plan.dive) });
+  return plan.prior.length ? title.again : title.first;
+}
+
+/** How full the ring is: it fills with the checks, then empties with the countdown. */
+export function veilProgress(
+  ticks: number,
+  step: number,
+  checks: number,
+  count: number,
+): number {
+  return step > 0 ? (count - step) / count : ticks / checks;
+}
+
+/** The helm's turn: a notch per check, unwound over the countdown, plus a full spin on Descend. */
+export function helmTurn(
+  ticks: number,
+  step: number,
+  checks: number,
+  count: number,
+  spun: boolean,
+): number {
+  return (
+    ticks * HELM_NOTCH -
+    (step * checks * HELM_NOTCH) / count +
+    (spun ? 2 * Math.PI : 0)
+  );
+}
+
+/** What the follow-up carries: the earlier messages, then the new question. */
+export function cargoRows(plan: PreDivePlan): PastMessage[] {
+  return [...plan.prior, { role: "user", text: plan.question }];
 }

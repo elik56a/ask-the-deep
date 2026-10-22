@@ -6,15 +6,8 @@ import { CHAT_COPY } from "#/constants/chat.constants";
 import { useTypedText } from "#/hooks/useTypedText";
 import type { Lang } from "#/types/i18n.types";
 import type { ThreadTurn as Turn } from "#/types/thread.types";
-import {
-  answerText,
-  messageCitations,
-  messageError,
-  messageEvents,
-  messageText,
-} from "#/utils/chat.utils";
-import { turnMeta } from "#/utils/thread.utils";
-import { buildTrace } from "#/utils/trace.utils";
+import { messageText } from "#/utils/chat.utils";
+import { turnMeta, turnView } from "#/utils/thread.utils";
 
 interface ThreadTurnProps {
   turn: Turn;
@@ -35,14 +28,9 @@ export function ThreadTurn({
   onFocusChunk,
 }: ThreadTurnProps) {
   const copy = CHAT_COPY[lang];
-  const events = turn.answer ? messageEvents(turn.answer) : [];
-  const trace = buildTrace(events);
-  const text = turn.answer ? answerText(turn.answer) : "";
-  const error = turn.answer ? messageError(turn.answer) : undefined;
-  const done = trace.outcome !== null;
+  const { trace, text, error, citations, done } = turnView(turn);
   const typed = useTypedText(text, fresh && done);
   const typing = typed.length < text.length;
-  const citations = messageCitations(events);
 
   return (
     <li

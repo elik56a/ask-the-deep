@@ -70,3 +70,9 @@ export const POOL_VERTEX =
   "attribute float aAlpha; uniform float uSize; varying float vA; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = uSize * (300.0 / -mv.z); gl_Position = projectionMatrix * mv; vA = aAlpha; }";
 export const POOL_FRAGMENT =
   "uniform vec3 uColor; varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.4, d) * (0.3 + 0.7 * smoothstep(0.2, 0.45, d)); gl_FragColor = vec4(uColor, a * vA); }";
+
+// three r128's light falloff, which the scenes were tuned with: linear to the cutoff, shaped by decay.
+export const LEGACY_ATTENUATION = `float getDistanceAttenuation( const in float lightDistance, const in float cutoffDistance, const in float decayExponent ) {
+  if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );
+  return 1.0;
+}`;

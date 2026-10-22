@@ -1,10 +1,13 @@
 import type { StreamEvent } from "#/generated/events.gen";
+import type { HoodCopy } from "#/types/hood.types";
+import type { SeabedCopy } from "#/types/sea.types";
 import type {
   StageId,
   Trace,
   TraceSpan,
   TraceTotals,
 } from "#/types/trace.types";
+import { formatInt, formatMs, formatUsd } from "#/utils/format.utils";
 
 function closeSpan(
   spans: TraceSpan[],
@@ -112,4 +115,38 @@ export function buildTrace(events: StreamEvent[]): Trace {
     outcome,
     lastMs,
   };
+}
+
+/** The run's length: the server's own total once it reports one, else the latest event. */
+export function traceMs(trace: Trace): number {
+  return trace.totals.latencyMs ?? trace.lastMs;
+}
+
+/** The run reached the seabed: it answered, or searched and found nothing. */
+export function traceLanded(trace: Trace): boolean {
+  return trace.outcome === "answered" || trace.outcome === "no_information";
+}
+
+/** The seabed receipt, label then value: total time, calls, tokens, cost, outcome. */
+export function traceReceipt(
+  labels: SeabedCopy["receipt"],
+  status: HoodCopy["status"],
+  trace: Trace,
+): [string, string][] {
+  const { totals, outcome } = trace;
+  return [
+    [labels.total, formatMs(traceMs(trace))],
+    [labels.calls, String(totals.modelCalls)],
+    [labels.tokens, formatInt(totals.inputTokens + totals.outputTokens)],
+    [labels.cost, formatUsd(totals.costUsd)],
+    [labels.outcome, outcome ? status[outcome] : "—"],
+  ];
+}
+
+/** The model the run was configured with, from its first event. */
+export function requestModel(events: StreamEvent[]): string {
+  for (const item of events) {
+    if (item.event.type === "request.started") return item.event.model;
+  }
+  return "";
 }

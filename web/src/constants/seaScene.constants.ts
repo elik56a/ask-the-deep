@@ -34,8 +34,38 @@ export const CAMERA = {
   bob: 0.35,
 } as const;
 
+// While the step log is in view (diving, rereading) the scene centres in the water beyond it,
+// on wide screens: the log starts at the 32 px gutter and a card ends 684 px past it.
+export const LOG_SHIFT = {
+  minWidth: 1024,
+  logStart: 32,
+  cardEnd: 684,
+} as const;
+
 // The camera is underwater below this height.
 export const UNDER_Y = -0.4;
+// The water fades in over a band around the waterline instead of switching there (P5.40):
+// dry above `dryY`, fully wet `band` lower, eased at `rate` per second.
+export const WET = { dryY: 0.6, band: 2.4, rate: 6 } as const;
+// Breaking the surface on the way up: a burst of bubbles and a foam wash draining down the view.
+export const SURFACING = {
+  dy: -2.5,
+  z: -5,
+  count: 140,
+  spread: 8,
+  rise: 4.5,
+  sideways: 2.5,
+} as const;
+export const FOAM = {
+  durationMs: 1600,
+  peak: 0.85,
+  peakAt: 0.25,
+  fromY: "10%",
+  peakY: "40%",
+  toY: "150%",
+  // Out fast to the peak, then falling away like water draining off.
+  easeIn: "cubic-bezier(0.55, 0, 0.75, 0.6)",
+} as const;
 // Per-second rates of the exponential eases.
 export const EASE_RATE = {
   pointer: 3,
@@ -71,7 +101,8 @@ export const OCEAN_PLANE = {
   colors: { deep: 0x06324a, mid: 0x14708c },
 } as const;
 
-// Falloff factors stand in for the old lights' decay at the distance each one lights.
+// Point and spot lights use r128's falloff (hooks/sea/legacyFalloff.ts): linear to `distance`,
+// shaped by `decay`, exactly as in the prototype.
 export const HEMI = {
   sky: 0xcfeaf5,
   deepSky: 0x4f86b3,
@@ -85,19 +116,20 @@ export const SUN_LIGHT = {
   position: [12, 40, -20],
 } as const;
 export const LAMP = {
-  distance: 24,
+  distance: 36,
+  decay: 1.2,
   position: [0, 0.5, 1],
   // Below this zone the lamp stays on low; the stream turns it up.
   deepZone: 1.1,
-  deep: 0.75,
+  deep: 0.9,
   on: 1.4,
 } as const;
 export const TORCH = {
   color: 0xd8f6ff,
-  distance: 70,
+  distance: 110,
+  decay: 1,
   angle: 0.6,
   penumbra: 0.7,
-  falloff: 0.82,
   position: [0.6, -0.4, 0],
   target: [0, -2.5, -20],
 } as const;
@@ -105,11 +137,12 @@ export const DIVER_LAMP = {
   color: 0xd8f6ff,
   distance: 14,
   intensity: 1.6,
-  falloff: 0.5,
+  decay: 1.6,
   offset: [1.5, 2.5, 4],
 } as const;
 export const LURE = {
   distance: 18,
+  decay: 1.4,
   intensity: 1.4,
   flicker: 0.3,
   flickerRate: 2.4,
@@ -239,22 +272,21 @@ export const BED_MARKS = {
 export const FLOOD = {
   color: 0xd9efff,
   distance: 140,
+  decay: 1,
   angle: 0.85,
   penumbra: 0.65,
   position: [4, 42, 6],
   target: [0, 0, -22],
   base: 3.2,
   landed: 2.6,
-  // Tuned down from the old 0.64 for the brighter sand.
-  falloff: 0.38,
 } as const;
 export const WARM = {
   color: 0xffc98a,
   distance: 40,
+  decay: 1.4,
   position: [-6, 9, -16],
   base: 1.4,
   landed: 1.2,
-  falloff: 0.61,
 } as const;
 // Seabed creatures animate once the camera is this many zones down.
 export const BED_LIFE_ZONE = 3;
@@ -369,7 +401,7 @@ export const OTHER_DIVERS = {
   torch: {
     color: 0xfff1cf,
     intensity: 2.2,
-    falloff: 0.75,
+    decay: 1.4,
     distance: 26,
     beam: 2.4,
     beamOpacity: 0.9,
@@ -409,14 +441,14 @@ export const SUB = {
   nose: {
     color: 0xe8fbff,
     intensity: 3.5,
-    falloff: 0.6,
+    decay: 1.2,
     distance: 50,
     at: [9, 0, 0],
   },
   top: {
     color: 0xbfe0ff,
     intensity: 2,
-    falloff: 0.7,
+    decay: 1.2,
     distance: 22,
     at: [0, 5, 3],
   },

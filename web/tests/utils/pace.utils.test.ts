@@ -1,7 +1,7 @@
-import { expect, it } from "vitest";
-import { DWELL_MS } from "#/constants/pace.constants";
+import { describe, expect, it } from "vitest";
+import { DELTA_FROM, DELTA_SPAN, DWELL_MS } from "#/constants/pace.constants";
 import type { PaceClock } from "#/types/pace.types";
-import { advanceClock, paceTimes } from "#/utils/pace.utils";
+import { advanceClock, paceTimes, writtenShare } from "#/utils/pace.utils";
 import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 const RUN = stream([
@@ -72,4 +72,34 @@ it("holds dive time while paused, but real time runs on", () => {
     v: 0,
     wall: 500,
   });
+});
+
+describe("writtenShare", () => {
+  const events = stream([
+    EVENT_SAMPLES["generation.started"],
+    EVENT_SAMPLES["decision.made"],
+  ]);
+  const times = paceTimes(events);
+
+  it("is nothing before writing starts and everything after a skip", () => {
+    expect(writtenShare(events, times, times[0] - 1)).toBe(0);
+    expect(writtenShare(events, times, Number.POSITIVE_INFINITY)).toBe(1);
+  });
+
+  it("grows across the writing step", () => {
+    const mid = times[0] + (DWELL_MS["generation.started"] ?? 0) / 2;
+    const share = writtenShare(events, times, mid);
+    expect(share).toBeGreaterThan(0);
+    expect(share).toBeLessThan(1);
+  });
+});
+
+it("lands what closes the writing step after the streamed text", () => {
+  const events = stream([
+    EVENT_SAMPLES["generation.started"],
+    EVENT_SAMPLES["llm.completed"],
+  ]);
+  const [start, done] = paceTimes(events);
+  const dwell = DWELL_MS["generation.started"] ?? 0;
+  expect(done - start).toBeCloseTo(dwell * (DELTA_FROM + DELTA_SPAN));
 });

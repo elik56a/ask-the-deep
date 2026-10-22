@@ -34,6 +34,8 @@ export interface SeaControls {
   seabed: (px: number) => void;
   /** On the sand with the full chat: the view lifts, the water clears and the lights come up. */
   landed: (on: boolean) => void;
+  /** The step log is in view: the scene centres in the water beyond it. */
+  shifted: (on: boolean) => void;
   /** Starts loading the deep models and the seabed props, once. */
   loadDeep: () => void;
 }
@@ -57,6 +59,8 @@ export interface StepCopy {
   step: string;
   request: string;
   requestTitle: string;
+  /** `{n}` earlier messages travel with a follow-up. */
+  requestCarried: string;
   safety: string;
   safetyPassed: string;
   safetyBlocked: string;
@@ -116,9 +120,62 @@ export interface SeabedCopy {
   };
 }
 
+/**
+ * What a step's narration says, under its title while it is in focus. `{q}` is the search query
+ * (shown quoted); `{n}`, `{t}`, `{s}`, `{k}` and `{tool}` are filled in.
+ */
+export interface SayCopy {
+  request: string;
+  requestCarried: string;
+  guard: string;
+  guardBlocked: string;
+  cacheHit: string;
+  cacheMiss: string;
+  llmFirst: string;
+  llmFirstCarried: string;
+  llmRound: string;
+  choseTool: string;
+  choseAnswer: string;
+  choseText: string;
+  unfinished: string;
+  search: string;
+  searchCarried: string;
+  tool: string;
+  results: string;
+  writingFrom: string;
+  writingNone: string;
+  decisionAnswer: string;
+  decisionNoInfo: string;
+  sources: string;
+  sourcesNone: string;
+  seabed: string;
+  seabedSkipped: string;
+  calledOff: string;
+  error: string;
+}
+
+/** A step's narration; `quote` fills the text's `{q}`. */
+export interface StepSay {
+  text: string;
+  quote?: string;
+}
+
+/** What the cards know beyond the events: the conversation and the playback. */
+export interface StepContext {
+  /** Earlier messages sent with this question. */
+  carried: number;
+  /** The visitor skipped to the end. */
+  skipped: boolean;
+  /** Real time the dive has played, for "about N× slower". */
+  wallMs: number;
+  /** Passages this dive's search returned. */
+  retrieved: string[];
+}
+
 export interface DiveCopy {
   zones: Record<ZoneId, string>;
   steps: StepCopy;
+  say: SayCopy;
   logLabel: string;
   seabed: SeabedCopy;
   /** The server panel; a `[short, wide]` label adds its second part on wide screens only. */
@@ -151,4 +208,11 @@ export interface PlaybackCopy {
   skip: string;
   serverRunning: string;
   serverDone: string;
+}
+
+/** A run of narration and the word it starts streaming at; `quote` marks the visitor's words. */
+export interface SayPart {
+  text: string;
+  start: number;
+  quote: boolean;
 }

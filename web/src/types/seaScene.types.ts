@@ -191,3 +191,16 @@ export interface DiverPose {
   /** How far the diver has turned to hover beside the chat. */
   hover: number;
 }
+
+/** Member `i` of a group that comes `count` times. */
+export interface Member<T> {
+  group: T;
+  i: number;
+}
+
+/** One prop on the sand: member `i` of `prop` at `place`. */
+export interface BedSlot {
+  prop: BedProp;
+  place: Place;
+  i: number;
+}

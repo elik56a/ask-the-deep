@@ -22,3 +22,8 @@ export function oscillate(
 export function easeOutCubic(k: number): number {
   return 1 - (1 - Math.min(Math.max(k, 0), 1)) ** 3;
 }
+
+/** `x` held to [0, 1]. */
+export function clamp01(x: number): number {
+  return Math.min(Math.max(x, 0), 1);
+}

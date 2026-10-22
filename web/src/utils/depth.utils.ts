@@ -188,3 +188,15 @@ export function diveSteps(events: StreamEvent[]): DiveStep[] {
   }
   return steps;
 }
+
+/** How the log ends: `ended` once it reports or aborts, `onSand` when it reached the seabed. */
+export function diveEnd(steps: DiveStep[]): {
+  ended: boolean;
+  onSand: boolean;
+} {
+  const last = steps.at(-1)?.kind;
+  return {
+    ended: last === "seabed" || last === "abort",
+    onSand: last === "seabed",
+  };
+}

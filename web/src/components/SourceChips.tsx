@@ -1,7 +1,8 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import { SourceTip } from "#/components/SourceTip";
 import { SOURCE_COPY } from "#/constants/source.constants";
 import type { Citation } from "#/generated/events.gen";
+import { useSourceTip } from "#/hooks/useSourceTip";
 import type { Lang } from "#/types/i18n.types";
 import { sourceUrl } from "#/utils/source.utils";
 
@@ -19,20 +20,8 @@ export function SourceChips({
   onFocusChunk,
 }: SourceChipsProps) {
   const tipId = useId();
-  const [tip, setTip] = useState<{
-    citation: Citation;
-    anchor: DOMRect;
-  } | null>(null);
+  const { tip, show, hide } = useSourceTip(onFocusChunk);
   if (citations.length === 0) return null;
-
-  const show = (citation: Citation, chip: HTMLElement) => {
-    setTip({ citation, anchor: chip.getBoundingClientRect() });
-    onFocusChunk(citation.chunk_id);
-  };
-  const hide = () => {
-    setTip(null);
-    onFocusChunk(null);
-  };
 
   return (
     <div

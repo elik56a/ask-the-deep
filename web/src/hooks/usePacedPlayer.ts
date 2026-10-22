@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PACE_TICK_MS } from "#/constants/pace.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { PaceClock } from "#/types/pace.types";
-import { advanceClock, paceTimes } from "#/utils/pace.utils";
+import { advanceClock, paceTimes, writtenShare } from "#/utils/pace.utils";
 
 /**
  * Plays a dive at a readable pace (ADR 0019): live events and replays alike show at their paced
@@ -49,6 +49,10 @@ export function usePacedPlayer(events: StreamEvent[]) {
     progress: clock && end > 0 ? Math.min(clock.v / end, 1) : 0,
     serverMs: finished ? finished.t_ms : (clock?.wall ?? 0),
     serverDone: finished !== undefined,
+    /** Real time the dive has played. */
+    wallMs: clock?.wall ?? 0,
+    /** Share of the answer streamed so far, for the writing step. */
+    written: writtenShare(events, times, clock?.v ?? Number.POSITIVE_INFINITY),
     start,
     stop,
     skip,

@@ -30,6 +30,7 @@ export function paceTimes(events: StreamEvent[]): number[] {
   let dwell = 0;
   let prev = 0;
   let delta = 0;
+  let writing = false;
   return events.map((item) => {
     const { type } = item.event;
     const opens = stepKindOf(item.event) !== null;
@@ -37,15 +38,35 @@ export function paceTimes(events: StreamEvent[]): number[] {
     if (opens) {
       at = slot + dwell;
       dwell = DWELL_MS[type] ?? 0;
+      writing = type === "generation.started";
     } else if (type === "text.delta") {
       const share = delta++ / Math.max(deltas.length - 1, 1);
       at = slot + dwell * (DELTA_FROM + DELTA_SPAN * share);
     } else {
-      at = slot + dwell * (INSIDE[type] ?? 0.5);
+      // While writing, what closes the step comes after the streamed text, as in the stream.
+      const inside = INSIDE[type] ?? 0.5;
+      at =
+        slot +
+        dwell * (writing ? Math.max(inside, DELTA_FROM + DELTA_SPAN) : inside);
     }
     at = Math.max(at, item.t_ms, prev);
     if (opens) slot = at;
     prev = at;
     return at;
   });
+}
+
+/** How much of the answer has streamed by dive time `v`, 0 to 1, spread like the text deltas are. */
+export function writtenShare(
+  events: StreamEvent[],
+  times: number[],
+  v: number,
+): number {
+  const i = events.findIndex(
+    (item) => item.event.type === "generation.started",
+  );
+  if (i < 0 || v < times[i]) return 0;
+  const dwell = DWELL_MS["generation.started"] ?? 0;
+  const k = (v - times[i]) / Math.max(dwell, 1);
+  return Math.min(Math.max((k - DELTA_FROM) / DELTA_SPAN, 0), 1);
 }

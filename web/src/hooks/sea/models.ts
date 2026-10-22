@@ -5,38 +5,53 @@ import { POSE_SAMPLES } from "#/constants/seaScene.constants";
 import type { ModelId } from "#/types/models.types";
 import type { Loaded, ThreeModule } from "#/types/seaScene.types";
 
+function meshesOf(THREE: ThreeModule, root: Three.Object3D): Three.Mesh[] {
+  const meshes: Three.Mesh[] = [];
+  root.traverse((node) => {
+    if (node instanceof THREE.Mesh) meshes.push(node);
+  });
+  return meshes;
+}
+
+/** Up to `POSE_SAMPLES` vertex numbers spread over `count`. */
+function samples(count: number): number[] {
+  const stride = Math.max(1, Math.floor(count / POSE_SAMPLES));
+  return Array.from(
+    { length: Math.ceil(count / stride) },
+    (_, k) => k * stride,
+  );
+}
+
 /** Bounds of the animated pose; a skinned mesh's rest bounds can be far off. */
 export function posedBox(THREE: ThreeModule, root: Three.Object3D): Three.Box3 {
   const box = new THREE.Box3();
   const point = new THREE.Vector3();
   root.updateMatrixWorld(true);
-  root.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return;
-    const position = node.geometry.attributes.position;
-    const stride = Math.max(1, Math.floor(position.count / POSE_SAMPLES));
-    for (let i = 0; i < position.count; i += stride) {
-      point.fromBufferAttribute(position, i);
-      if (node instanceof THREE.SkinnedMesh) node.applyBoneTransform(i, point);
-      box.expandByPoint(point.applyMatrix4(node.matrixWorld));
-    }
-  });
+  const points = meshesOf(THREE, root).flatMap((mesh) =>
+    samples(mesh.geometry.attributes.position.count).map(
+      (i) => [mesh, i] as const,
+    ),
+  );
+  for (const [mesh, i] of points) {
+    point.fromBufferAttribute(mesh.geometry.attributes.position, i);
+    if (mesh instanceof THREE.SkinnedMesh) mesh.applyBoneTransform(i, point);
+    box.expandByPoint(point.applyMatrix4(mesh.matrixWorld));
+  }
   return box;
 }
 
 export function disposeModel(THREE: ThreeModule, gltf: GLTF): void {
-  gltf.scene.traverse((node) => {
-    if (!(node instanceof THREE.Mesh)) return;
-    node.geometry.dispose();
-    const materials = Array.isArray(node.material)
-      ? node.material
-      : [node.material];
-    for (const material of materials) {
-      for (const value of Object.values(material)) {
-        if (value instanceof THREE.Texture) value.dispose();
-      }
-      material.dispose();
-    }
-  });
+  const meshes = meshesOf(THREE, gltf.scene);
+  const materials = meshes.flatMap((mesh) => [mesh.material].flat());
+  const textures = materials
+    .flatMap((material) => Object.values(material))
+    .filter((value) => value instanceof THREE.Texture);
+  for (const item of [
+    ...meshes.map((m) => m.geometry),
+    ...textures,
+    ...materials,
+  ])
+    item.dispose();
 }
 
 /** Loads models in parallel; one that fails is left out rather than failing the rest. */
