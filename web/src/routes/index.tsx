@@ -7,6 +7,7 @@ import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
 import { ModelCredits } from "#/components/ModelCredits";
+import { PlaybackBar } from "#/components/PlaybackBar";
 import { Seabed } from "#/components/Seabed";
 import { SeaScene } from "#/components/SeaScene";
 import { SurfaceHero } from "#/components/SurfaceHero";
@@ -17,13 +18,13 @@ import { useChatSession } from "#/hooks/useChatSession";
 import { useDiveFollow } from "#/hooks/useDiveFollow";
 import { useDiveLayout } from "#/hooks/useDiveLayout";
 import { useLang } from "#/hooks/useLang";
+import { usePacedPlayer } from "#/hooks/usePacedPlayer";
 import { useProcessPreference } from "#/hooks/useProcessPreference";
-import { useReplay } from "#/hooks/useReplay";
 import { useSea } from "#/hooks/useSea";
 import { useSeaEvents } from "#/hooks/useSeaEvents";
 import { useSession } from "#/hooks/useSession";
 import type { DiveMode } from "#/types/sea.types";
-import { messageEvents } from "#/utils/chat.utils";
+import { messageEvents, messageText } from "#/utils/chat.utils";
 import { diveSteps } from "#/utils/depth.utils";
 import { buildTrace } from "#/utils/trace.utils";
 
@@ -44,23 +45,25 @@ function Home() {
   const sea = useSea(seaCanvas, water);
 
   const last = chat.messages.at(-1);
-  const replay = useReplay(
+  const player = usePacedPlayer(
     last?.role === "assistant" ? messageEvents(last) : [],
   );
-  const steps = diveSteps(replay.events);
+  const steps = diveSteps(player.events);
   const layout = useDiveLayout(
     log,
     steps.map((step) => step.kind),
   );
-  const trace = buildTrace(replay.events);
+  const trace = buildTrace(player.events);
   const ended =
     steps.at(-1)?.kind === "seabed" || steps.at(-1)?.kind === "abort";
   const follow = useDiveFollow(mode, water, layout.tops.at(-1) ?? null, () => {
     setMode("rest");
     sea.current?.reset();
   });
-  useSeaEvents(sea, replay.events, steps, layout.tops, mode === "dive");
+  useSeaEvents(sea, player.events, steps, layout.tops, mode === "dive");
   const dive = DIVE_COPY[lang];
+  const questions = chat.messages.filter((message) => message.role === "user");
+  const question = questions.at(-1);
 
   useEffect(() => {
     document.documentElement.toggleAttribute("data-diving", diving);
@@ -69,6 +72,7 @@ function Home() {
   function startDive() {
     scrollTo(0, 0);
     sea.current?.reset();
+    player.start();
     setMode("dive");
   }
 
@@ -76,6 +80,7 @@ function Home() {
     if (!question.trim() || chat.busy) return;
     chat.send(question);
     if (process.show) startDive();
+    else player.stop();
   }
 
   function stay(on: boolean) {
@@ -147,17 +152,14 @@ function Home() {
               onFocusChunk={setFocusChunk}
               end={
                 ended &&
-                !replay.replaying && (
+                !player.playing && (
                   <Seabed
                     lang={lang}
                     steps={steps}
                     tops={layout.tops}
                     trace={trace}
                     onSurface={() => setMode("ascend")}
-                    onReplay={() => {
-                      startDive();
-                      replay.replay();
-                    }}
+                    onReplay={startDive}
                   />
                 )
               }
@@ -171,8 +173,23 @@ function Home() {
           waterRef={water}
           totals={trace.totals}
           status={trace.outcome ?? (chat.busy ? "running" : "idle")}
-          running={chat.busy || replay.replaying}
+          running={chat.busy || player.playing}
           finalMs={trace.totals.latencyMs ?? trace.lastMs}
+        />
+      )}
+      {mode === "dive" && player.playing && (
+        <PlaybackBar
+          lang={lang}
+          dive={questions.length}
+          question={question ? messageText(question) : ""}
+          paused={player.paused}
+          speed={player.speed}
+          progress={player.progress}
+          serverMs={player.serverMs}
+          serverDone={player.serverDone}
+          onPause={player.setPaused}
+          onSpeed={player.setSpeed}
+          onSkip={player.skip}
         />
       )}
       {mode === "dive" && !follow.following && (

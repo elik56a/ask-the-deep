@@ -123,4 +123,17 @@ export interface DiveCopy {
   follow: string;
   surface: string;
   replay: string;
+  playback: PlaybackCopy;
+}
+
+/** The paced dive's controls; `{n}` is the dive number, `{t}` a time. */
+export interface PlaybackCopy {
+  label: string;
+  dive: string;
+  pause: string;
+  resume: string;
+  speed: string;
+  skip: string;
+  serverRunning: string;
+  serverDone: string;
 }

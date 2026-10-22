@@ -1,4 +1,5 @@
 import { StepDetail } from "#/components/StepDetail";
+import { StreamText } from "#/components/StreamText";
 import { DIVE_COPY, STEP_TONE } from "#/constants/sea.constants";
 import type { Lang } from "#/types/i18n.types";
 import type { DiveStep } from "#/types/sea.types";
@@ -56,7 +57,9 @@ export function StepCard({
           {formatInt(Math.round(meters))} m
         </span>
       </header>
-      <h3 className="font-semibold text-[1.0625rem] leading-snug">{title}</h3>
+      <h3 key={title} className="font-semibold text-[1.0625rem] leading-snug">
+        <StreamText text={title} />
+      </h3>
       {!(step.event.event.type === "llm.started" && (step.result || ended)) && (
         <StepDetail item={step.event} {...detail} />
       )}

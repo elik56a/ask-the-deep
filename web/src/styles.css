@@ -103,3 +103,22 @@ body {
 :root:not([data-diving]) {
   overflow: hidden;
 }
+
+/* Step text streams in word by word, like the model's own output (ADR 0019). */
+.stream-word {
+  animation: word-in 0.42s var(--ease-out) both;
+  animation-delay: calc(var(--i) * 34ms + 140ms);
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    color: var(--color-glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-word {
+    animation: none;
+  }
+}

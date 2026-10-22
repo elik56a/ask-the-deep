@@ -173,6 +173,17 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
     follow: "Follow the dive",
     surface: "Surface",
     replay: "Replay the dive",
+    playback: {
+      label: "Dive playback",
+      dive: "Dive {n}",
+      pause: "Pause",
+      resume: "Resume",
+      speed: "Playback speed",
+      skip: "Skip to the answer",
+      serverRunning: "The server is answering… {t}",
+      serverDone:
+        "The server finished in {t}. You're watching it slowed down, one step at a time.",
+    },
   },
   he: {
     zones: {
@@ -245,5 +256,15 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
     follow: "לעקוב אחרי הצלילה",
     surface: "חזרה לפני המים",
     replay: "לצלול שוב",
+    playback: {
+      label: "הצגת הצלילה",
+      dive: "צלילה {n}",
+      pause: "השהיה",
+      resume: "המשך",
+      speed: "מהירות הצגה",
+      skip: "דילוג לתשובה",
+      serverRunning: "השרת עונה… {t}",
+      serverDone: "השרת סיים תוך {t}. מה שרואים כאן מואט, צעד אחר צעד.",
+    },
   },
 };

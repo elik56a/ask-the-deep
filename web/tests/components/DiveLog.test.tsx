@@ -34,7 +34,8 @@ const render = (lang: Lang) => {
       onFocusChunk={() => {}}
       end={null}
     />,
-  );
+    // Titles stream word by word, so compare the text without the word spans.
+  ).replace(/<[^>]+>/g, "");
 };
 
 it("numbers each step and says what the server did, in plain words", () => {
