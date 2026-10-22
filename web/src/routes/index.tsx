@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Chat } from "#/components/Chat";
 import { DepthRail } from "#/components/DepthRail";
-import { DiveComputer } from "#/components/DiveComputer";
+import { DepthTag } from "#/components/DepthTag";
 import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
@@ -11,6 +11,7 @@ import { PlaybackBar } from "#/components/PlaybackBar";
 import { PreDiveCheck } from "#/components/PreDiveCheck";
 import { Seabed } from "#/components/Seabed";
 import { SeaScene } from "#/components/SeaScene";
+import { ServerPanel } from "#/components/ServerPanel";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
@@ -280,13 +281,6 @@ function Home() {
           className="relative min-h-svh overflow-clip"
           style={{ height: `calc(${floor}px + ${(1 - DIVER_LINE) * 100}svh)` }}
         >
-          {mode === "dive" && (
-            <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
-              {dive.guide[0]}
-              <b className="font-semibold text-accent">{dive.guide[1]}</b>
-              {dive.guide[2]}
-            </p>
-          )}
           <div className="absolute inset-y-0 inset-x-[max(16px,env(safe-area-inset-left,0px))] lg:inset-x-8">
             <DepthRail lang={lang} />
             <DiveLog
@@ -316,14 +310,18 @@ function Home() {
         </main>
       )}
       {diving && (
-        <DiveComputer
-          lang={lang}
-          waterRef={water}
-          totals={trace.totals}
-          status={trace.outcome ?? (chat.busy ? "running" : "idle")}
-          running={chat.busy || player.playing}
-          finalMs={trace.totals.latencyMs ?? trace.lastMs}
-        />
+        <>
+          <ServerPanel
+            lang={lang}
+            totals={trace.totals}
+            status={
+              trace.outcome ?? (player.events.length > 0 ? "running" : "idle")
+            }
+            clockMs={player.events.at(-1)?.t_ms ?? 0}
+            covered={mode === "reveal" && chatState !== "pill"}
+          />
+          <DepthTag lang={lang} waterRef={water} />
+        </>
       )}
       {mode === "dive" && player.playing && (
         <PlaybackBar

@@ -119,9 +119,18 @@ export interface DiveCopy {
   steps: StepCopy;
   logLabel: string;
   seabed: SeabedCopy;
-  hud: { label: string; depth: string; diveTime: string };
-  /** Before the bold part, the bold part, after it. */
-  guide: [string, string, string];
+  /** The server panel; a `[short, wide]` label adds its second part on wide screens only. */
+  hud: {
+    label: string;
+    from: string;
+    serverTime: string;
+    calls: string;
+    tokens: [string, string];
+    cost: string;
+    firstWord: [string, string];
+  };
+  /** The depth tag's air reading above the water; `{t}` is °C. */
+  air: string;
   follow: string;
   /** At the seabed: the heading focus lands on, and what a screen reader hears by outcome. */
   back: { title: string; answered: string; empty: string };

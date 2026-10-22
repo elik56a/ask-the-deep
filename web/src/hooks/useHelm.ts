@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useRef } from "react";
-import * as THREE from "three";
+import type * as Three from "three";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import {
   HELM_BRASS,
@@ -15,7 +15,10 @@ import {
 // Light intensities are tuned for three's old non-physical lights, like the sea's (see useSea).
 const LEGACY_LIGHT = Math.PI;
 
-function buildWheel(keep: (item: { dispose: () => void }) => void) {
+function buildWheel(
+  THREE: typeof Three,
+  keep: (item: { dispose: () => void }) => void,
+) {
   const wood = new THREE.MeshStandardMaterial({
     color: HELM_WOOD,
     roughness: 0.45,
@@ -81,65 +84,80 @@ export function useHelm(
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        antialias: true,
-        alpha: true,
-      });
-    } catch {
-      return;
-    }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-    const disposables: { dispose: () => void }[] = [];
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-    camera.position.set(0, 0, 4.5);
-    scene.add(
-      new THREE.HemisphereLight(HELM_SKY, HELM_GROUND, 0.55 * LEGACY_LIGHT),
-    );
-    const key = new THREE.DirectionalLight(HELM_KEY, 2 * LEGACY_LIGHT);
-    key.position.set(-2, 3, 4);
-    scene.add(key);
-    // No falloff: the old lights' linear falloff at the wheel's distance comes to about 0.69
-    const rim = new THREE.PointLight(HELM_RIM, 2.2 * 0.69 * LEGACY_LIGHT, 8, 0);
-    rim.position.set(1.6, -1.2, -1.5);
-    scene.add(rim);
-    const wheel = buildWheel((item) => disposables.push(item));
-    const tilt = new THREE.Group();
-    tilt.rotation.set(-0.32, 0.42, 0);
-    tilt.add(wheel);
-    scene.add(tilt);
-
-    const reduced = matchMedia(REDUCED_MOTION_QUERY);
-    let turn = goal.current;
-    let speed = 0;
-    let sway = 0;
-    let last = 0;
-    let frame = 0;
-    const tick = (now: number) => {
-      const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
-      last = now;
-      if (reduced.matches) {
-        turn = goal.current;
-        speed = 0;
-      } else {
-        speed += ((goal.current - turn) * 38 - speed * 9) * dt;
-        turn += speed * dt;
-        sway += dt;
+    let disposed = false;
+    let stop = () => {};
+    // three.js loads lazily, as for the sea, so it never weighs on the first paint
+    import("three").then((THREE) => {
+      if (disposed) return;
+      let renderer: Three.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: true,
+          alpha: true,
+        });
+      } catch {
+        return;
       }
-      wheel.rotation.z = -turn;
-      tilt.rotation.y = 0.42 + Math.sin(sway * 0.6) * 0.06;
-      renderer.render(scene, camera);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      const disposables: { dispose: () => void }[] = [];
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+      camera.position.set(0, 0, 4.5);
+      scene.add(
+        new THREE.HemisphereLight(HELM_SKY, HELM_GROUND, 0.55 * LEGACY_LIGHT),
+      );
+      const key = new THREE.DirectionalLight(HELM_KEY, 2 * LEGACY_LIGHT);
+      key.position.set(-2, 3, 4);
+      scene.add(key);
+      // No falloff: the old lights' linear falloff at the wheel's distance comes to about 0.69
+      const rim = new THREE.PointLight(
+        HELM_RIM,
+        2.2 * 0.69 * LEGACY_LIGHT,
+        8,
+        0,
+      );
+      rim.position.set(1.6, -1.2, -1.5);
+      scene.add(rim);
+      const wheel = buildWheel(THREE, (item) => disposables.push(item));
+      const tilt = new THREE.Group();
+      tilt.rotation.set(-0.32, 0.42, 0);
+      tilt.add(wheel);
+      scene.add(tilt);
+
+      const reduced = matchMedia(REDUCED_MOTION_QUERY);
+      let turn = goal.current;
+      let speed = 0;
+      let sway = 0;
+      let last = 0;
+      let frame = 0;
+      const tick = (now: number) => {
+        const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
+        last = now;
+        if (reduced.matches) {
+          turn = goal.current;
+          speed = 0;
+        } else {
+          speed += ((goal.current - turn) * 38 - speed * 9) * dt;
+          turn += speed * dt;
+          sway += dt;
+        }
+        wheel.rotation.z = -turn;
+        tilt.rotation.y = 0.42 + Math.sin(sway * 0.6) * 0.06;
+        renderer.render(scene, camera);
+        frame = requestAnimationFrame(tick);
+      };
       frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
+      stop = () => {
+        cancelAnimationFrame(frame);
+        for (const item of disposables) item.dispose();
+        renderer.dispose();
+      };
+    });
     return () => {
-      cancelAnimationFrame(frame);
-      for (const item of disposables) item.dispose();
-      renderer.dispose();
+      disposed = true;
+      stop();
     };
   }, [canvasRef]);
 }

@@ -236,3 +236,20 @@ body {
     animation: none;
   }
 }
+
+/* A server number flashes when it changes, so the eye catches what just moved. */
+.flash {
+  animation: flash 0.6s var(--ease-out);
+}
+
+@keyframes flash {
+  from {
+    color: var(--color-glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}

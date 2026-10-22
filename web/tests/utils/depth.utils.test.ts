@@ -1,8 +1,16 @@
 import { expect, it } from "vitest";
-import { STEP_GAP, ZONE_HEAD, ZONE_PX, ZONES } from "#/constants/sea.constants";
+import {
+  STEP_GAP,
+  SURFACE_Y,
+  WATERLINE_Y,
+  ZONE_HEAD,
+  ZONE_PX,
+  ZONES,
+} from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { StepKind } from "#/types/sea.types";
 import {
+  depthReadout,
   diveOffset,
   diveSteps,
   floorPx,
@@ -12,6 +20,7 @@ import {
   pxToMeters,
   smoothstep,
   stepKindOf,
+  surfaceEye,
   zoneAt,
   zoneLabel,
 } from "#/utils/depth.utils";
@@ -166,4 +175,39 @@ it("never covers a zone label with a card", () => {
       expect(top >= line + ZONE_HEAD || top + height <= line).toBe(true);
     }
   }
+});
+
+const AIR = "{t} °C air";
+
+it("reads depth, water temperature and pressure under the water", () => {
+  expect(depthReadout(0, 0, AIR)).toEqual({
+    depth: "0",
+    temp: "24 °C",
+    pressure: "1.0 atm",
+  });
+  expect(depthReadout(45, 0, AIR).pressure).toBe("5.5 atm");
+  expect(depthReadout(200, 0, AIR).temp).toBe("13 °C");
+  expect(depthReadout(11000, 0, AIR)).toEqual({
+    depth: "11,000",
+    temp: "2.5 °C",
+    pressure: "1,101 atm",
+  });
+});
+
+it("reads the eye's height, the air's temperature and pressure above it", () => {
+  expect(depthReadout(0, 2.4, AIR)).toEqual({
+    depth: "+2.4",
+    temp: "26 °C air",
+    pressure: "1.00 atm",
+  });
+  expect(depthReadout(0, 1000, AIR)).toEqual({
+    depth: "+1000.0",
+    temp: "20 °C air",
+    pressure: "0.89 atm",
+  });
+});
+
+it("sinks the eye from the boat to the waterline as the page scrolls", () => {
+  expect(surfaceEye(0, -740)).toBe(SURFACE_Y);
+  expect(surfaceEye(740, -0.0001)).toBeCloseTo(WATERLINE_Y);
 });

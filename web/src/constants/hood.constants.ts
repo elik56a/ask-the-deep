@@ -6,8 +6,8 @@ export const PROCESS_STORAGE_KEY = "portfolio-chat:show-process";
 export const HOOD_COPY: Record<Lang, HoodCopy> = {
   en: {
     status: {
-      idle: "Idle",
-      running: "Running",
+      idle: "Waiting",
+      running: "Working",
       answered: "Answered",
       no_information: "No information",
       blocked: "Blocked",
@@ -48,7 +48,7 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
   he: {
     status: {
       idle: "ממתין",
-      running: "רץ",
+      running: "עובד",
       answered: "נענה",
       no_information: "אין מידע",
       blocked: "נחסם",

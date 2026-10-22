@@ -1,9 +1,12 @@
 import { type RefObject, useEffect, useState } from "react";
-import { diveOffset, pxToMeters } from "#/utils/depth.utils";
+import { diveOffset, pxToMeters, surfaceEye } from "#/utils/depth.utils";
 
-/** Meters at the diver line, read from the scroll once per frame at most. */
-export function useDiveDepth(waterRef: RefObject<HTMLElement | null>): number {
-  const [meters, setMeters] = useState(0);
+/**
+ * Meters at the diver line, and above the water the eye's height, read from the scroll once per
+ * frame at most.
+ */
+export function useDiveDepth(waterRef: RefObject<HTMLElement | null>) {
+  const [depth, setDepth] = useState({ meters: 0, eye: 0 });
 
   useEffect(() => {
     let frame = 0;
@@ -14,7 +17,18 @@ export function useDiveDepth(waterRef: RefObject<HTMLElement | null>): number {
         ? water.getBoundingClientRect().top + scrollY
         : Number.POSITIVE_INFINITY;
       const px = diveOffset(scrollY, top, innerHeight);
-      setMeters(px > 0 ? Math.round(pxToMeters(px)) : 0);
+      const next =
+        px > 0
+          ? { meters: Math.round(pxToMeters(px)), eye: 0 }
+          : {
+              meters: 0,
+              eye: Number.isFinite(px) ? surfaceEye(scrollY, px) : 0,
+            };
+      setDepth((d) =>
+        d.meters === next.meters && Math.abs(d.eye - next.eye) < 0.05
+          ? d
+          : next,
+      );
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -29,5 +43,5 @@ export function useDiveDepth(waterRef: RefObject<HTMLElement | null>): number {
     };
   }, [waterRef]);
 
-  return meters;
+  return depth;
 }

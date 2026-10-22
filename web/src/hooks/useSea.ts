@@ -13,8 +13,10 @@ import {
   SEA_MAX_PIXEL_RATIO,
   SHAFT_KEYS,
   SUNLIGHT_KEYS,
+  SURFACE_Y,
   WARM_COLOR,
   WATER_KEYS,
+  WATERLINE_Y,
   WORLD_PER_ZONE,
   ZONE_PX,
 } from "#/constants/sea.constants";
@@ -25,6 +27,7 @@ import {
   keyframe,
   metersToPx,
   smoothstep,
+  surfaceEye,
   zoneLabel,
 } from "#/utils/depth.utils";
 
@@ -64,8 +67,6 @@ interface Pool {
 
 // three r155+ dropped the PI factor of legacy lights; the scene was tuned with it.
 const LEGACY_LIGHT = Math.PI;
-const SURFACE_Y = 2.4;
-const WATERLINE_Y = -4;
 const SUN_DIRECTION: [number, number, number] = [0.22, 0.12, -1];
 const MODEL_IDS: ModelId[] = ["diver", "sardines", "fish", "jelly", "angler"];
 
@@ -925,11 +926,7 @@ function createSea(
     time.value = t;
     const px = divePx(waterRef.current);
     setZone(px);
-    const s0 = scrollY - px;
-    camY =
-      px < 0
-        ? SURFACE_Y + (WATERLINE_Y - SURFACE_Y) * smoothstep(scrollY / s0)
-        : worldY(px);
+    camY = px < 0 ? surfaceEye(scrollY, px) : worldY(px);
     const zone = Math.max(0, px / ZONE_PX);
     const under = camY < -0.4;
     if (under && !wasUnder && !reduced.matches) {

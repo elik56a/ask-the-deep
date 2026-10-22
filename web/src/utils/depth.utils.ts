@@ -1,13 +1,21 @@
 import {
+  AIR_C,
+  AIR_LAPSE_C_PER_M,
+  AIR_SCALE_HEIGHT_M,
   DIVER_LINE,
   FLOOR_M,
   STEP_GAP,
+  SURFACE_Y,
+  WATER_TEMP_KEYS,
+  WATERLINE_Y,
   ZONE_HEAD,
   ZONE_PX,
   ZONES,
 } from "#/constants/sea.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { DiveStep, StepKind, Zone, ZoneId } from "#/types/sea.types";
+import { formatInt } from "#/utils/format.utils";
+import { fill } from "#/utils/toolSteps.utils";
 
 const last = ZONES.length - 1;
 
@@ -79,6 +87,34 @@ export function keyframe(at: number, keys: [number, number][]): number {
   const [from, a] = keys[next - 1];
   const [to, b] = keys[next];
   return a + (b - a) * ((at - from) / (to - from));
+}
+
+/** The eye's height while the camera sinks from the boat to the waterline (`px` still negative). */
+export function surfaceEye(scrollY: number, px: number): number {
+  return (
+    SURFACE_Y + (WATERLINE_Y - SURFACE_Y) * smoothstep(scrollY / (scrollY - px))
+  );
+}
+
+/**
+ * What the depth tag reads: under water the depth, its temperature and the pressure (1 atm of air
+ * plus one per 10 m); above it the eye's height, the air's temperature and pressure.
+ */
+export function depthReadout(meters: number, eye: number, airTemp: string) {
+  if (eye > 0) {
+    return {
+      depth: `+${eye.toFixed(1)}`,
+      temp: fill(airTemp, { t: (AIR_C - eye * AIR_LAPSE_C_PER_M).toFixed(0) }),
+      pressure: `${Math.exp(-eye / AIR_SCALE_HEIGHT_M).toFixed(2)} atm`,
+    };
+  }
+  const atm = 1 + meters / 10;
+  const temp = keyframe(meters, WATER_TEMP_KEYS);
+  return {
+    depth: formatInt(meters),
+    temp: `${temp.toFixed(meters < 1000 ? 0 : 1)} °C`,
+    pressure: `${meters < 100 ? atm.toFixed(1) : formatInt(atm)} atm`,
+  };
 }
 
 export function smoothstep(k: number): number {

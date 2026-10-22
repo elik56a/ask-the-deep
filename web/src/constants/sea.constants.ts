@@ -32,6 +32,24 @@ export const FLOOR_M: Record<StepKind, number> = {
 
 // The diver rides at 30% of the viewport height; the latest step is followed to this line.
 export const DIVER_LINE = 0.26;
+
+// The camera starts on the boat this high (world units read as meters) and sinks to the waterline.
+export const SURFACE_Y = 2.4;
+export const WATERLINE_Y = -4;
+
+// The depth tag's readings. Water temperature by depth (m → °C), roughly a mid-latitude ocean.
+export const WATER_TEMP_KEYS: [number, number][] = [
+  [0, 24],
+  [200, 13],
+  [1000, 4],
+  [4000, 2],
+  [6000, 1.5],
+  [11000, 2.5],
+];
+// Above the water: air at the surface, cooling ~6.5 °C per km, pressure falling with a scale height.
+export const AIR_C = 26;
+export const AIR_LAPSE_C_PER_M = 0.0065;
+export const AIR_SCALE_HEIGHT_M = 8434;
 // three.js units of camera travel per zone.
 export const WORLD_PER_ZONE = 60;
 export const SEA_MAX_PIXEL_RATIO = 1.75;
@@ -52,6 +70,10 @@ export const BED_BELOW_PX = 160;
 // A lander's floodlight and a warm fill on the seabed (sRGB hex; three converts them).
 export const FLOOD_COLOR = 0xd9efff;
 export const WARM_COLOR = 0xffc98a;
+// The server panel's fish, lit on its own (sRGB hex).
+export const BUDDY_SKY = 0xcfefff;
+export const BUDDY_GROUND = 0x06192f;
+export const BUDDY_KEY = 0xfff0d2;
 // Rail ticks between zone borders.
 export const RAIL_TICKS = 3;
 
@@ -178,12 +200,16 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         outcome: "outcome",
       },
     },
-    hud: { label: "Dive computer", depth: "Depth", diveTime: "Dive time" },
-    guide: [
-      "Each card is ",
-      "one step the server takes",
-      " to answer you. The deeper we go, the further along the process is.",
-    ],
+    hud: {
+      label: "Live from the server",
+      from: "From the server",
+      serverTime: "server time",
+      calls: "Model calls",
+      tokens: ["Tokens", " in / out"],
+      cost: "Cost",
+      firstWord: ["First word", " after"],
+    },
+    air: "{t} °C air",
     follow: "Follow the dive",
     back: {
       title: "Back from the seabed",
@@ -266,12 +292,16 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         outcome: "תוצאה",
       },
     },
-    hud: { label: "מחשב צלילה", depth: "עומק", diveTime: "זמן צלילה" },
-    guide: [
-      "כל כרטיס הוא ",
-      "צעד אחד שהשרת עושה",
-      " כדי לענות לך. ככל שצוללים עמוק יותר, התהליך מתקדם יותר.",
-    ],
+    hud: {
+      label: "בזמן אמת מהשרת",
+      from: "מהשרת",
+      serverTime: "זמן שרת",
+      calls: "קריאות למודל",
+      tokens: ["טוקנים", " קלט / פלט"],
+      cost: "עלות",
+      firstWord: ["מילה ראשונה", " אחרי"],
+    },
+    air: "{t} °C באוויר",
     follow: "לעקוב אחרי הצלילה",
     back: {
       title: "חזרנו מהקרקעית",
