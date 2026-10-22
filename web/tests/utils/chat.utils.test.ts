@@ -12,6 +12,7 @@ import {
 } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
 import {
+  answerText,
   chatRequestBody,
   isChatMessages,
   latestAnswer,
@@ -161,4 +162,15 @@ it("accepts only stored chats it can render", () => {
   expect(isChatMessages([{ id: "x", role: "system", parts: [] }])).toBe(false);
   expect(isChatMessages([{ id: 1 }])).toBe(false);
   expect(isChatMessages("nope")).toBe(false);
+});
+
+it("drops the inline source marks from the answer the visitor reads", () => {
+  const reply = message(
+    "assistant",
+    "He builds tools [projects/devconverter.md#what-devconverter-dev-is]. At work too [experience/phytech.md#roles-at-phytech, experience/phytech.md#testing-strategy-at-phytech].",
+  );
+  expect(answerText(reply)).toBe("He builds tools. At work too.");
+  expect(
+    answerText(message("assistant", "A [link](https://x.dev) stays.")),
+  ).toBe("A [link](https://x.dev) stays.");
 });

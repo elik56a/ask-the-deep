@@ -218,3 +218,21 @@ body {
     animation: none;
   }
 }
+
+/* The source tooltip appears quickly in place; it never travels. */
+.tip-in {
+  animation: tip-in 0.15s var(--ease-out);
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip-in {
+    animation: none;
+  }
+}

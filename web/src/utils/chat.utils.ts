@@ -45,6 +45,15 @@ export function pastMessages(messages: ChatMessage[]): PastMessage[] {
     .slice(-MAX_HISTORY_MESSAGES);
 }
 
+// The model cites passages inline, as "[file.md#heading]" or several comma-separated in one bracket.
+const CITATION_MARKS =
+  /\s*\[[^\]\s,]+\.md#[^\]\s,]+(?:,\s*[^\]\s,]+\.md#[^\]\s,]+)*\]/g;
+
+/** The answer as the visitor reads it: the sources show as links under it, so the inline marks go. */
+export function answerText(message: ChatMessage): string {
+  return messageText(message).replace(CITATION_MARKS, "");
+}
+
 export function chatRequestBody(
   messages: ChatMessage[],
   session: string,

@@ -7,6 +7,7 @@ import { useTypedText } from "#/hooks/useTypedText";
 import type { Lang } from "#/types/i18n.types";
 import type { ThreadTurn as Turn } from "#/types/thread.types";
 import {
+  answerText,
   messageCitations,
   messageError,
   messageEvents,
@@ -36,7 +37,7 @@ export function ThreadTurn({
   const copy = CHAT_COPY[lang];
   const events = turn.answer ? messageEvents(turn.answer) : [];
   const trace = buildTrace(events);
-  const text = turn.answer ? messageText(turn.answer) : "";
+  const text = turn.answer ? answerText(turn.answer) : "";
   const error = turn.answer ? messageError(turn.answer) : undefined;
   const done = trace.outcome !== null;
   const typed = useTypedText(text, fresh && done);
@@ -92,6 +93,7 @@ export function ThreadTurn({
             </p>
           )}
           <SourceChips
+            lang={lang}
             citations={citations}
             focusChunk={focusChunk}
             onFocusChunk={onFocusChunk}
