@@ -53,6 +53,12 @@ variable "llm_model" {
   default = "google:gemini-3.5-flash-lite"
 }
 
+variable "llm_fallback_models" {
+  type        = list(string)
+  default     = ["openai:gpt-5-nano"]
+  description = "Backups in the order to try them. One whose API key is not set in SSM yet is skipped."
+}
+
 variable "embedding_model" {
   type    = string
   default = "google:gemini-embedding-001"
@@ -95,7 +101,7 @@ locals {
   domain     = lookup({ staging = "eliyahukriel.dev" }, terraform.workspace, "")
   name       = "portfolio-chat-${terraform.workspace}"
   ssm_prefix = "/portfolio-chat/${terraform.workspace}"
-  secrets    = ["DATABASE_URL", "GOOGLE_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
+  secrets    = ["DATABASE_URL", "GOOGLE_API_KEY", "OPENAI_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
 }
 
 data "aws_caller_identity" "me" {}
@@ -207,6 +213,7 @@ resource "aws_lambda_function" "api" {
       SSM_PREFIX              = local.ssm_prefix
       LOG_JSON                = "true"
       LLM_MODEL               = var.llm_model
+      LLM_FALLBACK_MODELS     = jsonencode(var.llm_fallback_models)
       EMBEDDING_MODEL         = var.embedding_model
       ORIGIN_VERIFY_SECRET    = random_password.origin_verify.result
     }

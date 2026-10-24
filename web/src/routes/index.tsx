@@ -1,31 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Chat } from "#/components/Chat";
 import { DepthRail } from "#/components/DepthRail";
-import { DiveComputer } from "#/components/DiveComputer";
+import { DepthTag } from "#/components/DepthTag";
 import { DiveLog } from "#/components/DiveLog";
 import { HumanCheck } from "#/components/HumanCheck";
 import { LangSwitch } from "#/components/LangSwitch";
 import { ModelCredits } from "#/components/ModelCredits";
+import { PlaybackBar } from "#/components/PlaybackBar";
+import { PreDiveCheck } from "#/components/PreDiveCheck";
 import { Seabed } from "#/components/Seabed";
 import { SeaScene } from "#/components/SeaScene";
+import { ServerPanel } from "#/components/ServerPanel";
 import { SurfaceHero } from "#/components/SurfaceHero";
 import { Button } from "#/components/ui/button";
 import { PAGE_COPY } from "#/constants/i18n.constants";
-import { DIVE_COPY } from "#/constants/sea.constants";
+import { PREDIVE_COPY } from "#/constants/predive.constants";
+import { DIVE_COPY, DIVER_LINE } from "#/constants/sea.constants";
+import { useAskFocus } from "#/hooks/useAskFocus";
 import { useChatSession } from "#/hooks/useChatSession";
+import { useConsoleMotion } from "#/hooks/useConsoleMotion";
 import { useDiveFollow } from "#/hooks/useDiveFollow";
-import { useDiveLayout } from "#/hooks/useDiveLayout";
 import { useLang } from "#/hooks/useLang";
 import { useProcessPreference } from "#/hooks/useProcessPreference";
-import { useReplay } from "#/hooks/useReplay";
+import { useRevealScroll } from "#/hooks/useRevealScroll";
+import { useRevealTimer } from "#/hooks/useRevealTimer";
 import { useSea } from "#/hooks/useSea";
 import { useSeaEvents } from "#/hooks/useSeaEvents";
+import { useSeaStage } from "#/hooks/useSeaStage";
 import { useSession } from "#/hooks/useSession";
+import { useShownDive } from "#/hooks/useShownDive";
+import type { ChatState } from "#/types/chat.types";
+import type { PreDivePlan } from "#/types/predive.types";
 import type { DiveMode } from "#/types/sea.types";
-import { messageEvents } from "#/utils/chat.utils";
-import { diveSteps } from "#/utils/depth.utils";
-import { buildTrace } from "#/utils/trace.utils";
+import type { ThreadTurn } from "#/types/thread.types";
+import { messageText, pastMessages } from "#/utils/chat.utils";
+import { preDiveChecks } from "#/utils/predive.utils";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -37,45 +47,133 @@ function Home() {
   const process = useProcessPreference();
   const asked = chat.messages.length > 0;
   const [mode, setMode] = useState<DiveMode>("rest");
-  const diving = mode !== "rest";
+  const [plan, setPlan] = useState<PreDivePlan | null>(null);
+  const [chatState, setChatState] = useState<ChatState>("full");
+  // The dive on screen: the newest, or an earlier one picked with "Watch again"
+  const [watching, setWatching] = useState<number | null>(null);
+  const [stayFresh, setStayFresh] = useState<number | null>(null);
+  const diving = mode !== "rest" && mode !== "intro";
+  const revealed = mode === "reveal";
   const seaCanvas = useRef<HTMLCanvasElement>(null);
   const water = useRef<HTMLElement>(null);
   const log = useRef<HTMLOListElement>(null);
+  const consoleBox = useRef<HTMLDivElement>(null);
   const sea = useSea(seaCanvas, water);
-
-  const last = chat.messages.at(-1);
-  const replay = useReplay(
-    last?.role === "assistant" ? messageEvents(last) : [],
-  );
-  const steps = diveSteps(replay.events);
-  const layout = useDiveLayout(
-    log,
-    steps.map((step) => step.kind),
-  );
-  const trace = buildTrace(replay.events);
-  const ended =
-    steps.at(-1)?.kind === "seabed" || steps.at(-1)?.kind === "abort";
-  const follow = useDiveFollow(mode, water, layout.tops.at(-1) ?? null, () => {
-    setMode("rest");
-    sea.current?.reset();
-  });
-  useSeaEvents(sea, replay.events, steps, layout.tops, mode === "dive");
+  const view = useShownDive(chat.messages, watching, log);
+  const { turns, shown, player, steps, layout, trace, ended, onSand, bed } =
+    view;
   const dive = DIVE_COPY[lang];
 
-  useEffect(() => {
-    document.documentElement.toggleAttribute("data-diving", diving);
-  }, [diving]);
+  const follow = useDiveFollow(
+    mode,
+    water,
+    revealed && onSand ? bed : (layout.tops.at(-1) ?? null),
+    () => {
+      setMode("rest");
+      sea.current?.reset();
+    },
+    // Scrolling away from the sand folds the chat so the log is in full view.
+    () => {
+      if (revealed) setChatState((c) => (c === "full" ? "pill" : c));
+    },
+  );
+  useSeaEvents(
+    sea,
+    player.events,
+    steps,
+    layout.tops,
+    mode === "dive",
+    view.written.words,
+  );
+  useSeaStage(sea, mode, chatState, onSand ? bed : null);
+  useRevealTimer(
+    mode === "dive",
+    (ended && !player.playing) || chat.failed,
+    player.skipped,
+    () => {
+      setChatState("full");
+      setMode("reveal");
+    },
+  );
+  useAskFocus(mode, "question", "reveal-title");
+  const leaveConsole = useConsoleMotion(consoleBox, revealed, chatState);
+  useRevealScroll(
+    revealed,
+    () => {
+      follow.resume();
+      setChatState("full");
+    },
+    land,
+    () => {
+      setChatState("full");
+      setMode("ascend");
+    },
+  );
 
   function startDive() {
     scrollTo(0, 0);
     sea.current?.reset();
+    sea.current?.loadDeep();
+    player.start();
     setMode("dive");
   }
 
-  function ask(question: string) {
-    if (!question.trim() || chat.busy) return;
-    chat.send(question);
-    if (process.show) startDive();
+  function ask(text: string) {
+    const question = text.trim();
+    if (!question || chat.busy || mode === "intro" || mode === "dive") return;
+    if (!process.show) {
+      setWatching(null);
+      chat.send(question);
+      player.stop();
+      setStayFresh(turns.length + 1);
+      return;
+    }
+    const prior = pastMessages(chat.messages);
+    leaveConsole(() => {
+      setWatching(null);
+      setStayFresh(null);
+      setPlan({ question, replay: false, dive: turns.length + 1, prior });
+      setMode("intro");
+    });
+  }
+
+  function replay(turn: ThreadTurn | null) {
+    if (!turn?.answer) return;
+    const question = messageText(turn.question);
+    leaveConsole(() => {
+      setWatching(turn.dive);
+      setStayFresh(null);
+      setPlan({ question, replay: true, dive: turn.dive, prior: [] });
+      setMode("intro");
+    });
+  }
+
+  function newConversation() {
+    chat.clear();
+    setWatching(null);
+    setStayFresh(null);
+    scrollTo(0, 0);
+    setMode("rest");
+  }
+
+  function descend() {
+    if (plan && !plan.replay) chat.send(plan.question);
+    startDive();
+  }
+
+  function land() {
+    follow.rush();
+    setChatState("full");
+  }
+
+  function reread() {
+    setChatState("pill");
+    follow.look(layout.tops.at(-1) ?? 0);
+  }
+
+  function cancelDive() {
+    setPlan(null);
+    setMode("rest");
   }
 
   function stay(on: boolean) {
@@ -89,29 +187,34 @@ function Home() {
   return (
     <>
       <SeaScene canvasRef={seaCanvas} />
-      <header className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-between gap-2 lg:inset-x-8 [&>*]:pointer-events-auto">
-        <p className="glass flex items-center gap-2.5 rounded-full py-1.5 ps-2 pe-3">
-          <span
-            aria-hidden="true"
-            className="size-5.5 rounded-full border border-line-strong bg-[radial-gradient(circle_at_50%_35%,var(--color-haze)_0_34%,transparent_36%),linear-gradient(180deg,transparent_52%,var(--color-accent)_52%_58%,transparent_58%)]"
-          />
-          <span className="font-display text-xl italic leading-none rtl:not-italic">
-            {PAGE_COPY[lang].title}
-          </span>
-        </p>
+      <header
+        inert={mode !== "rest"}
+        className="pointer-events-none fixed inset-x-[max(16px,env(safe-area-inset-left,0px))] top-[calc(12px+env(safe-area-inset-top,0px))] z-20 flex items-center justify-end gap-2 transition-opacity duration-300 inert:opacity-0 lg:inset-x-8 [&>*]:pointer-events-auto"
+      >
         <LangSwitch lang={lang} onToggle={toggle} />
       </header>
-      <section aria-label={PAGE_COPY[lang].title} className="relative h-svh">
-        {!asked && <SurfaceHero lang={lang} />}
+      <section
+        aria-label={PAGE_COPY[lang].title}
+        inert={mode === "dive" || mode === "reveal"}
+        className="relative h-svh transition-opacity duration-300 inert:opacity-0"
+      >
+        <SurfaceHero lang={lang} talked={asked} />
       </section>
       <div
-        data-diving={diving || undefined}
-        className="fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-140px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-diving:max-lg:inset-x-0 data-diving:max-lg:bottom-0 data-diving:max-lg:max-h-[48svh] data-diving:max-lg:w-full data-diving:lg:start-auto data-diving:lg:end-8 data-diving:lg:bottom-6 data-diving:lg:max-h-[calc(100svh-270px)] data-diving:lg:w-120"
+        ref={consoleBox}
+        hidden={mode === "intro" || mode === "dive" || mode === "ascend"}
+        data-console
+        data-chat={revealed ? chatState : undefined}
+        // At the seabed: full at the bottom centre (a sheet on small screens), its height capped so
+        // ~96px clears the report card; a pill or a compact side panel at the inline-end.
+        className={`${revealed ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px),calc(100svh-var(--hud-end,0px)-40px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
       >
+        <h2 id="reveal-title" tabIndex={-1} className="sr-only">
+          {dive.back.title}
+        </h2>
         <Chat
           lang={lang}
           messages={chat.messages}
-          waiting={chat.waiting}
           canSend={Boolean(session.token) && !chat.busy}
           failed={chat.failed}
           onSend={ask}
@@ -119,7 +222,14 @@ function Home() {
           onFocusChunk={setFocusChunk}
           stayAtSurface={!process.show}
           onStayAtSurface={stay}
-          collapsible={diving}
+          state={revealed ? chatState : null}
+          onStateChange={setChatState}
+          onSurface={() => setMode("ascend")}
+          onReread={reread}
+          onLand={land}
+          freshDive={revealed ? (shown?.dive ?? null) : stayFresh}
+          onWatch={replay}
+          onNewConversation={newConversation}
         />
         {!session.token && (
           <HumanCheck
@@ -134,15 +244,10 @@ function Home() {
         <main
           ref={water}
           className="relative min-h-svh overflow-clip"
-          style={{ height: `calc(${layout.bottom}px + 80svh)` }}
+          style={{
+            height: `calc(${view.floor}px + ${(1 - DIVER_LINE) * 100}svh)`,
+          }}
         >
-          {mode === "dive" && (
-            <p className="glass fixed start-8 top-[calc(70px+env(safe-area-inset-top,0px))] z-14 max-w-[min(440px,calc(100%-536px))] rounded-[14px] px-3.5 py-2.5 text-sm leading-[1.45] max-lg:hidden">
-              {dive.guide[0]}
-              <b className="font-semibold text-accent">{dive.guide[1]}</b>
-              {dive.guide[2]}
-            </p>
-          )}
           <div className="absolute inset-y-0 inset-x-[max(16px,env(safe-area-inset-left,0px))] lg:inset-x-8">
             <DepthRail lang={lang} />
             <DiveLog
@@ -150,23 +255,23 @@ function Home() {
               steps={steps}
               ended={ended}
               tops={layout.tops}
+              measured={layout.measured}
               listRef={log}
-              retrieved={trace.retrieved}
+              ctx={view.ctx}
+              model={view.model}
+              written={view.written}
               focusChunk={focusChunk}
               onFocusChunk={setFocusChunk}
               end={
                 ended &&
-                !replay.replaying && (
+                !player.playing && (
                   <Seabed
                     lang={lang}
                     steps={steps}
                     tops={layout.tops}
                     trace={trace}
                     onSurface={() => setMode("ascend")}
-                    onReplay={() => {
-                      startDive();
-                      replay.replay();
-                    }}
+                    onReplay={() => replay(shown)}
                   />
                 )
               }
@@ -175,25 +280,62 @@ function Home() {
         </main>
       )}
       {diving && (
-        <DiveComputer
+        <>
+          <ServerPanel
+            lang={lang}
+            totals={trace.totals}
+            status={
+              trace.outcome ?? (player.events.length > 0 ? "running" : "idle")
+            }
+            clockMs={player.events.at(-1)?.t_ms ?? 0}
+            covered={revealed && chatState !== "pill"}
+          />
+          <DepthTag lang={lang} waterRef={water} />
+        </>
+      )}
+      {mode === "dive" && player.playing && (
+        <PlaybackBar
           lang={lang}
-          waterRef={water}
-          totals={trace.totals}
-          status={trace.outcome ?? (chat.busy ? "running" : "idle")}
-          running={chat.busy || replay.replaying}
-          finalMs={trace.totals.latencyMs ?? trace.lastMs}
+          dive={shown?.dive ?? 0}
+          question={shown ? messageText(shown.question) : ""}
+          paused={player.paused}
+          speed={player.speed}
+          progress={player.progress}
+          serverMs={player.serverMs}
+          serverDone={player.serverDone}
+          onPause={player.setPaused}
+          onSpeed={player.setSpeed}
+          onSkip={() => {
+            player.skip();
+            follow.jump();
+          }}
         />
       )}
       {mode === "dive" && !follow.following && (
         <Button
           variant="outline"
           onClick={follow.resume}
-          className="glass fixed start-[max(100px,calc(env(safe-area-inset-left,0px)+84px))] bottom-[calc(24px+env(safe-area-inset-bottom,0px))] z-17 min-h-11 rounded-full px-4 max-lg:bottom-[calc(48svh+12px)]"
+          className="glass follow-glow fixed start-1/2 bottom-[calc(150px+env(safe-area-inset-bottom,0px))] z-17 min-h-11 -translate-x-1/2 rounded-full px-4 rtl:translate-x-1/2"
         >
           {dive.follow} ↓
         </Button>
       )}
-      {!diving && <ModelCredits lang={lang} />}
+      <p className="sr-only" aria-live="polite">
+        {revealed &&
+          (trace.outcome === "answered" ? dive.back.answered : dive.back.empty)}
+      </p>
+      {plan && (
+        <PreDiveCheck
+          key={`${plan.dive}-${plan.replay}`}
+          lang={lang}
+          plan={plan}
+          checks={preDiveChecks(PREDIVE_COPY[lang], plan, view.events)}
+          onDescend={descend}
+          onCancel={cancelDive}
+          onGone={() => setPlan(null)}
+        />
+      )}
+      {mode === "rest" && <ModelCredits lang={lang} />}
     </>
   );
 }

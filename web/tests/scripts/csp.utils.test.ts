@@ -23,7 +23,7 @@ describe("CSP", () => {
       html.indexOf("<script"),
     );
     expect(html).toContain(
-      "script-src 'self' https://challenges.cloudflare.com 'sha256-",
+      "script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval' 'sha256-",
     );
     expect(html).toContain("frame-src https://challenges.cloudflare.com");
   });

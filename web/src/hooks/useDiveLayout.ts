@@ -35,5 +35,6 @@ export function useDiveLayout(
   );
   const last = tops.length - 1;
   const bottom = last < 0 ? 0 : tops[last] + (heights[last] ?? 0);
-  return { tops, bottom };
+  // Until every card is measured the tops are provisional, so nothing should slide from them.
+  return { tops, bottom, measured: heights.length === count };
 }

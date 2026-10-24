@@ -1,18 +1,24 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { RetrievalGate } from "#/components/RetrievalGate";
 import { StepIcon } from "#/components/StepIcon";
 import { Badge } from "#/components/ui/badge";
-import { CHAT_COPY } from "#/constants/chat.constants";
-import { HOOD_COPY } from "#/constants/hood.constants";
+import { HOOD_COPY, WRITTEN_BARS } from "#/constants/hood.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { Lang } from "#/types/i18n.types";
 import { formatInt, formatMs, formatUsd } from "#/utils/format.utils";
+import { splitAround, writtenBars } from "#/utils/stepDetail.utils";
 import { toolList } from "#/utils/stepText.utils";
 import { fill } from "#/utils/toolSteps.utils";
 
 interface StepDetailProps {
   item: StreamEvent;
   lang: Lang;
+  /** The run's model, for "Thinking with …". */
+  model: string;
+  /** Answer words streamed so far, of the whole answer. */
+  written: { words: number; total: number };
+  /** Earlier messages sent with the question. */
+  carried: number;
   retrieved: string[];
   focusChunk: string | null;
   onFocusChunk: (chunkId: string | null) => void;
@@ -22,6 +28,9 @@ interface StepDetailProps {
 export function StepDetail({
   item,
   lang,
+  model,
+  written,
+  carried,
   retrieved,
   focusChunk,
   onFocusChunk,
@@ -29,6 +38,7 @@ export function StepDetail({
   const hood = HOOD_COPY[lang];
   const copy = hood.card;
   const { event } = item;
+  const thinking = splitAround(copy.thinkingWith, "{model}");
   let body: ReactNode = null;
 
   switch (event.type) {
@@ -36,17 +46,25 @@ export function StepDetail({
       body = (
         <div className="flex flex-wrap gap-1.5">
           <Badge variant="metric">{`${event.provider}:${event.model}`}</Badge>
-          <Badge variant="metric">{`rules ${event.rules_version}`}</Badge>
+          <Badge variant="metric">
+            {fill(copy.prompt, { v: event.rules_version })}
+          </Badge>
+          {carried > 0 && (
+            <Badge variant="hi">
+              {fill(copy.history, { n: String(carried) })}
+            </Badge>
+          )}
         </div>
       );
       break;
     case "guardrails.checked": {
       body = (
         <ul className="flex flex-wrap gap-1.5">
-          {event.checks.map((check) => (
+          {event.checks.map((check, i) => (
             <li
               key={check.name}
-              className="inline-flex items-center gap-1.5 rounded-md border border-line px-1.5 py-1 font-mono text-xs leading-none"
+              style={{ "--i": i } as CSSProperties}
+              className="tick-in inline-flex items-center gap-1.5 rounded-md border border-line px-1.75 py-1.25 font-mono text-xs leading-none"
             >
               <span className={check.passed ? "text-ok" : "text-warn"}>
                 {check.passed ? "✓" : "✕"}
@@ -72,23 +90,31 @@ export function StepDetail({
       break;
     case "llm.started":
       body = (
-        <p className="flex items-center gap-2.5 text-muted text-sm">
+        <p className="flex items-center gap-2.5 text-accent text-sm">
           <span className="grid size-4 place-items-center">
             <StepIcon state="running" />
           </span>
-          {CHAT_COPY[lang].thinking}
+          <span>
+            {thinking[0]}
+            <code dir="ltr" className="font-medium font-mono text-[13px]">
+              {model}
+            </code>
+            {thinking[1]}
+          </span>
         </p>
       );
       break;
     case "llm.completed":
       body = (
         <>
-          <p className="text-sm">
+          <p className="text-[0.9375rem]">
             {event.decision === "tools" ? (
               <>
                 {copy.decidedTools}{" "}
                 <strong className="font-semibold text-accent">
-                  {toolList(event.tools)}
+                  <code dir="ltr" className="font-medium font-mono text-[13px]">
+                    {toolList(event.tools)}
+                  </code>
                 </strong>
               </>
             ) : (
@@ -100,9 +126,13 @@ export function StepDetail({
             )}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            <Badge variant="metric">{event.model}</Badge>
             <Badge variant="metric">{formatMs(event.duration_ms)}</Badge>
-            <Badge variant="metric">{`${formatInt(event.input_tokens)} → ${formatInt(event.output_tokens)}`}</Badge>
+            <Badge variant="metric">
+              {fill(copy.tokens, {
+                in: formatInt(event.input_tokens),
+                out: formatInt(event.output_tokens),
+              })}
+            </Badge>
             <Badge variant="metric">{formatUsd(event.cost_usd)}</Badge>
             {event.fallback && <Badge variant="warn">{copy.fallback}</Badge>}
             {event.rejected && (
@@ -117,10 +147,10 @@ export function StepDetail({
     case "tool.called":
       if (Object.keys(event.args).length === 0) break;
       body = (
-        <dl className="overflow-x-auto rounded-lg bg-sunk px-2.5 py-2 text-[13px]">
+        <dl className="overflow-x-auto rounded-lg bg-case/50 px-2.5 py-2 text-[13px]">
           {Object.entries(event.args).map(([key, value]) => (
             <div key={key} className="flex gap-2">
-              <dt className="font-mono text-muted">{key}:</dt>
+              <dt className="text-muted">{key}:</dt>
               <dd dir="auto" className="font-mono">{`"${value}"`}</dd>
             </div>
           ))}
@@ -130,7 +160,8 @@ export function StepDetail({
     case "tool.completed":
       body = (
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant={event.ok ? "ok" : "warn"}>
+          {event.ok && <Badge variant="ok">{copy.ok}</Badge>}
+          <Badge variant={event.ok ? "metric" : "warn"}>
             {fill(copy.results, { n: String(event.result_count) })}
           </Badge>
           <Badge variant="metric">{formatMs(event.duration_ms)}</Badge>
@@ -149,20 +180,40 @@ export function StepDetail({
       break;
     case "generation.started":
       body = (
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant={event.prompt_cache_hit ? "ok" : "metric"}>
-            {event.prompt_cache_hit
-              ? copy.promptCacheHit
-              : copy.promptCacheMiss}
-          </Badge>
-        </div>
+        <>
+          <p className="flex items-baseline gap-2.5 font-medium font-mono text-[0.9375rem] text-haze leading-[1.2]">
+            <b className="font-medium text-[1.75rem] text-text tabular-nums">
+              {written.words}
+            </b>
+            {copy.wordsStreamed}
+          </p>
+          <div aria-hidden="true" className="flex flex-col gap-1.5">
+            {writtenBars(written.words, written.total, WRITTEN_BARS).map(
+              (k, line) => (
+                <i
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the bars are a fixed set
+                  key={line}
+                  className="block h-2 origin-left rounded bg-linear-to-r from-haze/40 to-haze/10 transition-transform duration-300 ease-out rtl:origin-right"
+                  style={{ transform: `scaleX(${k})` }}
+                />
+              ),
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant={event.prompt_cache_hit ? "ok" : "metric"}>
+              {event.prompt_cache_hit
+                ? copy.promptCacheHit
+                : copy.promptCacheMiss}
+            </Badge>
+          </div>
+        </>
       );
       break;
     case "decision.made": {
       const answered = event.action === "answer";
       body = (
         <>
-          <p dir="auto" className="text-muted text-sm">
+          <p dir="auto" className="text-[0.9375rem]">
             {event.reason}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -177,26 +228,21 @@ export function StepDetail({
       );
       break;
     }
-    case "citations.attached": {
-      const matched = event.citations.filter((citation) =>
-        retrieved.includes(citation.chunk_id),
-      ).length;
+    case "citations.attached":
+      if (event.citations.length === 0) break;
       body = (
         <div className="flex flex-wrap gap-1.5">
-          {event.citations.length > 0 ? (
-            <Badge variant={matched === event.citations.length ? "ok" : "warn"}>
-              {fill(copy.citationsMatched, {
-                m: String(matched),
-                n: String(event.citations.length),
-              })}
+          {event.citations.map((citation) => (
+            <Badge
+              key={citation.chunk_id}
+              variant={retrieved.includes(citation.chunk_id) ? "ok" : "warn"}
+            >
+              {citation.breadcrumb}
             </Badge>
-          ) : (
-            <Badge variant="metric">{copy.noCitations}</Badge>
-          )}
+          ))}
         </div>
       );
       break;
-    }
     case "error":
       body = (
         <div className="flex flex-wrap items-center gap-1.5">

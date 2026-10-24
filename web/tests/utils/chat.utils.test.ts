@@ -12,9 +12,10 @@ import {
 } from "#/constants/chat.constants";
 import type { ChatMessage } from "#/types/chat.types";
 import {
+  answerText,
+  carriedWith,
   chatRequestBody,
   isChatMessages,
-  isWaiting,
   latestAnswer,
   messageCitations,
   messageError,
@@ -156,24 +157,30 @@ it("finds the error code a blocked answer carries", () => {
   expect(messageError(message("assistant", "hi"))).toBeUndefined();
 });
 
-it("waits until the answer starts or an error arrives", () => {
-  const question = message("user", "q");
-  const empty: ChatMessage = { id: "a", role: "assistant", parts: [] };
-  expect(isWaiting([question], "submitted")).toBe(true);
-  expect(isWaiting([question, empty], "streaming")).toBe(true);
-  expect(isWaiting([question, message("assistant", "a")], "streaming")).toBe(
-    false,
-  );
-  expect(isWaiting([question, errorMessage("timeout")], "streaming")).toBe(
-    false,
-  );
-  expect(isWaiting([question, empty], "ready")).toBe(false);
-});
-
 it("accepts only stored chats it can render", () => {
   expect(isChatMessages([message("user", "q")])).toBe(true);
   expect(isChatMessages([])).toBe(true);
   expect(isChatMessages([{ id: "x", role: "system", parts: [] }])).toBe(false);
   expect(isChatMessages([{ id: 1 }])).toBe(false);
   expect(isChatMessages("nope")).toBe(false);
+});
+
+it("drops the inline source marks from the answer the visitor reads", () => {
+  const reply = message(
+    "assistant",
+    "He builds tools [projects/devconverter.md#what-devconverter-dev-is]. At work too [experience/phytech.md#roles-at-phytech, experience/phytech.md#testing-strategy-at-phytech].",
+  );
+  expect(answerText(reply)).toBe("He builds tools. At work too.");
+  expect(
+    answerText(message("assistant", "A [link](https://x.dev) stays.")),
+  ).toBe("A [link](https://x.dev) stays.");
+});
+
+it("counts the earlier messages a question carried, as they were sent", () => {
+  const first = message("user", "One?");
+  const empty = message("assistant", "");
+  const second = message("user", "Two?");
+  const messages = [first, empty, second];
+  expect(carriedWith(messages, first)).toBe(0);
+  expect(carriedWith(messages, second)).toBe(1);
 });

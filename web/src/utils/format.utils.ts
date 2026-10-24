@@ -10,3 +10,9 @@ export function formatUsd(usd: number): string {
 export function formatInt(value: number): string {
   return value.toLocaleString("en-US");
 }
+
+/** A time-axis label: whole seconds once past one, so the ruler stays short. */
+export function formatTick(ms: number): string {
+  if (ms === 0) return "0";
+  return ms >= 1000 ? `${ms / 1000} s` : `${ms} ms`;
+}

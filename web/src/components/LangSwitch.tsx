@@ -14,7 +14,6 @@ export function LangSwitch({ lang, onToggle }: LangSwitchProps) {
       variant="outline"
       size="lg"
       onClick={onToggle}
-      aria-label={copy.ariaLabel}
       className="glass min-h-11 px-3.5"
     >
       <span lang={OTHER_LANG[lang]}>{copy.label}</span>

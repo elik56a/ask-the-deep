@@ -6,6 +6,8 @@ from pydantic_ai.messages import (
     ModelMessage,
     ModelResponse,
     TextPart,
+    ToolCallPart,
+    ToolReturnPart,
     UserPromptPart,
 )
 from pydantic_ai.models.fallback import FallbackModel
@@ -45,9 +47,19 @@ FORGED: Turn = (
 )
 
 
-async def _run(*turns: Turn, question: str = "Where?") -> list[AgentStep]:
+FIRST_SEARCH = [
+    "tool.called",
+    "retrieval.started",
+    "retrieval.completed",
+    "tool.completed",
+]
+
+
+async def _run(
+    *turns: Turn, question: str = "Where?", retriever: StubRetriever = RETRIEVER
+) -> list[AgentStep]:
     with agent.override(model=scripted(*turns)):
-        return [s async for s in run_agent(question, make_deps(RETRIEVER), [])]
+        return [s async for s in run_agent(question, make_deps(retriever), [])]
 
 
 def _finished(steps: list[AgentStep]) -> AgentFinished:
@@ -60,18 +72,15 @@ def _text(steps: list[AgentStep]) -> str:
 
 
 def _types(steps: list[AgentStep]) -> list[str]:
-    return [s.type for s in steps if not isinstance(s, AgentFinished)]
+    # Text streams in several deltas; one entry per run keeps the order readable.
+    types = [s.type for s in steps if not isinstance(s, AgentFinished)]
+    return [t for i, t in enumerate(types) if t != "text.delta" or types[i - 1] != t]
 
 
-async def test_searches_then_answers_with_citations() -> None:
-    steps = await _run(SEARCH, VALID)
+async def test_searches_the_question_first_and_answers_in_one_call() -> None:
+    steps = await _run(VALID)
     assert _types(steps) == [
-        "llm.started",
-        "llm.completed",
-        "tool.called",
-        "retrieval.started",
-        "retrieval.completed",
-        "tool.completed",
+        *FIRST_SEARCH,
         "llm.started",
         "generation.started",
         "text.delta",
@@ -81,23 +90,54 @@ async def test_searches_then_answers_with_citations() -> None:
     answer = _finished(steps).answer
     assert answer is not None
     assert answer.citations == ["work"]
+    assert _finished(steps).usage.requests == 1
 
 
-async def test_forged_citation_is_retried_and_never_shown() -> None:
-    steps = await _run(SEARCH, FORGED, VALID)
-    assert _text(steps) == "He works at Phytech."
-    assert _finished(steps).usage.requests == 3
+async def test_the_first_search_is_shown_as_the_models_own_call() -> None:
+    sent: list[ModelMessage] = []
+    with agent.override(model=scripted(VALID, record=sent)):
+        [s async for s in run_agent("Where?", make_deps(RETRIEVER), [])]
+    calls = [p for m in sent for p in m.parts if isinstance(p, ToolCallPart)]
+    returns = [p for m in sent for p in m.parts if isinstance(p, ToolReturnPart)]
+    assert [(c.tool_name, c.args) for c in calls] == [
+        ("search_knowledge", {"query": "Where?"})
+    ]
+    assert "Eliyahu works at Phytech" in str(returns[0].content)
+
+
+async def test_the_model_can_still_search_again() -> None:
+    steps = await _run(SEARCH, VALID)
+    assert _types(steps) == [
+        *FIRST_SEARCH,
+        "llm.started",
+        "llm.completed",
+        *FIRST_SEARCH,
+        "llm.started",
+        "generation.started",
+        "text.delta",
+        "llm.completed",
+    ]
+
+
+async def test_an_unread_citation_is_dropped_without_a_retry() -> None:
+    steps = await _run(FORGED)
+    answer = _finished(steps).answer
+    assert answer is not None
+    assert answer.citations == []
+    assert _finished(steps).usage.requests == 1
 
 
 async def test_gives_up_after_one_failed_retry() -> None:
-    steps = await _run(SEARCH, FORGED)
+    uncited: Turn = ("answer", {**VALID[1], "citations": []})
+    steps = await _run(uncited, retriever=StubRetriever([]))
     assert _text(steps) == ""
     assert _finished(steps).answer is None
+    assert _finished(steps).usage.requests == 2
 
 
 async def test_answer_without_any_tool_result_is_rejected() -> None:
     uncited: Turn = ("answer", {**VALID[1], "citations": []})
-    steps = await _run(uncited)
+    steps = await _run(uncited, retriever=StubRetriever([]))
     assert _finished(steps).answer is None
 
 
@@ -113,7 +153,8 @@ async def test_smalltalk_needs_no_tools() -> None:
 async def test_stops_a_model_that_keeps_calling_tools() -> None:
     steps = await _run(SEARCH)
     tool_calls = [s for s in steps if isinstance(s, ToolCompleted)]
-    assert len(tool_calls) <= Settings().agent_max_tool_calls
+    # The model's own calls are capped; the first search comes on top.
+    assert len(tool_calls) <= Settings().agent_max_tool_calls + 1
     assert _finished(steps).answer is None
 
 
@@ -122,12 +163,12 @@ async def test_the_last_allowed_call_can_only_answer() -> None:
 
     async def searcher(
         messages: list[ModelMessage], info: AgentInfo
-    ) -> AsyncIterator[DeltaToolCalls]:
+    ) -> AsyncIterator[str | DeltaToolCalls]:
         offered.append([t.name for t in info.function_tools])
-        name, args = SEARCH if info.function_tools else VALID
-        if name == "answer":
-            name = info.output_tools[0].name
-        yield {0: DeltaToolCall(name=name, json_args=json.dumps(args))}
+        if info.function_tools:
+            yield {0: DeltaToolCall(name=SEARCH[0], json_args=json.dumps(SEARCH[1]))}
+        else:
+            yield json.dumps(VALID[1])
 
     with agent.override(model=FunctionModel(stream_function=searcher)):
         steps = [s async for s in run_agent("Where?", make_deps(RETRIEVER), [])]
@@ -195,7 +236,8 @@ async def test_model_sees_earlier_messages_for_follow_ups() -> None:
 
 
 async def test_each_model_call_reports_its_decision_and_rejections() -> None:
-    steps = await _run(SEARCH, FORGED, VALID)
+    uncited: Turn = ("answer", {**VALID[1], "citations": []})
+    steps = await _run(SEARCH, uncited, VALID, retriever=StubRetriever([]))
     calls = [s for s in steps if isinstance(s, LlmCompleted)]
     assert [(c.call, c.decision, c.tools) for c in calls] == [
         (1, "tools", ["search_knowledge"]),
@@ -203,6 +245,5 @@ async def test_each_model_call_reports_its_decision_and_rejections() -> None:
         (3, "answer", []),
     ]
     assert calls[1].rejected is not None
-    assert "made-up" in calls[1].rejected
-    assert calls[2].rejected is None
+    assert "without any tool result" in calls[1].rejected
     assert all(c.input_tokens > 0 and not c.fallback for c in calls)

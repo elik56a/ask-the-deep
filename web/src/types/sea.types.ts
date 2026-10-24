@@ -32,9 +32,15 @@ export interface SeaControls {
   lanterns: (px: number, passages: SeaPassage[], threshold: number) => void;
   bubbles: (count: number) => void;
   seabed: (px: number) => void;
+  /** On the sand with the full chat: the view lifts, the water clears and the lights come up. */
+  landed: (on: boolean) => void;
+  /** The step log is in view: the scene centres in the water beyond it. */
+  shifted: (on: boolean) => void;
+  /** Starts loading the deep models and the seabed props, once. */
+  loadDeep: () => void;
 }
 
-export type DiveMode = "rest" | "dive" | "ascend";
+export type DiveMode = "rest" | "intro" | "dive" | "reveal" | "ascend";
 
 /** One card in the dive log: the event that opened it and the one that closed it, if any. */
 export interface DiveStep {
@@ -53,6 +59,8 @@ export interface StepCopy {
   step: string;
   request: string;
   requestTitle: string;
+  /** `{n}` earlier messages travel with a follow-up. */
+  requestCarried: string;
   safety: string;
   safetyPassed: string;
   safetyBlocked: string;
@@ -112,15 +120,103 @@ export interface SeabedCopy {
   };
 }
 
+/**
+ * What a step's narration says, under its title while it is in focus. `{q}` is the search query
+ * (shown quoted); `{n}`, `{t}`, `{s}`, `{k}` and `{tool}` are filled in.
+ */
+export interface SayCopy {
+  request: string;
+  requestCarried: string;
+  guard: string;
+  guardBlocked: string;
+  cacheHit: string;
+  cacheMiss: string;
+  llmFirst: string;
+  llmFirstCarried: string;
+  llmRound: string;
+  choseTool: string;
+  choseAnswer: string;
+  choseText: string;
+  unfinished: string;
+  search: string;
+  searchCarried: string;
+  /** A search the model asked for after the first one, which runs on the question as typed. */
+  searchMore: string;
+  tool: string;
+  results: string;
+  writingFrom: string;
+  writingNone: string;
+  decisionAnswer: string;
+  decisionNoInfo: string;
+  sources: string;
+  sourcesNone: string;
+  seabed: string;
+  seabedSkipped: string;
+  calledOff: string;
+  error: string;
+}
+
+/** A step's narration; `quote` fills the text's `{q}`. */
+export interface StepSay {
+  text: string;
+  quote?: string;
+}
+
+/** What the cards know beyond the events: the conversation and the playback. */
+export interface StepContext {
+  /** The visitor's question; the first search runs on it as typed. */
+  question: string;
+  /** Earlier messages sent with this question. */
+  carried: number;
+  /** The visitor skipped to the end. */
+  skipped: boolean;
+  /** Real time the dive has played, for "about N× slower". */
+  wallMs: number;
+  /** Passages this dive's search returned. */
+  retrieved: string[];
+}
+
 export interface DiveCopy {
   zones: Record<ZoneId, string>;
   steps: StepCopy;
+  say: SayCopy;
   logLabel: string;
   seabed: SeabedCopy;
-  hud: { label: string; depth: string; diveTime: string };
-  /** Before the bold part, the bold part, after it. */
-  guide: [string, string, string];
+  /** The server panel; a `[short, wide]` label adds its second part on wide screens only. */
+  hud: {
+    label: string;
+    from: string;
+    serverTime: string;
+    calls: string;
+    tokens: [string, string];
+    cost: string;
+    firstWord: [string, string];
+  };
+  /** The depth tag's air reading above the water; `{t}` is °C. */
+  air: string;
   follow: string;
+  /** At the seabed: the heading focus lands on, and what a screen reader hears by outcome. */
+  back: { title: string; answered: string; empty: string };
   surface: string;
   replay: string;
+  playback: PlaybackCopy;
+}
+
+/** The paced dive's controls; `{n}` is the dive number, `{t}` a time. */
+export interface PlaybackCopy {
+  label: string;
+  dive: string;
+  pause: string;
+  resume: string;
+  speed: string;
+  skip: string;
+  serverRunning: string;
+  serverDone: string;
+}
+
+/** A run of narration and the word it starts streaming at; `quote` marks the visitor's words. */
+export interface SayPart {
+  text: string;
+  start: number;
+  quote: boolean;
 }

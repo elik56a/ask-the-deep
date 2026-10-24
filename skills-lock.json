@@ -19,11 +19,29 @@
       "skillPath": "skills/ask-sonner/SKILL.md",
       "computedHash": "8bd257b845985f4b35b603b510a126604176521094af79c4b7347ffeb8a8f7ab"
     },
+    "creative-coding": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/creative-coding/SKILL.md",
+      "computedHash": "3d42e129d653dc015d6ce4b3ee405998dfcb1d43ed8fb161e52f0932fc24086e"
+    },
+    "design-system": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/design-system/SKILL.md",
+      "computedHash": "e6397c4729d09d76ff791654de436599d755d1137691ea97d3ff853f21f1363f"
+    },
     "emil-design-eng": {
       "source": "emilkowalski/skill",
       "sourceType": "github",
       "skillPath": "skills/emil-design-eng/SKILL.md",
       "computedHash": "51f2537e04d15911b41d78e2de24c36a0e26d41beae15e82a954fe5496a5eda9"
+    },
+    "figma-craft": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/figma-craft/SKILL.md",
+      "computedHash": "dba3d76402994920c6de414559a018c91919e9619635d2a9a464221867e46fd1"
     },
     "find-animation-opportunities": {
       "source": "emilkowalski/skill",
@@ -42,6 +60,24 @@
       "sourceType": "github",
       "skillPath": "skills/pick-ui-library/SKILL.md",
       "computedHash": "5d2a77bf0ecafbda85aa95fb49999b6d77945d9066ec83d970b62e5b388cd686"
+    },
+    "ui-designer": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-designer/SKILL.md",
+      "computedHash": "ee8c2ac347c52a7aa1e92949ed50418d9f64130ca4f4c371d7e3119241144427"
+    },
+    "ux-designer": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ux-designer/SKILL.md",
+      "computedHash": "a7aeeaec52782ebd28ea00fd28484a3e634bb9f7bcccc7137d260bd91de2f13b"
+    },
+    "ux-research": {
+      "source": "Gustavosilveira23/claude-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ux-research/SKILL.md",
+      "computedHash": "692a1ceb88903d2e8d1b01dc8dc1d4e8d52a8a4dbb065ebcd1f9a84cf953c8bb"
     },
     "web-design-engineer": {
       "source": "ConardLi/garden-skills",

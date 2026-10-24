@@ -18,9 +18,11 @@ const badgeVariants = cva(
         ghost: "hover:bg-sunk hover:text-muted-foreground",
         // Panel metrics: numbers and ids, kept left-to-right inside Hebrew text.
         metric:
-          "h-auto rounded-md bg-sunk px-1.5 py-1 font-mono text-[11px] text-muted tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate]",
-        ok: "h-auto rounded-md bg-sunk px-1.5 py-1 font-mono text-[11px] text-ok tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate]",
-        warn: "h-auto rounded-md bg-warn/15 px-1.5 py-1 font-mono text-[11px] text-warn tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate]",
+          "h-auto rounded-md px-1.75 py-1.25 font-medium font-mono text-[11px] tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-muted",
+        ok: "h-auto rounded-md px-1.75 py-1.25 font-medium font-mono text-[11px] tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-ok",
+        warn: "h-auto rounded-md px-1.75 py-1.25 font-medium font-mono text-[11px] tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-warn/16 text-warn",
+        // A fact worth noticing, such as the history a follow-up carries.
+        hi: "h-auto rounded-md px-1.75 py-1.25 font-medium font-mono text-[11px] tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-haze text-on-accent",
         link: "text-primary underline-offset-4 hover:underline",
       },
     },

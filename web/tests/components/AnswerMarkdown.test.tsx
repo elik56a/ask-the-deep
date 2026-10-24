@@ -34,3 +34,9 @@ it("unwraps elements an answer may not use", () => {
   expect(html).not.toContain("<img");
   expect(html).toContain("Title");
 });
+
+it("links a bare URL", () => {
+  const html = render("On GitHub at https://github.com/elik56a.");
+  expect(html).toContain('href="https://github.com/elik56a"');
+  expect(html).toContain("elik56a</a>.");
+});

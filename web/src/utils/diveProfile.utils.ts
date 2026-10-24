@@ -1,4 +1,4 @@
-import { ZONE_PX } from "#/constants/sea.constants";
+import { PROFILE_CHART, ZONE_PX } from "#/constants/sea.constants";
 import type { DiveStep, ProfilePoint } from "#/types/sea.types";
 
 /**
@@ -20,4 +20,18 @@ export function diveProfile(
       kind: step.kind,
     })),
   ];
+}
+
+/** Where the profile lands in `PROFILE_CHART`: time along x, zones down y. */
+export function profileScale(points: ProfilePoint[], totalMs: number) {
+  const { width, height, pad, headroom } = PROFILE_CHART;
+  const maxZone =
+    Math.max(...points.map((point) => point.zone)) * headroom || 1;
+  return {
+    maxZone,
+    x: (t: number) =>
+      pad.start + (t / (totalMs || 1)) * (width - pad.start - pad.end),
+    y: (zone: number) =>
+      pad.top + (zone / maxZone) * (height - pad.top - pad.bottom),
+  };
 }

@@ -6,8 +6,8 @@ export const PROCESS_STORAGE_KEY = "portfolio-chat:show-process";
 export const HOOD_COPY: Record<Lang, HoodCopy> = {
   en: {
     status: {
-      idle: "Idle",
-      running: "Running",
+      idle: "Waiting",
+      running: "Working",
       answered: "Answered",
       no_information: "No information",
       blocked: "Blocked",
@@ -34,8 +34,8 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
       fallback: "fallback model",
       rejected: "rejected: {reason}",
       results: "{n} results",
-      reachModel: "{n} reach the model",
-      blockedBelow: "{n} blocked below the gate",
+      reachModel: "{n} rise to the model",
+      blockedBelow: "{n} sink below the gate",
       gate: "gate {t}",
       score: "Score {s}, gate {t}",
       promptCacheHit: "prompt cache hit",
@@ -43,12 +43,18 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
       best: "best {s}",
       citationsMatched: "{m}/{n} cited passages were retrieved in this run",
       noCitations: "No sources to verify",
+      prompt: "prompt {v}",
+      history: "history · {n} messages",
+      thinkingWith: "Thinking with {model}…",
+      tokens: "{in} → {out} tokens",
+      ok: "ok",
+      wordsStreamed: "words streamed",
     },
   },
   he: {
     status: {
       idle: "ממתין",
-      running: "רץ",
+      running: "עובד",
       answered: "נענה",
       no_information: "אין מידע",
       blocked: "נחסם",
@@ -75,8 +81,8 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
       fallback: "מודל גיבוי",
       rejected: "נדחה: {reason}",
       results: "{n} תוצאות",
-      reachModel: "{n} מגיעים למודל",
-      blockedBelow: "{n} נחסמו מתחת לסף",
+      reachModel: "{n} עולים למודל",
+      blockedBelow: "{n} שוקעים מתחת לסף",
       gate: "סף {t}",
       score: "ציון {s}, סף {t}",
       promptCacheHit: "מטמון פרומפט: נמצא",
@@ -84,6 +90,12 @@ export const HOOD_COPY: Record<Lang, HoodCopy> = {
       best: "הטוב ביותר {s}",
       citationsMatched: "{m}/{n} מהמקורות המצוטטים נשלפו בריצה הזו",
       noCitations: "אין מקורות לבדוק",
+      prompt: "פרומפט {v}",
+      history: "היסטוריה · {n} הודעות",
+      thinkingWith: "חושב עם {model}…",
+      tokens: "{in} → {out} טוקנים",
+      ok: "תקין",
+      wordsStreamed: "מילים נכתבו",
     },
   },
 };
@@ -96,3 +108,6 @@ export const STATUS_DOT: Record<HoodStatus, string> = {
   blocked: "bg-warn",
   error: "bg-warn",
 };
+
+/** The writing step's bars, as shares of a full line: the last one is a short line. */
+export const WRITTEN_BARS = [1, 1, 0.6] as const;

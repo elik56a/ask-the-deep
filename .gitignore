@@ -19,5 +19,9 @@ data/knowledge/faq.md
 
 # Locally installed Claude Code skills
 .claude/skills/
+/agent/
 
 .agents/
+
+# Playwright MCP screenshots, snapshots and logs
+.playwright-mcp/

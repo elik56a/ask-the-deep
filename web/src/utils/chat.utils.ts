@@ -1,4 +1,3 @@
-import type { ChatStatus } from "ai";
 import {
   MAX_HISTORY_CHARS,
   MAX_HISTORY_MESSAGES,
@@ -34,13 +33,9 @@ export function messageText(message: ChatMessage): string {
     .join("");
 }
 
-export function chatRequestBody(
-  messages: ChatMessage[],
-  session: string,
-): ChatRequestBody {
-  const last = messages.at(-1);
-  const history = messages
-    .slice(0, -1)
+/** The earlier messages that travel with a question, as the API receives them. */
+export function pastMessages(messages: ChatMessage[]): PastMessage[] {
+  return messages
     .flatMap((message): PastMessage[] => {
       const text = messageText(message).slice(0, MAX_HISTORY_CHARS);
       return message.role !== "system" && text
@@ -48,6 +43,23 @@ export function chatRequestBody(
         : [];
     })
     .slice(-MAX_HISTORY_MESSAGES);
+}
+
+// The model cites passages inline, as "[file.md#heading]" or several comma-separated in one bracket.
+const CITATION_MARKS =
+  /\s*\[[^\]\s,]+\.md#[^\]\s,]+(?:,\s*[^\]\s,]+\.md#[^\]\s,]+)*\]/g;
+
+/** The answer as the visitor reads it: the sources show as links under it, so the inline marks go. */
+export function answerText(message: ChatMessage): string {
+  return messageText(message).replace(CITATION_MARKS, "");
+}
+
+export function chatRequestBody(
+  messages: ChatMessage[],
+  session: string,
+): ChatRequestBody {
+  const last = messages.at(-1);
+  const history = pastMessages(messages.slice(0, -1));
   return { question: last ? messageText(last) : "", history, session };
 }
 
@@ -56,20 +68,6 @@ export function messageError(message: ChatMessage): string | undefined {
     if (event.type === "error") return event.code;
   }
   return undefined;
-}
-
-export function isWaiting(
-  messages: ChatMessage[],
-  status: ChatStatus,
-): boolean {
-  if (status === "submitted") return true;
-  const last = messages.at(-1);
-  return (
-    status === "streaming" &&
-    last?.role === "assistant" &&
-    !messageText(last) &&
-    !messageError(last)
-  );
 }
 
 export function isChatMessages(value: unknown): value is ChatMessage[] {
@@ -87,4 +85,13 @@ export function isChatMessages(value: unknown): value is ChatMessage[] {
         Array.isArray(item.parts),
     )
   );
+}
+
+/** How many earlier messages went with `question`, as `pastMessages` sent them. */
+export function carriedWith(
+  messages: ChatMessage[],
+  question: ChatMessage,
+): number {
+  const at = messages.indexOf(question);
+  return at > 0 ? pastMessages(messages.slice(0, at)).length : 0;
 }

@@ -1,6 +1,16 @@
 import { expect, it } from "vitest";
+import { HOOD_COPY } from "#/constants/hood.constants";
+import { DIVE_COPY } from "#/constants/sea.constants";
 import type { LlmCompleted, StreamEvent } from "#/generated/events.gen";
-import { buildTrace, rulerTicks } from "#/utils/trace.utils";
+import {
+  buildTrace,
+  requestModel,
+  rulerTicks,
+  traceLanded,
+  traceMs,
+  traceReceipt,
+} from "#/utils/trace.utils";
+import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 it("picks a round ruler step with at most six marks", () => {
   expect(rulerTicks(2910)).toEqual([0, 500, 1000, 1500, 2000, 2500]);
@@ -142,4 +152,34 @@ it("returns an empty trace before any event", () => {
   expect(trace.spans).toEqual([]);
   expect(trace.totals.modelCalls).toBe(0);
   expect(trace.outcome).toBeNull();
+});
+
+const ran = stream([
+  EVENT_SAMPLES["request.started"],
+  EVENT_SAMPLES["llm.started"],
+  EVENT_SAMPLES["llm.completed"],
+  EVENT_SAMPLES["request.finished"],
+]);
+
+it("names the configured model from the run's first event", () => {
+  expect(requestModel(ran)).toBe("gemini");
+  expect(requestModel([])).toBe("");
+});
+
+it("lands an answered run and times it by its last event without a total", () => {
+  const trace = buildTrace(ran);
+  expect(traceLanded(trace)).toBe(true);
+  expect(traceLanded(buildTrace(ran.slice(0, 2)))).toBe(false);
+  expect(traceMs(trace)).toBe(trace.totals.latencyMs ?? 300);
+});
+
+it("writes the seabed receipt, a dash before the run ends", () => {
+  const labels = DIVE_COPY.en.seabed.receipt;
+  const status = HOOD_COPY.en.status;
+  const receipt = traceReceipt(labels, status, buildTrace(ran));
+  expect(receipt.map(([label]) => label)).toEqual(Object.values(labels));
+  expect(receipt.at(-1)?.[1]).toBe(status.answered);
+  expect(
+    traceReceipt(labels, status, buildTrace(ran.slice(0, 1))).at(-1)?.[1],
+  ).toBe("—");
 });

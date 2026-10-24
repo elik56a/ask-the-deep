@@ -21,6 +21,16 @@ export interface CardCopy {
   best: string;
   citationsMatched: string;
   noCitations: string;
+  /** `{v}` the prompt version. */
+  prompt: string;
+  /** `{n}` earlier messages carried. */
+  history: string;
+  /** `{model}` the model's name. */
+  thinkingWith: string;
+  /** `{in}` and `{out}` token counts. */
+  tokens: string;
+  ok: string;
+  wordsStreamed: string;
 }
 
 export interface HoodCopy {

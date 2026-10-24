@@ -35,7 +35,7 @@ export function DepthRail({ lang }: DepthRailProps) {
           className="absolute inset-x-0 start-14 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-line border-t border-dashed ps-7 pt-2"
           style={{ top: metersToPx(zone.from) }}
         >
-          <b className="font-display font-normal text-[1.625rem] italic leading-none rtl:not-italic">
+          <b className="font-bold font-display font-stretch-expanded text-xl leading-none tracking-[-0.01em]">
             {copy.zones[zone.id]}
           </b>
           <span dir="ltr" className="font-mono text-[11px] text-muted">
