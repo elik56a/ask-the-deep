@@ -69,7 +69,7 @@ Settle these before or during P0. Record each outcome as an ADR in `docs/adr/`.
 **Gate:** recall@6 > 90% on an initial question set.
 
 ### Corpus
-- [~] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_
+- [~] **P1.1** Write the real knowledge files: `profile.md`, `experience/*.md`, `projects/*.md`, `skills/*.md`, `faq.md`, `boundaries.md`, with front matter per the type table. No salary, private contacts or non-public employer info. _(Not a task in the spec, but nothing works without it.)_ — expanded from 31 to 78 passages (Phytech work from the git history at resume level, skills, career path, project details); eval-cited headings kept; recall@6 95.5% (unchanged). Left: `faq.md` answers
 - [x] **P1.2** Privacy review of every corpus file before setting `visibility: public` (files stay local, ADR 0004) — `faq.md` stays private until answered
 
 ### Ingestion (`api/rag/`)
