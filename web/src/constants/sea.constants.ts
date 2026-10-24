@@ -84,6 +84,27 @@ export const BED_BELOW_PX = 160;
 export const BUDDY_SKY = 0xcfefff;
 export const BUDDY_GROUND = 0x06192f;
 export const BUDDY_KEY = 0xfff0d2;
+// The server panel's fish: its camera and lights, how much of the view it fills (room for the
+// swinging tail), and its pace and sway while the server works or rests.
+export const BUDDY = {
+  fov: 26,
+  near: 0.1,
+  far: 50,
+  eye: [0, 0.2, 7],
+  maxPixelRatio: 2,
+  sky: 1.2,
+  key: 1.3,
+  keyAt: [-2, 3, 4],
+  fill: 0.78,
+  busyPace: 2.6,
+  restPace: 0.6,
+  paceRate: 3,
+  maxFrameS: 0.05,
+  turn: -0.4,
+  sway: 0.18,
+  swayRate: 0.7,
+  bob: 0.08,
+} as const;
 // Rail ticks between zone borders.
 export const RAIL_TICKS = 3;
 

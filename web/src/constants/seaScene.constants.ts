@@ -462,7 +462,6 @@ export const JELLY_GLOW = [0x2fd3c4, 0x6f88ff, 0xff7a55];
 export const DARK_FISH_GLOW = 0x0c3a4a;
 export const OCTOPUS_GLOW = 0x4fa8c8;
 export const ALIEN_GLOW = 0x1d6f7a;
-export const WRECK_GLOW = 0xffffff;
 
 // Bounds of a posed model are sampled from about this many vertices per mesh.
 export const POSE_SAMPLES = 300;

@@ -3,7 +3,6 @@ import {
   DARK_FISH_GLOW,
   JELLY_GLOW,
   OCTOPUS_GLOW,
-  WRECK_GLOW,
 } from "#/constants/seaScene.constants";
 import type { BedProp, LifeGroup } from "#/types/seaScene.types";
 
@@ -186,13 +185,6 @@ export const BED_PROPS: BedProp[] = [
     length: 20,
     ground: true,
     places: [{ x: 19, y: 0.6, z: -30, ry: -0.4 }],
-  },
-  {
-    model: "ginnanmaru",
-    length: 18,
-    ground: true,
-    tint: { emissive: WRECK_GLOW, glowMap: true, emissiveIntensity: 0.45 },
-    places: [{ x: -15.5, y: -0.5, z: -25, ry: 1.45 }],
   },
   {
     model: "helmet",

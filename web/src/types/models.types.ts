@@ -15,7 +15,6 @@ export type ModelId =
   | "angler2"
   | "alien-fish"
   | "whale-fall"
-  | "ginnanmaru"
   | "helmet"
   | "isopod"
   | "star"

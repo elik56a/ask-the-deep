@@ -23,7 +23,6 @@ export const MODEL_URL: Record<ModelId, string> = {
   angler2: "/models/angler2.glb",
   "alien-fish": "/models/alien-fish.glb",
   "whale-fall": "/models/whale-fall.glb",
-  ginnanmaru: "/models/ginnanmaru.glb",
   helmet: "/models/helmet.glb",
   isopod: "/models/isopod.glb",
   star: "/models/star.glb",
@@ -49,7 +48,6 @@ export const MODEL_WAVES: ModelId[][] = [
   ],
   [
     "whale-fall",
-    "ginnanmaru",
     "helmet",
     "isopod",
     "star",
@@ -178,12 +176,6 @@ export const MODEL_CREDITS: ModelCredit[] = [
     title: "Whale Fall at the Davidson Octopus Gardens",
     author: "mbari",
     source: `${SKETCHFAB}whale-fall-at-the-davidson-octopus-gardens-1f3e23b319734019a3d5f251ea43975a`,
-  },
-  {
-    id: "ginnanmaru",
-    title: "Abandoned ship Ginnanmaru",
-    author: "nari4D",
-    source: `${SKETCHFAB}abandoned-ship-ginnanmaru-432b4c258b664e8683c3b4fe597df1ef`,
   },
   {
     id: "helmet",

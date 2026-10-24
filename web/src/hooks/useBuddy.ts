@@ -1,8 +1,15 @@
 import { type RefObject, useEffect, useRef } from "react";
 import { MODEL_URL } from "#/constants/models.constants";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
-import { BUDDY_GROUND, BUDDY_KEY, BUDDY_SKY } from "#/constants/sea.constants";
+import {
+  BUDDY,
+  BUDDY_GROUND,
+  BUDDY_KEY,
+  BUDDY_SKY,
+} from "#/constants/sea.constants";
 import { LEGACY_LIGHT } from "#/constants/seaScene.constants";
+import { oscillate } from "#/utils/ease.utils";
+import { posedBox } from "./sea/models";
 
 /**
  * The server's companion (P5.36): the sea's fish in its own small renderer, swimming hard while
@@ -37,21 +44,28 @@ export function useBuddy(
       } catch {
         return;
       }
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(devicePixelRatio, BUDDY.maxPixelRatio));
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
-        26,
+        BUDDY.fov,
         canvas.clientWidth / canvas.clientHeight,
-        0.1,
-        50,
+        BUDDY.near,
+        BUDDY.far,
       );
-      camera.position.set(0, 0.2, 7);
+      camera.position.fromArray(BUDDY.eye);
       scene.add(
-        new THREE.HemisphereLight(BUDDY_SKY, BUDDY_GROUND, 1.2 * LEGACY_LIGHT),
+        new THREE.HemisphereLight(
+          BUDDY_SKY,
+          BUDDY_GROUND,
+          BUDDY.sky * LEGACY_LIGHT,
+        ),
       );
-      const key = new THREE.DirectionalLight(BUDDY_KEY, 1.3 * LEGACY_LIGHT);
-      key.position.set(-2, 3, 4);
+      const key = new THREE.DirectionalLight(
+        BUDDY_KEY,
+        BUDDY.key * LEGACY_LIGHT,
+      );
+      key.position.fromArray(BUDDY.keyAt);
       scene.add(key);
       const reduced = matchMedia(REDUCED_MOTION_QUERY);
       const fish = new THREE.Group();
@@ -75,9 +89,14 @@ export function useBuddy(
             action.play();
           }
           mixer.update(0);
-          const box = new THREE.Box3().setFromObject(model, true);
-          const k =
-            2.6 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
+          // The posed size: a skinned fish's rest bounds are not what is drawn.
+          const box = posedBox(THREE, model);
+          const size = box.getSize(new THREE.Vector3());
+          const view = camera.getViewSize(
+            camera.position.z,
+            new THREE.Vector2(),
+          );
+          const k = BUDDY.fill * Math.min(view.x / size.x, view.y / size.y);
           model.scale.setScalar(k);
           model.position
             .copy(box.getCenter(new THREE.Vector3()))
@@ -85,23 +104,24 @@ export function useBuddy(
           fish.add(model);
         });
 
-      let pace = 0.6;
+      let pace = BUDDY.restPace;
       let t = 0;
       let last = 0;
       let frame = 0;
       const tick = (now: number) => {
-        const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
+        const dt = last ? Math.min((now - last) / 1000, BUDDY.maxFrameS) : 0;
         last = now;
         // Ease between a hard swim and an idle drift, so the change of pace never snaps
-        pace += ((working.current ? 2.6 : 0.6) - pace) * Math.min(1, dt * 3);
+        const to = working.current ? BUDDY.busyPace : BUDDY.restPace;
+        pace += (to - pace) * Math.min(1, dt * BUDDY.paceRate);
         if (!reduced.matches) {
           t += dt;
           if (action) action.timeScale = pace;
           mixer?.update(dt);
         }
         // The model is long along X: a small turn off the side view gives it some depth
-        fish.rotation.y = -0.4 + Math.sin(t * 0.7) * 0.18;
-        fish.position.y = Math.sin(t * (1 + pace)) * 0.08;
+        fish.rotation.y = oscillate(BUDDY.turn, BUDDY.sway, BUDDY.swayRate, t);
+        fish.position.y = Math.sin(t * (1 + pace)) * BUDDY.bob;
         renderer.render(scene, camera);
         frame = requestAnimationFrame(tick);
       };
