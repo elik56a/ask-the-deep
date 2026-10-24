@@ -19,7 +19,7 @@ data/knowledge/faq.md
 
 # Locally installed Claude Code skills
 .claude/skills/
-agent/
+/agent/
 
 .agents/
 
