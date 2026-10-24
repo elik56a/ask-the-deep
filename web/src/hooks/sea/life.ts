@@ -7,6 +7,7 @@ import {
   LEGACY_LIGHT,
   OTHER_DIVERS,
   SUB,
+  VISIBLE_RANGE,
   WAVES,
 } from "#/constants/seaScene.constants";
 import type {
@@ -95,7 +96,7 @@ export function placeLife(
   });
 }
 
-/** The props on the sand, added to the seabed group. Returns the ones that animate. */
+/** The props on the sand, added to the seabed group. */
 export function placeBed(
   spawn: Spawner,
   loaded: Loaded,
@@ -113,7 +114,25 @@ export function placeBed(
       spreadAt(place.z, i, random()),
     );
     c.root.rotation.y = spreadAt(place.ry, i, random());
-    return c.action ? [c] : [];
+    return [c];
+  });
+}
+
+/**
+ * The other divers' torches, in the scene from the start: a light joining later would recompile
+ * every lit material. Off until their divers arrive.
+ */
+export function torchLights({ THREE, scene }: Kit): Three.PointLight[] {
+  const { torch } = OTHER_DIVERS;
+  return OTHER_DIVERS.at.map(() => {
+    const light = new THREE.PointLight(
+      torch.color,
+      0,
+      torch.distance,
+      torch.decay,
+    );
+    scene.add(light);
+    return light;
   });
 }
 
@@ -123,20 +142,16 @@ export function placeOthers(
   spawn: Spawner,
   diver: GLTF,
   length: number,
+  torches: Three.PointLight[],
 ): Creature[] {
-  const { THREE } = kit;
   const { torch, puff } = OTHER_DIVERS;
   return OTHER_DIVERS.at.map(({ x, y, z, speed }, i) => {
     const o = spawn(diver, length, {
       speed: OTHER_DIVERS.speed,
       rot: OTHER_DIVERS.rot,
     });
-    const light = new THREE.PointLight(
-      torch.color,
-      torch.intensity * LEGACY_LIGHT,
-      torch.distance,
-      torch.decay,
-    );
+    const light = torches[i];
+    light.intensity = torch.intensity * LEGACY_LIGHT;
     const beam = glowSprite(kit, torch.color, torch.beam, torch.beamOpacity);
     light.position.set(...torch.at);
     beam.position.set(...torch.at);
@@ -147,7 +162,14 @@ export function placeOthers(
   });
 }
 
-/** Moves the swimmers and drifters; only those near the camera animate. */
+/** Draws `c` only while it is within `VISIBLE_RANGE` of the camera's height `camY`. */
+function showNear(c: Creature, y: number, camY: number): void {
+  const on = Math.abs(y - camY) < VISIBLE_RANGE;
+  if (c.meshes[0]?.visible === on) return;
+  for (const mesh of c.meshes) mesh.visible = on;
+}
+
+/** Moves the swimmers and drifters; only those near the camera are drawn, and nearer still animate. */
 export function swimLife(
   creatures: Creature[],
   t: number,
@@ -164,6 +186,7 @@ export function swimLife(
       c.root.position.set(pose.x, pose.y, pose.z);
       c.root.rotation.y = pose.ry;
     }
+    showNear(c, c.root.position.y, camY);
     if (Math.abs(c.root.position.y - camY) < ANIMATE_RANGE) c.mixer.update(dt);
   }
 }
@@ -183,6 +206,7 @@ export function swimOthers(
     const pose = loopPose(o.loop, t);
     o.root.position.set(pose.x, pose.y, pose.z);
     o.root.rotation.y = pose.ry;
+    showNear(o, pose.y, camY);
     if (Math.abs(o.loop.y - camY) >= range) continue;
     o.mixer.update(dt);
     o.puff = (o.puff ?? 0) - dt;
@@ -242,11 +266,14 @@ export function subRig(kit: Kit) {
   sub.add(...lit, beam);
   sub.position.set(0, worldY(metersToPx(SUB.meters)), SUB.z);
   kit.scene.add(sub);
+  let model: Creature | null = null;
   return {
     place(spawn: Spawner, gltf: GLTF): void {
-      sub.add(spawn(gltf, SUB.length, { rot: SUB.rot }).root);
+      model = spawn(gltf, SUB.length, { rot: SUB.rot });
+      sub.add(model.root);
     },
-    frame(t: number): void {
+    frame(t: number, camY: number): void {
+      if (model) showNear(model, sub.position.y, camY);
       sub.position.x = oscillate(0, SUB.swing, SUB.swingRate, t);
       sub.rotation.y = Math.cos(t * SUB.swingRate) > 0 ? 0 : Math.PI;
     },

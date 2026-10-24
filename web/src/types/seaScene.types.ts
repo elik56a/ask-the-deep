@@ -76,6 +76,8 @@ export interface Pose {
 
 export interface Creature {
   root: Three.Group;
+  /** Its meshes, hidden out of range; lights stay on so the shaders never recompile. */
+  meshes: Three.Mesh[];
   mixer: Three.AnimationMixer;
   action: Three.AnimationAction | null;
   path?: SwimPath;

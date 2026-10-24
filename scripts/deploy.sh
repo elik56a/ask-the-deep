@@ -22,8 +22,15 @@ echo "api.zip: $(du -h "$build/api.zip" | cut -f1)"
 aws lambda update-function-code --function-name "$function" --zip-file "fileb://$build/api.zip" >/dev/null
 aws lambda wait function-updated-v2 --function-name "$function"
 
-# Site: prerendered pages to S3, then drop CloudFront's cached copies.
-(cd "$root/web" && pnpm build)
-aws s3 sync "$root/web/dist/client" "s3://$bucket" --delete
+# Site: prerendered pages to S3, then drop CloudFront's cached copies. Hashed bundles never
+# change; pages revalidate; the models go up brotli-compressed and keep for a day.
+(cd "$root/web" && pnpm build && node --experimental-strip-types --no-warnings scripts/compress-models.ts)
+site="$root/web/dist/client"
+aws s3 sync "$site" "s3://$bucket" --delete --exclude 'assets/*' --exclude 'models/*' \
+  --cache-control 'no-cache'
+aws s3 sync "$site/assets" "s3://$bucket/assets" --delete \
+  --cache-control 'public, max-age=31536000, immutable'
+aws s3 sync "$site/models" "s3://$bucket/models" --delete --content-encoding br \
+  --content-type model/gltf-binary --cache-control 'public, max-age=86400'
 aws cloudfront create-invalidation --distribution-id "$distribution" --paths '/*' >/dev/null
 echo "deployed $function"

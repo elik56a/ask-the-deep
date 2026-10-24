@@ -63,6 +63,7 @@ import {
   subRig,
   swimLife,
   swimOthers,
+  torchLights,
 } from "./life";
 import { lights } from "./lights";
 import { markers } from "./markers";
@@ -90,6 +91,8 @@ function renderer(
       powerPreference: "high-performance",
     });
     r.outputColorSpace = THREE.LinearSRGBColorSpace;
+    // Reading a shader's log waits for it to compile, which stalls the page on every new material.
+    r.debug.checkShaderErrors = import.meta.env.DEV;
     r.setPixelRatio(Math.min(devicePixelRatio, SEA_MAX_PIXEL_RATIO));
     return r;
   } catch {
@@ -163,12 +166,14 @@ export function createSea(
     LURE.distance,
     LURE.decay,
   );
+  scene.add(lureLight);
+  const torches = torchLights(kit);
   const boat = boatRig(kit);
   const sub = subRig(kit);
   const diver = diverRig(kit);
   const creatures: Creature[] = [];
   const others: Creature[] = [];
-  const bedLife: Creature[] = [];
+  const bedProps: Creature[] = [];
   const models: GLTF[] = [];
   let disposed = false;
 
@@ -182,16 +187,28 @@ export function createSea(
     creatures.push(...placeLife(kit, spawn, loaded, lureLight));
     if (loaded.diver) {
       diver.set(spawn(loaded.diver, DIVER.length));
-      others.push(...placeOthers(kit, spawn, loaded.diver, DIVER.length));
+      others.push(
+        ...placeOthers(kit, spawn, loaded.diver, DIVER.length, torches),
+      );
     }
     if (loaded.boat) boat.place(spawn, loaded.boat);
     const subModel = loaded["research-sub"];
     if (subModel) sub.place(spawn, subModel);
-    bedLife.push(...placeBed(spawn, loaded, floor.bed));
+    bedProps.push(...placeBed(spawn, loaded, floor.bed));
     wake();
   }
 
-  const load = (ids: ModelId[]) => loadModels(loader, ids).then(populate);
+  // Shaders compile off the main thread (KHR_parallel_shader_compile) before a wave joins the scene.
+  const compiled = (loaded: Loaded) =>
+    Promise.all(
+      Object.values(loaded).map((gltf) =>
+        gltf ? gl.compileAsync(gltf.scene, camera, scene) : null,
+      ),
+    )
+      .catch(() => null)
+      .then(() => loaded);
+  const load = (ids: ModelId[]) =>
+    loadModels(loader, ids).then(compiled).then(populate);
   // Surface life loads at once; everything deeper when the first dive starts (ADR 0019).
   const [firstWave, nearWave, deepWave, bedWave] = MODEL_WAVES;
   load(firstWave);
@@ -311,16 +328,18 @@ export function createSea(
     const still = quiet() ? 0 : dt;
     swimLife(creatures, t, still, camY);
     swimOthers(others, t, still, camY, quiet() ? null : bubbles, splashAt);
-    if (zone > BED_LIFE_ZONE) for (const c of bedLife) c.mixer.update(still);
+    for (const c of bedProps) {
+      if (c.action && zone > BED_LIFE_ZONE) c.mixer.update(still);
+    }
     boat.frame(t, camY, under);
-    sub.frame(t);
+    sub.frame(t, camY);
     diver.frame({ camY, t, dt: still, camera, landK });
     lureLight.intensity =
       (LURE.intensity + Math.sin(t * LURE.flickerRate) * LURE.flicker) *
       LEGACY_LIGHT;
     rays.frame(zone, wet, t);
     drift.frame(t);
-    floor.frame(t, landK);
+    floor.frame(t, landK, camY);
     marks.frame(dt, t);
     if (landing !== null && camY <= landing + LANDING_DUST.within) {
       if (!quiet()) {
@@ -488,7 +507,7 @@ export function createSea(
       document.removeEventListener("visibilitychange", onVisible);
       reduced.removeEventListener("change", wake);
       canvas.removeEventListener("webglcontextlost", onLost);
-      for (const c of [...creatures, ...others, ...bedLife]) {
+      for (const c of [...creatures, ...others, ...bedProps]) {
         c.mixer.stopAllAction();
       }
       for (const gltf of models) disposeModel(THREE, gltf);

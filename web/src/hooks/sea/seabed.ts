@@ -5,6 +5,7 @@ import {
   LEGACY_LIGHT,
   ROCKS,
   SEABED,
+  VISIBLE_RANGE,
   WARM,
 } from "#/constants/seaScene.constants";
 import type { Kit } from "#/types/seaScene.types";
@@ -107,10 +108,18 @@ export function seabed(kit: Kit) {
     return mark;
   });
   kit.scene.add(bed);
+  let shown = true;
   return {
     bed,
-    /** Landed (`landK` 1), the lights come up. */
-    frame(t: number, landK: number): void {
+    /** Landed (`landK` 1), the lights come up. Far above it (`camY`), only the lights stay in the scene. */
+    frame(t: number, landK: number, camY: number): void {
+      const near = Math.abs(bed.position.y - camY) < VISIBLE_RANGE;
+      if (shown !== near) {
+        shown = near;
+        for (const child of bed.children) {
+          if (!(child instanceof THREE.Light)) child.visible = near;
+        }
+      }
       flood.intensity = (FLOOD.base + landK * FLOOD.landed) * LEGACY_LIGHT;
       warm.intensity = (WARM.base + landK * WARM.landed) * LEGACY_LIGHT;
       marks.forEach((mark, i) => {

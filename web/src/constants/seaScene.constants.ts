@@ -81,6 +81,8 @@ export const DEEP_LOAD_ZONE = 0.25;
 export const MAX_FRAME_S = 0.05;
 // Creatures animate only within this height of the camera.
 export const ANIMATE_RANGE = 70;
+// Past this height from the camera the fog has swallowed a model, so it is not drawn.
+export const VISIBLE_RANGE = 105;
 
 export const SKY_DOME = {
   radius: 900,

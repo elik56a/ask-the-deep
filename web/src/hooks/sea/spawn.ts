@@ -44,9 +44,12 @@ export function spawner(
 ): Spawner {
   return (gltf, length, { speed = 1, rot, ground, tint } = {}, index = 0) => {
     const model = clone(gltf.scene);
+    const meshes: Three.Mesh[] = [];
     model.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return;
+      // A skinned mesh's rest bounds are far off its pose, so it is shown by depth instead (VISIBLE_RANGE).
       node.frustumCulled = false;
+      meshes.push(node);
       if (tint && node.material instanceof THREE.MeshStandardMaterial) {
         node.material = keep(node.material.clone());
         applyTint(node.material, tint, index);
@@ -73,6 +76,6 @@ export function spawner(
     root.add(pivot);
     scene.add(root);
     if (ground) pivot.position.y -= posedBox(THREE, root).min.y;
-    return { root, mixer, action };
+    return { root, meshes, mixer, action };
   };
 }
