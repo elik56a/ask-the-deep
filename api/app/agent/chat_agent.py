@@ -1,9 +1,10 @@
 """The agent loop: the model decides which tools to call, then writes a checked answer.
 
 The visitor's question is searched once before the first model call, so most
-questions are answered from that search in one call (ADR 0020). If the main
-model fails (provider error), a backup model takes over when
-LLM_FALLBACK_MODEL is set. Limits cap how many model and tool calls one
+questions are answered from that search in one call (ADR 0020). If a model
+fails (an HTTP error, a timeout, a dropped connection), the next one in
+LLM_FALLBACK_MODELS takes over, and the router sets the failed one aside for a
+while so later questions skip it. Limits cap how many model and tool calls one
 question may use; on the last allowed model call the tools are hidden, so
 the model answers from what it has found instead of searching on. The answer is
 structured (kind, citations, text), streamed as JSON so its words arrive as
@@ -19,6 +20,7 @@ import json
 import time
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import Literal
 
@@ -35,7 +37,12 @@ from pydantic_ai import (
     UsageLimits,
 )
 from pydantic_ai.capabilities import PrepareTools
-from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai.exceptions import (
+    FallbackExceptionGroup,
+    ModelAPIError,
+    UnexpectedModelBehavior,
+    UsageLimitExceeded,
+)
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
@@ -45,13 +52,14 @@ from pydantic_ai.messages import (
     ToolReturnPart,
     UserPromptPart,
 )
-from pydantic_ai.models import Model
+from pydantic_ai.models import Model, infer_model
 from pydantic_ai.models.fallback import FallbackModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.result import AgentStream
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.usage import RunUsage
 
+from app.agent.router import ModelRouter, model_name, router
 from app.agent.tools import TOOLS, AgentDeps, ToolMeta, search
 from app.config import Settings
 from app.events import (
@@ -173,7 +181,30 @@ def _check_answer(ctx: RunContext[AgentDeps], answer: Answer) -> Answer:
     return read_only(answer, ctx.deps)
 
 
-def _model(settings: Settings) -> Model | str:
+_log = structlog.get_logger("agent")
+
+
+@cache
+def _available(model: str) -> bool:
+    """Whether a backup can be built; one whose provider has no API key is left out.
+
+    So a backup can be configured before its key is set, and the main model
+    keeps answering meanwhile.
+    """
+    try:
+        infer_model(model)
+    except Exception as exc:  # each provider SDK raises its own error for a missing key
+        _log.warning("model_unavailable", model=model, error=type(exc).__name__)
+        return False
+    return True
+
+
+def _router(settings: Settings) -> ModelRouter:
+    backups = (m for m in settings.llm_fallback_models if _available(m))
+    return router((settings.llm_model, *backups), settings.llm_cooldown_s)
+
+
+def _model(settings: Settings, chain: list[str]) -> Model | str:
     if settings.llm_model == "test":
         return TestModel(
             call_tools=[_SEARCH],
@@ -181,9 +212,7 @@ def _model(settings: Settings) -> Model | str:
                 {"kind": "answered", "citations": [], "text": _TEST_ANSWER}
             ),
         )
-    if settings.llm_fallback_model:
-        return FallbackModel(settings.llm_model, settings.llm_fallback_model)
-    return settings.llm_model
+    return FallbackModel(*chain) if len(chain) > 1 else chain[0]
 
 
 def cost_usd(messages: Sequence[ModelMessage]) -> float:
@@ -322,7 +351,6 @@ def _llm_completed(
     decision: Literal["tools", "answer", "text"] = (
         "tools" if tools else "answer" if calls or wrote else "text"
     )
-    fallback_name = (settings.llm_fallback_model or "").partition(":")[2]
     return LlmCompleted(
         call=call,
         model=response.model_name or "unknown",
@@ -332,7 +360,8 @@ def _llm_completed(
         duration_ms=round((time.monotonic() - started) * 1000),
         decision=decision,
         tools=tools,
-        fallback=bool(fallback_name) and response.model_name == fallback_name,
+        fallback=response.model_name
+        in {model_name(m) for m in settings.llm_fallback_models},
         rejected=attempt.rejected,
     )
 
@@ -387,15 +416,19 @@ async def run_agent(
     first = await search(deps, question)
     for step in tracker.completed(_SEARCH, _FIRST_SEARCH_ID, first.metadata):
         yield step
+    routing = _router(settings)
+    chain = routing.chain()
     try:
         async with agent.iter(
             message_history=[*_history(history), *_first_search(question, first)],
             deps=deps,
-            model=_model(settings),
+            model=_model(settings, chain),
             instructions=_instructions(settings),
             model_settings={
                 "max_tokens": settings.max_output_tokens,
-                "timeout": settings.llm_timeout_s,
+                "timeout": settings.llm_fallback_after_s
+                if len(chain) > 1
+                else settings.llm_timeout_s,
                 "thinking": settings.llm_thinking,
             },
             usage_limits=UsageLimits(
@@ -412,6 +445,7 @@ async def run_agent(
                         async with node.stream(run.ctx) as stream:
                             async for step in _answer_steps(stream, deps, attempt):
                                 yield step
+                        routing.report(chain, stream.response.model_name)
                         yield _llm_completed(
                             call, stream.response, started, attempt, settings
                         )
@@ -426,4 +460,7 @@ async def run_agent(
                 cost = cost_usd(run.new_messages())
     except (UnexpectedModelBehavior, UsageLimitExceeded):
         answer = None
+    except (ModelAPIError, FallbackExceptionGroup):
+        routing.report(chain, None)
+        raise
     yield AgentFinished(answer=answer, usage=usage, cost_usd=cost)

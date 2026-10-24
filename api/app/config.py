@@ -20,7 +20,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     llm_model: str = "test"
-    llm_fallback_model: str | None = None
+    # Backup models in the order to try them, as JSON: '["anthropic:claude-haiku-5-5"]'.
+    # A model that failed is set aside this long (app/agent/router.py).
+    llm_fallback_models: list[str] = []
+    llm_cooldown_s: float = 60.0
     embedding_model: str = "test"
     embedding_dimensions: int = 768
     database_url: SecretStr = SecretStr(
@@ -49,6 +52,8 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 15.0
     # How hard the model thinks before writing; each level up adds seconds per call.
     llm_thinking: Literal["minimal", "low", "medium", "high"] = "minimal"
+    # With a backup model, a call slower than this moves on to the backup instead.
+    llm_fallback_after_s: float = 8.0
     db_timeout_s: float = 5.0
     # Caps on the agent loop, so a confused model can't run up cost or latency.
     agent_max_requests: int = 4
