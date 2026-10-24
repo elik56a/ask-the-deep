@@ -10,6 +10,10 @@ visibility: public
 
 # 019 Mobile
 
+## Where Eliyahu worked before Phytech
+
+Before Phytech, Eliyahu worked at 019 Mobile, from 2020 to 2022, as a Full Stack Engineer. There he modernized a legacy jQuery and PHP monolith into a Vue.js app, re-engineered the SMS campaign engine, and built Node.js and OracleDB backend services. Before 019 Mobile, he worked at Givers (2019–2020).
+
 ## Legacy modernization at 019 Mobile
 
 From 2020 to 2022, Eliyahu was a Full Stack Engineer at 019 Mobile. He modernized a legacy jQuery and PHP monolith into a Vue.js single-page application.

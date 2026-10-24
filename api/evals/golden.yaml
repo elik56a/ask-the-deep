@@ -68,6 +68,7 @@
   facts: [He worked at 019 Mobile from 2020 to 2022, "He did at least one of these there: modernized a jQuery and PHP monolith into Vue.js, re-engineered the SMS campaign engine, built Node.js and OracleDB backend services"]
   must_not: [Givers came right before Phytech]
   chunks:
+    - experience/019-mobile.md#where-eliyahu-worked-before-phytech
     - experience/019-mobile.md#legacy-modernization-at-019-mobile
     - experience/019-mobile.md#sms-campaign-engine-at-019-mobile
     - experience/019-mobile.md#backend-services-at-019-mobile

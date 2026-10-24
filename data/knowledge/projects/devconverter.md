@@ -2,7 +2,7 @@
 title: DevConverter.dev
 type: project
 role: Founder and lead developer
-technologies: [Next.js, TypeScript, Tailwind CSS, CryptoJS]
+technologies: [Next.js, TypeScript, Tailwind CSS, CryptoJS, Radix UI]
 url: https://devconverter.dev
 language: en
 visibility: public
@@ -21,3 +21,7 @@ DevConverter.dev includes a JSON formatter and validator, a Base64 encoder and d
 ## Privacy on DevConverter.dev
 
 All data processing on DevConverter.dev happens in the browser, using libraries such as CryptoJS for MD5 and SHA-256. Sensitive data never leaves the user's device.
+
+## How DevConverter.dev is built
+
+DevConverter.dev lives in EK Studio, a TypeScript monorepo that Eliyahu set up for his own products. The monorepo holds the DevConverter Next.js app and a shared UI component library built on Radix UI primitives and Tailwind CSS, so every app in it shares the same components.
