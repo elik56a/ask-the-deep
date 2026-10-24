@@ -74,6 +74,10 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run python -m app.rag.ingest
+      # Ingest embeds every passage into the fresh database; the free tier allows
+      # 100 embeddings a minute, so recall waits for the next minute.
+      # ponytail: breaks again past ~100 passages; then batch or pause inside ingest.
+      - run: sleep 60
       - run: uv run python -m app.rag.recall
       - run: uv run python -m app.evals.run $SET
         env:
