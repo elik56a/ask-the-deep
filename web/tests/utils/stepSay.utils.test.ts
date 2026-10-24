@@ -8,6 +8,7 @@ import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 const copy = DIVE_COPY.en.say;
 const ctx: StepContext = {
+  question: "Where does he work?",
   carried: 0,
   skipped: false,
   wallMs: 0,
@@ -73,5 +74,22 @@ describe("sayParts", () => {
       { text: "rag eval", start: 2, quote: true },
       { text: " now.", start: 4, quote: false },
     ]);
+  });
+});
+
+describe("search narration", () => {
+  const searching = (query: string) =>
+    [{ ...EVENT_SAMPLES["tool.called"], args: { query } }] as const;
+
+  it("reads the first search as the question itself, even on a follow-up", () => {
+    const said = say([...searching(ctx.question)], { carried: 2 });
+    expect(said?.text).toBe(copy.search);
+  });
+
+  it("reads a later search as the model's own, rewritten from a follow-up", () => {
+    expect(say([...searching("work at Phytech")], { carried: 2 })?.text).toBe(
+      copy.searchCarried,
+    );
+    expect(say([...searching("work at Phytech")])?.text).toBe(copy.searchMore);
   });
 });

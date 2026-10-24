@@ -6,6 +6,7 @@ Docker Postgres from docker-compose.yml.
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     dynamodb_table: str | None = None
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
-    rules_version: str = "v5"
+    rules_version: str = "v6"
     # Cosine similarity a passage needs to reach the model; set from measured
     # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
     retrieval_threshold: float = 0.57
@@ -46,6 +47,8 @@ class Settings(BaseSettings):
     # give up (30 s), so the visitor always gets a clear message.
     request_timeout_s: float = 25.0
     llm_timeout_s: float = 15.0
+    # How hard the model thinks before writing; each level up adds seconds per call.
+    llm_thinking: Literal["minimal", "low", "medium", "high"] = "minimal"
     db_timeout_s: float = 5.0
     # Caps on the agent loop, so a confused model can't run up cost or latency.
     agent_max_requests: int = 4

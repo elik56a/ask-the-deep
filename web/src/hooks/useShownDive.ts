@@ -3,7 +3,12 @@ import { BED_BELOW_PX } from "#/constants/sea.constants";
 import { useDiveLayout } from "#/hooks/useDiveLayout";
 import { usePacedPlayer } from "#/hooks/usePacedPlayer";
 import type { ChatMessage } from "#/types/chat.types";
-import { answerText, carriedWith, messageEvents } from "#/utils/chat.utils";
+import {
+  answerText,
+  carriedWith,
+  messageEvents,
+  messageText,
+} from "#/utils/chat.utils";
 import { diveEnd, diveSteps } from "#/utils/depth.utils";
 import { streamEnd } from "#/utils/streamWords.utils";
 import { threadTurns } from "#/utils/thread.utils";
@@ -47,6 +52,7 @@ export function useShownDive(
     model: requestModel(events),
     written: { words: Math.round(player.written * words), total: words },
     ctx: {
+      question: shown ? messageText(shown.question) : "",
       carried: shown ? carriedWith(messages, shown.question) : 0,
       skipped: player.skipped,
       wallMs: player.wallMs,

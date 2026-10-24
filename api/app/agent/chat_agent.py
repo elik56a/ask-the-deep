@@ -1,12 +1,15 @@
 """The agent loop: the model decides which tools to call, then writes a checked answer.
 
-If the main model fails (provider error), a backup model takes over when
+The visitor's question is searched once before the first model call, so most
+questions are answered from that search in one call (ADR 0020). If the main
+model fails (provider error), a backup model takes over when
 LLM_FALLBACK_MODEL is set. Limits cap how many model and tool calls one
 question may use; on the last allowed model call the tools are hidden, so
 the model answers from what it has found instead of searching on. The answer is
-structured (kind, citations, text) and checked in code: it may cite only
-passages a tool returned, and an "answered" reply needs at least one tool
-result. A failed check makes the model retry once; after that, no answer.
+structured (kind, citations, text), streamed as JSON so its words arrive as
+they are written, and checked in code: citations of passages no tool returned
+are dropped, and an "answered" reply needs at least one tool result. A failed
+check makes the model retry once; after that, no answer.
 
 `run_agent` turns the run into steps (events plus a final `AgentFinished`), so
 the pipeline never touches Pydantic AI directly.
@@ -19,13 +22,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+import structlog
 from pydantic import BaseModel
 from pydantic_ai import (
     Agent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     ModelRetry,
+    NativeOutput,
     RunContext,
+    ToolReturn,
     UsageLimits,
 )
 from pydantic_ai.capabilities import PrepareTools
@@ -46,7 +52,7 @@ from pydantic_ai.result import AgentStream
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.usage import RunUsage
 
-from app.agent.tools import TOOLS, AgentDeps, ToolMeta
+from app.agent.tools import TOOLS, AgentDeps, ToolMeta, search
 from app.config import Settings
 from app.events import (
     GenerationStarted,
@@ -62,6 +68,10 @@ from app.events import (
 from app.rag.retrieval import Hit
 
 _PROMPTS = Path(__file__).parent / "prompts"
+_SEARCH = "search_knowledge"
+# The search run before the first model call, shown to the model as its own first call.
+_FIRST_SEARCH_ID = "first-search"
+_log = structlog.get_logger("agent")
 _TEST_ANSWER = "This is the offline test model. Set LLM_MODEL for real answers."
 
 
@@ -115,7 +125,9 @@ def _last_call_answers(
 
 
 agent = Agent(
-    output_type=Answer,
+    # JSON output streams as text, so the answer's words show as they are written;
+    # as an output tool call it would only arrive once the call ends.
+    output_type=NativeOutput(Answer),
     deps_type=AgentDeps,
     tools=TOOLS,
     retries=1,
@@ -133,11 +145,6 @@ class _Attempt:
 
 def answer_problem(answer: Answer, deps: AgentDeps) -> str | None:
     """Why this answer may not be shown, phrased as feedback for the model."""
-    forged = [c for c in answer.citations if c not in deps.seen]
-    if forged:
-        return (
-            f"Citations {forged} were not returned by any tool. Cite only ids you read."
-        )
     if answer.kind == "answered" and not deps.successful_tools:
         return (
             "You answered without any tool result. Call a tool or reply no_information."
@@ -145,22 +152,34 @@ def answer_problem(answer: Answer, deps: AgentDeps) -> str | None:
     return None
 
 
+def read_only(answer: Answer, deps: AgentDeps) -> Answer:
+    """The answer citing only passages a tool returned in this run.
+
+    A made-up id is dropped rather than failing the answer: the text still
+    stands on the passages that were read, and a retry would cost a model call.
+    """
+    cited = [c for c in answer.citations if c in deps.seen]
+    if len(cited) < len(answer.citations):
+        _log.warning("citations_dropped", count=len(answer.citations) - len(cited))
+    return answer.model_copy(update={"citations": cited})
+
+
 @agent.output_validator
 def _check_answer(ctx: RunContext[AgentDeps], answer: Answer) -> Answer:
-    if not ctx.partial_output and (problem := answer_problem(answer, ctx.deps)):
+    if ctx.partial_output:
+        return answer
+    if problem := answer_problem(answer, ctx.deps):
         raise ModelRetry(problem)
-    return answer
+    return read_only(answer, ctx.deps)
 
 
 def _model(settings: Settings) -> Model | str:
     if settings.llm_model == "test":
         return TestModel(
-            call_tools=["search_knowledge"],
-            custom_output_args={
-                "kind": "answered",
-                "citations": [],
-                "text": _TEST_ANSWER,
-            },
+            call_tools=[_SEARCH],
+            custom_output_text=json.dumps(
+                {"kind": "answered", "citations": [], "text": _TEST_ANSWER}
+            ),
         )
     if settings.llm_fallback_model:
         return FallbackModel(settings.llm_model, settings.llm_fallback_model)
@@ -199,6 +218,27 @@ def _history(messages: list[PastMessage]) -> list[ModelMessage]:
     ]
 
 
+def _first_search(question: str, result: ToolReturn) -> list[ModelMessage]:
+    """The question and its first search, as the model would have asked for it."""
+    return [
+        ModelRequest(parts=[UserPromptPart(question)]),
+        ModelResponse(
+            parts=[
+                ToolCallPart(
+                    _SEARCH, {"query": question}, tool_call_id=_FIRST_SEARCH_ID
+                )
+            ]
+        ),
+        ModelRequest(
+            parts=[
+                ToolReturnPart(
+                    _SEARCH, result.return_value, tool_call_id=_FIRST_SEARCH_ID
+                )
+            ]
+        ),
+    ]
+
+
 def _scored(hits: list[Hit], threshold: float) -> list[ScoredPassage]:
     return [
         ScoredPassage(
@@ -227,27 +267,29 @@ class _ToolTracker:
 
     def steps(self, event: object) -> list[AgentStep]:
         if isinstance(event, FunctionToolCallEvent):
-            return self._called(event)
+            call = event.part
+            return self.called(call.tool_name, call.tool_call_id, _call_args(event))
         if isinstance(event, FunctionToolResultEvent):
-            return self._completed(event)
+            result = event.part
+            meta = result.metadata if isinstance(result, ToolReturnPart) else None
+            tool = result.tool_name or "unknown"
+            return self.completed(tool, result.tool_call_id, meta)
         return []
 
-    def _called(self, event: FunctionToolCallEvent) -> list[AgentStep]:
-        self._started[event.part.tool_call_id] = time.monotonic()
-        args = _call_args(event)
-        steps: list[AgentStep] = [ToolCalled(tool=event.part.tool_name, args=args)]
-        if event.part.tool_name == "search_knowledge":
+    def called(self, tool: str, call_id: str, args: dict[str, str]) -> list[AgentStep]:
+        self._started[call_id] = time.monotonic()
+        steps: list[AgentStep] = [ToolCalled(tool=tool, args=args)]
+        if tool == _SEARCH:
             steps.append(RetrievalStarted(query=args.get("query", "")))
         return steps
 
-    def _completed(self, event: FunctionToolResultEvent) -> list[AgentStep]:
-        part = event.part
-        meta = part.metadata if isinstance(part, ToolReturnPart) else None
-        meta = meta if isinstance(meta, ToolMeta) else ToolMeta(ok=False, count=0)
-        started = self._started.pop(part.tool_call_id, time.monotonic())
-        tool = part.tool_name or "unknown"
+    def completed(self, tool: str, call_id: str, metadata: object) -> list[AgentStep]:
+        meta = (
+            metadata if isinstance(metadata, ToolMeta) else ToolMeta(ok=False, count=0)
+        )
+        started = self._started.pop(call_id, time.monotonic())
         steps: list[AgentStep] = []
-        if tool == "search_knowledge":
+        if tool == _SEARCH:
             steps.append(
                 RetrievalCompleted(
                     passages=_scored(meta.hits, self._threshold),
@@ -275,8 +317,10 @@ def _llm_completed(
 ) -> LlmCompleted:
     calls = [p.tool_name for p in response.parts if isinstance(p, ToolCallPart)]
     tools = [name for name in calls if name in _TOOL_NAMES]
+    # The answer is JSON text (native output); a reply with neither is plain text.
+    wrote = any(isinstance(p, TextPart) and p.content for p in response.parts)
     decision: Literal["tools", "answer", "text"] = (
-        "tools" if tools else "answer" if calls else "text"
+        "tools" if tools else "answer" if calls or wrote else "text"
     )
     fallback_name = (settings.llm_fallback_model or "").partition(":")[2]
     return LlmCompleted(
@@ -336,16 +380,23 @@ async def run_agent(
     cost = 0.0
     call = 0
     answer: Answer | None = None
+    # Searching first saves the model a whole call on most questions (ADR 0020).
+    args = {"query": question}
+    for step in tracker.called(_SEARCH, _FIRST_SEARCH_ID, args):
+        yield step
+    first = await search(deps, question)
+    for step in tracker.completed(_SEARCH, _FIRST_SEARCH_ID, first.metadata):
+        yield step
     try:
         async with agent.iter(
-            question,
-            message_history=_history(history),
+            message_history=[*_history(history), *_first_search(question, first)],
             deps=deps,
             model=_model(settings),
             instructions=_instructions(settings),
             model_settings={
                 "max_tokens": settings.max_output_tokens,
                 "timeout": settings.llm_timeout_s,
+                "thinking": settings.llm_thinking,
             },
             usage_limits=UsageLimits(
                 request_limit=settings.agent_max_requests,

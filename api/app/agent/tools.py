@@ -84,24 +84,24 @@ def _merge(results: list[list[Hit]]) -> list[Hit]:
     return list(best.values())
 
 
-async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn:
-    """Search Eliyahu's knowledge base (experience, projects, skills, profile, FAQ).
+async def search(deps: AgentDeps, query: str) -> ToolReturn:
+    """Search the knowledge base for `query`, keeping the passages that clear the gate.
 
-    Use a short, specific query. Search again with a different query for each
-    part of a multi-part question. Returns passages with ids you can cite.
+    The agent runs it once on the visitor's question before the first model
+    call, and the model runs it through `search_knowledge`.
     """
-    settings = ctx.deps.settings
+    settings = deps.settings
     # The model sometimes rewrites a name ("גיברס" → "Gibs"); searching the
     # visitor's own words too means a bad rewrite can't hide the right passages.
-    queries = [query, *_take_question(ctx.deps)]
+    queries = list(dict.fromkeys([query, *_take_question(deps)]))
     hits = _merge(
         await asyncio.gather(
-            *(ctx.deps.retriever.search(q, settings.retrieval_top_k) for q in queries)
+            *(deps.retriever.search(q, settings.retrieval_top_k) for q in queries)
         )
     )
     accepted = [h.chunk for h in hits if h.similarity >= settings.retrieval_threshold]
-    _read(ctx.deps, accepted)
-    ctx.deps.best_score = max([ctx.deps.best_score, *(h.similarity for h in hits)])
+    _read(deps, accepted)
+    deps.best_score = max([deps.best_score, *(h.similarity for h in hits)])
     return ToolReturn(
         return_value=format_passages(accepted) if accepted else _NOTHING_FOUND,
         metadata=ToolMeta(
@@ -112,6 +112,15 @@ async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn
             passage_ids=[c.chunk_id for c in accepted],
         ),
     )
+
+
+async def search_knowledge(ctx: RunContext[AgentDeps], query: str) -> ToolReturn:
+    """Search Eliyahu's knowledge base (experience, projects, skills, profile, FAQ).
+
+    Use a short, specific query. Search again with a different query for each
+    part of a multi-part question. Returns passages with ids you can cite.
+    """
+    return await search(ctx.deps, query)
 
 
 async def list_projects(ctx: RunContext[AgentDeps]) -> ToolReturn:

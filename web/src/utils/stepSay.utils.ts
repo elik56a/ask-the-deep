@@ -47,7 +47,12 @@ export function stepSay(
         return { text: fill(copy.tool, { tool: event.tool }) };
       }
       return {
-        text: carried ? copy.searchCarried : copy.search,
+        text:
+          event.args.query === ctx.question
+            ? copy.search
+            : carried
+              ? copy.searchCarried
+              : copy.searchMore,
         quote: event.args.query ?? "",
       };
     case "retrieval.completed":

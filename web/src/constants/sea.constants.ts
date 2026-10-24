@@ -247,9 +247,9 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       cacheMiss:
         "Nothing is saved for this question yet, so the model answers it fresh.",
       llmFirst:
-        "The model reads your question and picks a move: answer right away, or use a tool first.",
+        "The model reads your question with what the search found, then picks a move: answer now, or use another tool first.",
       llmFirstCarried:
-        "The model reads your question together with the earlier messages, then picks a move: answer now, or use a tool first.",
+        "The model reads your question with the earlier messages and what the search found, then picks a move: answer now, or use another tool first.",
       llmRound:
         "Round {n} of the agent loop. The model now has the search results and decides again.",
       choseTool: "It can't answer from memory, so it calls a tool: {tool}.",
@@ -260,6 +260,8 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         "Your question becomes a search: {q}. It runs as a meaning search and a keyword search at the same time, and the two result lists are merged.",
       searchCarried:
         "The model turned your follow-up into a precise search: {q}. It runs as a meaning search and a keyword search at the same time, and the two result lists are merged.",
+      searchMore:
+        "The first results missed part of your question, so the model searches again: {q}. Again a meaning search and a keyword search, merged.",
       tool: "The model calls {tool} to read this straight from Eliyahu's data, with no search needed.",
       results:
         "Every passage gets a relevance score. Only passages above the {t} line reach the model. The rest sink, and the model never sees them.",
@@ -386,9 +388,9 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         "השאלה הזו נענתה לאחרונה, אז התשובה השמורה חוזרת ושום מודל לא רץ.",
       cacheMiss: "עדיין אין תשובה שמורה לשאלה הזו, אז המודל עונה עליה מחדש.",
       llmFirst:
-        "המודל קורא את השאלה שלך ובוחר צעד: לענות מיד, או להשתמש קודם בכלי.",
+        "המודל קורא את השאלה שלך יחד עם מה שהחיפוש מצא, ואז בוחר צעד: לענות עכשיו, או להשתמש קודם בכלי נוסף.",
       llmFirstCarried:
-        "המודל קורא את השאלה שלך יחד עם ההודעות הקודמות, ואז בוחר צעד: לענות עכשיו, או להשתמש קודם בכלי.",
+        "המודל קורא את השאלה שלך יחד עם ההודעות הקודמות ומה שהחיפוש מצא, ואז בוחר צעד: לענות עכשיו, או להשתמש קודם בכלי נוסף.",
       llmRound:
         "סבב {n} של לולאת הסוכן. עכשיו יש למודל את תוצאות החיפוש, והוא מחליט שוב.",
       choseTool: "הוא לא יכול לענות מהזיכרון, אז הוא קורא לכלי: {tool}.",
@@ -399,6 +401,8 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         "השאלה שלך הופכת לחיפוש: {q}. הוא רץ כחיפוש לפי משמעות וכחיפוש מילות מפתח בבת אחת, ושתי רשימות התוצאות מתמזגות.",
       searchCarried:
         "המודל הפך את שאלת ההמשך שלך לחיפוש מדויק: {q}. הוא רץ כחיפוש לפי משמעות וכחיפוש מילות מפתח בבת אחת, ושתי רשימות התוצאות מתמזגות.",
+      searchMore:
+        "התוצאות הראשונות לא כיסו חלק מהשאלה, אז המודל מחפש שוב: {q}. שוב חיפוש לפי משמעות וחיפוש מילות מפתח, ממוזגים.",
       tool: "המודל קורא ל־{tool} כדי לקרוא את זה ישר מהנתונים של אליהו, בלי חיפוש.",
       results:
         "כל קטע מקבל ציון רלוונטיות. רק קטעים מעל קו ה־{t} מגיעים למודל. השאר שוקעים, והמודל לא רואה אותם.",

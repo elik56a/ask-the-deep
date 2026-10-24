@@ -140,6 +140,8 @@ export interface SayCopy {
   unfinished: string;
   search: string;
   searchCarried: string;
+  /** A search the model asked for after the first one, which runs on the question as typed. */
+  searchMore: string;
   tool: string;
   results: string;
   writingFrom: string;
@@ -162,6 +164,8 @@ export interface StepSay {
 
 /** What the cards know beyond the events: the conversation and the playback. */
 export interface StepContext {
+  /** The visitor's question; the first search runs on it as typed. */
+  question: string;
   /** Earlier messages sent with this question. */
   carried: number;
   /** The visitor skipped to the end. */

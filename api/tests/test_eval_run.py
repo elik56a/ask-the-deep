@@ -62,7 +62,8 @@ async def test_records_what_the_agent_did() -> None:
     assert run.text == "He works at Phytech."
     assert run.citations == ["work"]
     assert run.retrieved == ["work"]
-    assert run.tools == ["search_knowledge"]
+    # The first search, then the model's own.
+    assert run.tools == ["search_knowledge", "search_knowledge"]
     assert run.model_calls == 2
 
 
