@@ -13,27 +13,25 @@ import {
   DIVER_LINE,
   FOLLOW_GAIN,
   FOLLOW_SPEED,
+  GLIDE_SLACK_PX,
+  RESYNC_PX,
   RUSH_GAIN,
   RUSH_SPEED,
   SNAP_MS,
 } from "#/constants/sea.constants";
 import type { DiveMode } from "#/types/sea.types";
 
-const SCROLL_KEYS = [
-  "ArrowUp",
-  "ArrowDown",
-  "PageUp",
-  "PageDown",
-  "Home",
-  "End",
-  " ",
-];
+const UP_KEYS = ["ArrowUp", "PageUp", "Home"];
+const DOWN_KEYS = ["ArrowDown", "PageDown", "End", " "];
 
 /**
  * Glides the page so the latest step sits at the diver line (P5.22), with a
  * speed cap so a burst of events reads as a descent, not a jump. Any scroll
- * by the visitor pauses following until `resume`. In "ascend" it glides to
- * the top and calls `onSurfaced`. Uses `scrollTo`, never `scrollIntoView`.
+ * by the visitor pauses following until `resume`. During the dive the page
+ * never scrolls past the latest step, so the seabed waits for the diver;
+ * scrolling up pauses, and scrolling back down to the step resumes. In
+ * "ascend" it glides to the top and calls `onSurfaced`. Uses `scrollTo`,
+ * never `scrollIntoView`.
  * Scrolling inside the chat (`[data-console]`) is not scrolling the dive; any other scroll by the
  * visitor also calls `onUserScroll`.
  */
@@ -49,6 +47,8 @@ export function useDiveFollow(
   latest.current = { target, following, onSurfaced, onUserScroll };
   const rushing = useRef(false);
   const snapUntil = useRef(0);
+  // How far down the visitor may scroll during the dive: the latest step at the diver line.
+  const limit = useRef<number | null>(null);
 
   useEffect(() => {
     if (mode === "dive" || mode === "reveal") setFollowing(true);
@@ -61,7 +61,7 @@ export function useDiveFollow(
     let last = 0;
     let frame = 0;
     const glide = (to: number, speed: number, dt: number, gain: number) => {
-      if (Math.abs(scrollY - glideY) > 3) glideY = scrollY;
+      if (Math.abs(scrollY - glideY) > GLIDE_SLACK_PX) glideY = scrollY;
       const gap = to - glideY;
       if (Math.abs(gap) < 0.5) return;
       glideY +=
@@ -87,10 +87,22 @@ export function useDiveFollow(
           latest.current.onSurfaced();
           return;
         }
-      } else if (on && step !== null && water) {
+      } else if (step !== null && water) {
         const top = water.getBoundingClientRect().top + scrollY;
         const max = document.documentElement.scrollHeight - innerHeight;
         const to = Math.min(top + step - innerHeight * DIVER_LINE, max);
+        limit.current = mode === "dive" ? to : null;
+        // A scroll past the step by the visitor (the scrollbar, a fast flick) snaps back and is following again; the glide's own moves never do.
+        const byVisitor = !on || Math.abs(scrollY - glideY) > GLIDE_SLACK_PX;
+        if (mode === "dive" && byVisitor && scrollY > to) {
+          scrollTo(0, to);
+          glideY = to;
+          setFollowing(true);
+        }
+        if (!on) {
+          frame = requestAnimationFrame(tick);
+          return;
+        }
         const rush = rushing.current;
         glide(
           to,
@@ -108,25 +120,48 @@ export function useDiveFollow(
 
   useEffect(() => {
     if (mode !== "dive" && mode !== "reveal") return;
-    const pause = (event: Event) => {
+    const pause = () => {
+      setFollowing(false);
+      latest.current.onUserScroll?.();
+    };
+    // At the seabed any scroll pauses; during the dive only scrolling up does, and scrolling down stops at the step.
+    const scrolled = (event: Event, down: boolean) => {
       const inChat =
         event.target instanceof Element &&
         event.target.closest("[data-console]");
       if (inChat) return;
-      setFollowing(false);
-      latest.current.onUserScroll?.();
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (SCROLL_KEYS.includes(event.key) && event.target === document.body) {
-        pause(event);
+      const stop = limit.current;
+      if (mode === "reveal" || !down) pause();
+      else if (stop !== null && scrollY >= stop - RESYNC_PX) {
+        event.preventDefault();
+        setFollowing(true);
       }
     };
-    addEventListener("wheel", pause, { passive: true });
-    addEventListener("touchmove", pause, { passive: true });
+    const onWheel = (event: WheelEvent) => scrolled(event, event.deltaY > 0);
+    let touchY = 0;
+    const onTouchStart = (event: TouchEvent) => {
+      touchY = event.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const y = event.touches[0]?.clientY ?? touchY;
+      scrolled(event, y < touchY);
+      touchY = y;
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.target !== document.body) return;
+      const down = DOWN_KEYS.includes(event.key) && !event.shiftKey;
+      if (down || UP_KEYS.includes(event.key) || event.key === " ") {
+        scrolled(event, down);
+      }
+    };
+    addEventListener("wheel", onWheel, { passive: false });
+    addEventListener("touchstart", onTouchStart, { passive: true });
+    addEventListener("touchmove", onTouchMove, { passive: false });
     addEventListener("keydown", onKey);
     return () => {
-      removeEventListener("wheel", pause);
-      removeEventListener("touchmove", pause);
+      removeEventListener("wheel", onWheel);
+      removeEventListener("touchstart", onTouchStart);
+      removeEventListener("touchmove", onTouchMove);
       removeEventListener("keydown", onKey);
     };
   }, [mode]);

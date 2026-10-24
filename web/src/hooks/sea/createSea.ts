@@ -339,7 +339,7 @@ export function createSea(
       LEGACY_LIGHT;
     rays.frame(zone, wet, t);
     drift.frame(t);
-    floor.frame(t, landK, camY);
+    floor.frame(t, landK, camY, landing !== null);
     marks.frame(dt, t);
     if (landing !== null && camY <= landing + LANDING_DUST.within) {
       if (!quiet()) {

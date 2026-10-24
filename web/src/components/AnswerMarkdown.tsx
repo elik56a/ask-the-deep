@@ -1,5 +1,6 @@
 import Markdown, { type Components } from "react-markdown";
 import { ANSWER_ELEMENTS } from "#/constants/markdown.constants";
+import { linkBareUrls } from "#/utils/markdown.utils";
 
 interface AnswerMarkdownProps {
   text: string;
@@ -38,7 +39,7 @@ export function AnswerMarkdown({ text }: AnswerMarkdownProps) {
       skipHtml
       components={COMPONENTS}
     >
-      {text}
+      {linkBareUrls(text)}
     </Markdown>
   );
 }

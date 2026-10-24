@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { HOOD_COPY, STATUS_DOT } from "#/constants/hood.constants";
 import { DIVE_COPY } from "#/constants/sea.constants";
+import { useBottomVar } from "#/hooks/useBottomVar";
 import { useBuddy } from "#/hooks/useBuddy";
 import { useEased } from "#/hooks/useEased";
 import type { HoodStatus } from "#/types/hood.types";
@@ -28,7 +29,9 @@ export function ServerPanel({
 }: ServerPanelProps) {
   const hud = DIVE_COPY[lang].hud;
   const canvas = useRef<HTMLCanvasElement>(null);
+  const panel = useRef<HTMLElement>(null);
   useBuddy(canvas, status === "running");
+  useBottomVar(panel, "--hud-end");
   const [clock, calls, tokensIn, tokensOut, cost, ttft] = useEased([
     clockMs,
     totals.modelCalls,
@@ -65,6 +68,7 @@ export function ServerPanel({
 
   return (
     <aside
+      ref={panel}
       aria-label={hud.label}
       className={`glass fixed end-8 top-[calc(12px+env(safe-area-inset-top,0px))] z-16 flex w-140 flex-col gap-3 rounded-[20px] px-4 pt-3 pb-3.5 max-lg:start-[max(16px,env(safe-area-inset-left,0px))] max-lg:end-[max(16px,env(safe-area-inset-right,0px))] max-lg:w-auto max-lg:gap-2.5 max-lg:px-3 max-lg:py-2.5 ${covered ? "max-lg:hidden" : ""}`}
     >

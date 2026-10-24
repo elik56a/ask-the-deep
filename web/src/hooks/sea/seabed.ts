@@ -111,9 +111,9 @@ export function seabed(kit: Kit) {
   let shown = true;
   return {
     bed,
-    /** Landed (`landK` 1), the lights come up. Far above it (`camY`), only the lights stay in the scene. */
-    frame(t: number, landK: number, camY: number): void {
-      const near = Math.abs(bed.position.y - camY) < VISIBLE_RANGE;
+    /** Landed (`landK` 1), the lights come up. Until the dive `placed` it, or far above it (`camY`), only the lights stay in the scene. */
+    frame(t: number, landK: number, camY: number, placed: boolean): void {
+      const near = placed && Math.abs(bed.position.y - camY) < VISIBLE_RANGE;
       if (shown !== near) {
         shown = near;
         for (const child of bed.children) {

@@ -90,7 +90,7 @@ it("names the tool being run", () => {
 
 it("counts passages that clear the gate", () => {
   expect(text(EVENT_SAMPLES["retrieval.completed"]).title).toBe(
-    "1 of 2 passages are good enough to use",
+    "1 of 2 passages are on topic",
   );
 });
 

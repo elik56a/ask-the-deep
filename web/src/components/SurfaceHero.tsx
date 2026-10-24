@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { CHAT_COPY } from "#/constants/chat.constants";
-import { useHeroEnd } from "#/hooks/useHeroEnd";
+import { useBottomVar } from "#/hooks/useBottomVar";
 import type { Lang } from "#/types/i18n.types";
 
 interface SurfaceHeroProps {
@@ -12,7 +12,7 @@ interface SurfaceHeroProps {
 export function SurfaceHero({ lang, talked }: SurfaceHeroProps) {
   const copy = CHAT_COPY[lang];
   const hero = useRef<HTMLDivElement>(null);
-  useHeroEnd(hero);
+  useBottomVar(hero, "--hero-end");
   const [before, name, after] = copy.introTitle;
   return (
     <div

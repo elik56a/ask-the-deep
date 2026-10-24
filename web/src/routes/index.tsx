@@ -193,7 +193,11 @@ function Home() {
       >
         <LangSwitch lang={lang} onToggle={toggle} />
       </header>
-      <section aria-label={PAGE_COPY[lang].title} className="relative h-svh">
+      <section
+        aria-label={PAGE_COPY[lang].title}
+        inert={mode === "dive" || mode === "reveal"}
+        className="relative h-svh transition-opacity duration-300 inert:opacity-0"
+      >
         <SurfaceHero lang={lang} talked={asked} />
       </section>
       <div
@@ -203,7 +207,7 @@ function Home() {
         data-chat={revealed ? chatState : undefined}
         // At the seabed: full at the bottom centre (a sheet on small screens), its height capped so
         // ~96px clears the report card; a pill or a compact side panel at the inline-end.
-        className={`${revealed ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
+        className={`${revealed ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px),calc(100svh-var(--hud-end,0px)-40px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
       >
         <h2 id="reveal-title" tabIndex={-1} className="sr-only">
           {dive.back.title}
@@ -311,7 +315,7 @@ function Home() {
         <Button
           variant="outline"
           onClick={follow.resume}
-          className="glass fixed start-[max(100px,calc(env(safe-area-inset-left,0px)+84px))] bottom-[calc(24px+env(safe-area-inset-bottom,0px))] z-17 min-h-11 rounded-full px-4 max-lg:bottom-[calc(48svh+12px)]"
+          className="glass follow-glow fixed start-1/2 bottom-[calc(150px+env(safe-area-inset-bottom,0px))] z-17 min-h-11 -translate-x-1/2 rounded-full px-4 rtl:translate-x-1/2"
         >
           {dive.follow} ↓
         </Button>

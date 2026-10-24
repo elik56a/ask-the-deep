@@ -14,7 +14,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "gen:events": "uv run --directory ../api python -m app.schema_export | json2ts --bannerComment '// Generated from api/app/events.py by `pnpm gen:events`. Do not edit.' --additionalProperties false > src/generated/events.gen.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/react": "4.0.147",
@@ -34,7 +35,9 @@
     "three": "0.186.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "2.5.15",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/router-cli": "^1.132.0",
     "@types/node": "^22.10.2",

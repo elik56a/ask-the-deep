@@ -57,7 +57,7 @@ it("numbers each step and says what the server did, in plain words", () => {
   expect(html).not.toContain("Step 9");
   expect(html).toContain("The model chose to search Eliyahu&#x27;s notes");
   expect(html).toContain("Model call 2 · agent loop, round 2");
-  expect(html).toContain("1 of 2 passages are good enough to use");
+  expect(html).toContain("1 of 2 passages are on topic");
   expect(html).toContain("Seabed · answer delivered");
 });
 

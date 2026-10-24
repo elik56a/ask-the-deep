@@ -106,15 +106,16 @@ body {
 }
 
 /* Step text streams in word by word, like the model's own output (ADR 0019). */
+/* Each word comes into focus instead of flashing a colour, so the line reads as one soft wave. */
 .stream-word {
-  animation: word-in 0.42s var(--ease-out) both;
+  animation: word-in 0.6s var(--ease-out) both;
   animation-delay: calc(var(--i) * 34ms + 140ms);
 }
 
 @keyframes word-in {
   from {
     opacity: 0;
-    color: var(--color-glow);
+    filter: blur(2px);
   }
 }
 
@@ -344,13 +345,20 @@ body {
   }
 }
 
+/* "Follow the dive" pulses like Descend, so the way back to the diver is easy to find. */
+.follow-glow {
+  border-color: var(--color-glow);
+  animation: ready 1.4s var(--ease-out) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .veil,
   .veil-card > * {
     transition: none;
   }
 
-  .veil[data-ready] .descend {
+  .veil[data-ready] .descend,
+  .follow-glow {
     animation: none;
   }
 }

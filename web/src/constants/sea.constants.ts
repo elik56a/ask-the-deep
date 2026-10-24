@@ -71,6 +71,10 @@ export const ASCENT_BUBBLES = { everyMs: 200, count: 3 } as const;
 export const SURFACE_SHARE = 0.35;
 // Within this of the page end, the visitor is on the sand.
 export const SAND_SLACK_PX = 24;
+// A scroll position this far from the glide's own was moved by the visitor.
+export const GLIDE_SLACK_PX = 3;
+// Scrolling back down to within this of the latest step resumes following.
+export const RESYNC_PX = 8;
 // After a skip the view snaps to the newest step while the log settles.
 export const SNAP_MS = 800;
 
@@ -213,8 +217,8 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       searching: "Searching Eliyahu's notes",
       running: "Running {tool}",
       results: "Search results",
-      resultsGood: "{g} of {n} passages are good enough to use",
-      resultsNone: "None of {n} passages is good enough",
+      resultsGood: "{g} of {n} passages are on topic",
+      resultsNone: "None of {n} passages is on topic",
       writing: "Writing",
       writingFrom: "Writing the answer from {n} passages",
       writingNone: "Writing a reply with no passages to use",
@@ -264,7 +268,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         "The first results missed part of your question, so the model searches again: {q}. Again a meaning search and a keyword search, merged.",
       tool: "The model calls {tool} to read this straight from Eliyahu's data, with no search needed.",
       results:
-        "Every passage gets a relevance score. Only passages above the {t} line reach the model. The rest sink, and the model never sees them.",
+        "Every passage gets a relevance score. Only passages above the {t} line reach the model. The rest sink, and the model never sees them. A high score means on topic, not an answer: the model reads them and decides what answers the question.",
       writingFrom:
         "The model writes using only the passages that passed the gate. It streams back word by word. You'll read it at the seabed.",
       writingNone:
@@ -357,8 +361,8 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
       searching: "מחפשים ברשימות של אליהו",
       running: "מריצים את {tool}",
       results: "תוצאות החיפוש",
-      resultsGood: "{g} מתוך {n} קטעים טובים מספיק לשימוש",
-      resultsNone: "אף אחד מ־{n} הקטעים לא טוב מספיק",
+      resultsGood: "{g} מתוך {n} קטעים קשורים לשאלה",
+      resultsNone: "אף אחד מ־{n} הקטעים לא קשור לשאלה",
       writing: "כתיבה",
       writingFrom: "כותבים את התשובה מתוך {n} קטעים",
       writingNone: "כותבים תשובה בלי קטעים לשימוש",
@@ -405,7 +409,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
         "התוצאות הראשונות לא כיסו חלק מהשאלה, אז המודל מחפש שוב: {q}. שוב חיפוש לפי משמעות וחיפוש מילות מפתח, ממוזגים.",
       tool: "המודל קורא ל־{tool} כדי לקרוא את זה ישר מהנתונים של אליהו, בלי חיפוש.",
       results:
-        "כל קטע מקבל ציון רלוונטיות. רק קטעים מעל קו ה־{t} מגיעים למודל. השאר שוקעים, והמודל לא רואה אותם.",
+        "כל קטע מקבל ציון רלוונטיות. רק קטעים מעל קו ה־{t} מגיעים למודל. השאר שוקעים, והמודל לא רואה אותם. ציון גבוה אומר שהקטע בנושא, לא שהוא התשובה: המודל קורא אותם ומחליט מה עונה על השאלה.",
       writingFrom:
         "המודל כותב רק מתוך הקטעים שעברו את הסף. התשובה זורמת בחזרה מילה אחר מילה. תקראו אותה בקרקעית.",
       writingNone:
