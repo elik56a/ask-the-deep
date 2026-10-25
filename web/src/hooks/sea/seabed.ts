@@ -108,17 +108,14 @@ export function seabed(kit: Kit) {
     return mark;
   });
   kit.scene.add(bed);
-  let shown = true;
   return {
     bed,
     /** Landed (`landK` 1), the lights come up. Until the dive `placed` it, or far above it (`camY`), only the lights stay in the scene. */
     frame(t: number, landK: number, camY: number, placed: boolean): void {
       const near = placed && Math.abs(bed.position.y - camY) < VISIBLE_RANGE;
-      if (shown !== near) {
-        shown = near;
-        for (const child of bed.children) {
-          if (!(child instanceof THREE.Light)) child.visible = near;
-        }
+      // Every frame: the props join the bed when their models load, after it may have hidden.
+      for (const child of bed.children) {
+        if (!(child instanceof THREE.Light)) child.visible = near;
       }
       flood.intensity = (FLOOD.base + landK * FLOOD.landed) * LEGACY_LIGHT;
       warm.intensity = (WARM.base + landK * WARM.landed) * LEGACY_LIGHT;
