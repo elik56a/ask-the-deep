@@ -363,8 +363,18 @@ export const DIVER = {
   hoverPitch: 0.12,
   hoverTurn: -0.8,
   hoverEpsilon: 0.001,
-  // Fins kick faster while diving.
+  // Fins kick faster in the giant stride.
   kick: 0.6,
+  // Underwater the swim cycle runs at `idleStroke` while he hangs still, up to `idleStroke + stroke`
+  // as the view moves at `strokeSpeed` units a second.
+  idleStroke: 0.35,
+  stroke: 1.6,
+  strokeSpeed: 12,
+  strokeRate: 4,
+  // Rising, he rolls over head up (and back going down) once the view moves faster than
+  // `flipSpeed` units a second.
+  flipSpeed: 1.5,
+  flipRate: 3,
 } as const;
 
 // The giant stride (pre-dive): the camera drops toward the waterline, the diver swims up close,
@@ -525,6 +535,8 @@ export const SUB = {
 export const JELLY_GLOW = [0x2fd3c4, 0x6f88ff, 0xff7a55];
 export const DARK_FISH_GLOW = 0x0c3a4a;
 export const OCTOPUS_GLOW = 0x4fa8c8;
+// The Octocats glow faintly, so they read in the dark water.
+export const OCTOCAT_GLOW = 0x2a5670;
 export const ALIEN_GLOW = 0x1d6f7a;
 
 // Bounds of a posed model are sampled from about this many vertices per mesh.

@@ -22,7 +22,8 @@ export type ModelId =
   | "coral-stylaster"
   | "coral-soft"
   | "seahorse"
-  | "seadragon";
+  | "seadragon"
+  | "github";
 
 export interface ModelCreditsCopy {
   summary: string;

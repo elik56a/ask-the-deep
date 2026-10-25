@@ -254,6 +254,16 @@
   chunks: [profile.md#how-to-contact-eliyahu]
   tools: [contact_info, search_knowledge]
 
+# --- answerable from live GitHub data (no passages to cite) -------------------
+
+- id: en-github-latest
+  question: Show me Eliyahu's 10 latest GitHub repositories
+  language: en
+  type: answerable
+  kinds: [answered]
+  facts: [Lists at least 6 of his GitHub repositories, each as a link to it]
+  tools: [github_activity]
+
 # --- traps: plausible, but the corpus doesn't say ----------------------------
 
 - id: en-trap-google

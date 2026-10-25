@@ -53,6 +53,7 @@ import {
 } from "#/utils/depth.utils";
 import { diveEase } from "#/utils/diver.utils";
 import { approach, clamp01, frameSeconds } from "#/utils/ease.utils";
+import { sandHeight } from "#/utils/seabed.utils";
 import { waveAt } from "#/utils/wave.utils";
 import { diverRig } from "./diver";
 import { glowTexture } from "./glow";
@@ -274,8 +275,26 @@ export function createSea(
     host.dataset.zone = next;
   }
 
+  const probe = new THREE.Vector3();
+  /**
+   * The x on the sand at `at`'s height and depth that lands at `ndcX` across the view (−1 left, 1
+   * right), wherever the camera has shifted. Projection is linear in x: the camera never turns sideways.
+   */
+  function besideX(ndcX: number, at: Three.Vector3): number {
+    const ndcAt = (x: number) =>
+      probe.set(x, at.y, at.z).add(floor.bed.position).project(camera).x;
+    const zero = ndcAt(0);
+    return (ndcX - zero) / (ndcAt(1) - zero);
+  }
+
   // Landed: the view lifts so the seabed shows above the chat; rereading looks like the way down.
-  function aim(dt: number, t: number, eye: number, under: boolean): void {
+  function aim(
+    dt: number,
+    t: number,
+    eye: number,
+    under: boolean,
+    side: number,
+  ): void {
     const ease = (from: number, to: number, rate: number) =>
       quiet() ? to : approach(from, to, rate, dt);
     pointer.x = approach(pointer.x, pointer.tx, EASE_RATE.pointer, dt);
@@ -283,8 +302,6 @@ export function createSea(
     lift = ease(lift, landed ? innerHeight * LAND_LIFT : 0, EASE_RATE.lift);
     landK = ease(landK, landed ? 1 : 0, EASE_RATE.land);
     const wide = innerWidth >= LOG_SHIFT.minWidth;
-    // The log sits at the inline start, so in RTL the free water is on the left.
-    const side = document.documentElement.dir === "rtl" ? -1 : 1;
     const shiftTo =
       shifted && wide
         ? (side * (LOG_SHIFT.logStart + LOG_SHIFT.cardEnd)) / 2
@@ -336,11 +353,23 @@ export function createSea(
     }
   }
 
-  function animate(dt: number, t: number, zone: number, under: boolean): void {
+  function animate(
+    dt: number,
+    t: number,
+    zone: number,
+    under: boolean,
+    side: number,
+  ): void {
     const still = quiet() ? 0 : dt;
     swimLife(creatures, t, still, camY);
     swimOthers(others, t, still, camY, quiet() ? null : bubbles, splashAt);
     for (const c of bedProps) {
+      if (c.beside !== undefined) {
+        const at = c.root.position;
+        at.x = besideX(side * c.beside, at);
+        at.y = sandHeight(at.x, at.z);
+        c.root.lookAt(camera.position);
+      }
       if (c.action && zone > BED_LIFE_ZONE) c.mixer.update(still);
     }
     boat.frame(t, camY, under);
@@ -439,9 +468,11 @@ export function createSea(
     const wetTo = clamp01((WET.dryY - eye) / WET.band);
     wet = quiet() ? wetTo : approach(wet, wetTo, WET.rate, dt);
     if (zone > DEEP_LOAD_ZONE) loadDeep();
-    aim(dt, t, eye, under);
+    // The log sits at the inline start, so in RTL the free water is on the left.
+    const side = document.documentElement.dir === "rtl" ? -1 : 1;
+    aim(dt, t, eye, under, side);
     shade(zone, under, dt);
-    animate(dt, t, zone, under);
+    animate(dt, t, zone, under, side);
     gl.render(scene, camera);
   }
 

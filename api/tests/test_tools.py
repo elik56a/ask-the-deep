@@ -14,7 +14,7 @@ from app.agent.tools import (
 )
 from app.config import Settings
 from app.rag.retrieval import Hit
-from tests.fakes import StubRetriever, fake_github, make_chunk, make_deps
+from tests.fakes import REPOS, StubRetriever, fake_github, make_chunk, make_deps
 
 THRESHOLD = Settings().retrieval_threshold
 PROJECT: dict[str, object] = {
@@ -111,7 +111,21 @@ async def test_get_unknown_project_fails_softly() -> None:
 async def test_github_activity_tags_repos_as_data() -> None:
     result = await github_activity(_ctx(make_deps(RETRIEVER)))
     assert str(result.return_value).startswith("<github>")
+    assert "[portfolio-chat](https://github.com/elik56a/portfolio-chat)" in str(
+        result.return_value
+    )
     assert "portfolio-chat" in str(result.return_value)
+
+
+async def test_github_activity_lists_as_many_as_asked_within_the_cap() -> None:
+    deps = make_deps(RETRIEVER)
+    many = [{**REPOS[0], "name": f"repo-{i}"} for i in range(40)]
+    deps.github = fake_github(lambda _: httpx.Response(200, json=many))
+    default = deps.settings.github_repo_count
+    assert _meta(await github_activity(_ctx(deps))).count == default
+    assert _meta(await github_activity(_ctx(deps), count=10)).count == 10
+    assert _meta(await github_activity(_ctx(deps), count=99)).count == 30
+    assert _meta(await github_activity(_ctx(deps), count=0)).count == 1
 
 
 async def test_github_outage_is_reported_not_raised() -> None:

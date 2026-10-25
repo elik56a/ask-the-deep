@@ -114,6 +114,7 @@ export function placeBed(
       spreadAt(place.z, i, random()),
     );
     c.root.rotation.y = spreadAt(place.ry, i, random());
+    c.beside = place.beside;
     return [c];
   });
 }

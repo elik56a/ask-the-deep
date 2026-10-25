@@ -4,9 +4,12 @@ import { CAMERA, DIVER, STRIDE } from "#/constants/seaScene.constants";
 import {
   diveEase,
   diverPose,
+  headsUp,
   heroPose,
   strideEntryS,
   stridePose,
+  strokePace,
+  strokeTimeScale,
 } from "#/utils/diver.utils";
 
 const view = { t: 0, aspect: 16 / 9, fov: 55, side: 1, landK: 0 };
@@ -76,4 +79,27 @@ it("goes under during the arc's way down", () => {
 it("eases from the surface to the waterline", () => {
   expect(diveEase(SURFACE_Y)).toBe(0);
   expect(diveEase(WATERLINE_Y)).toBe(1);
+});
+
+it("heads up while the view rises and down while it sinks, keeping his heading at rest", () => {
+  const fast = DIVER.flipSpeed * 2;
+  expect(headsUp(false, fast * 0.1, 0.1)).toBe(true);
+  expect(headsUp(true, -fast * 0.1, 0.1)).toBe(false);
+  expect(headsUp(true, 0, 0.1)).toBe(true);
+  expect(headsUp(false, DIVER.flipSpeed * 0.05, 0.1)).toBe(false);
+  expect(headsUp(true, 1, 0)).toBe(true);
+});
+
+it("swims harder the faster the view moves, and not at all on the first frame", () => {
+  expect(strokePace(0, 0.1)).toBe(0);
+  expect(strokePace(DIVER.strokeSpeed * 0.05, 0.1)).toBeCloseTo(0.5);
+  expect(strokePace(-DIVER.strokeSpeed, 0.1)).toBe(1);
+  expect(strokePace(Number.NaN, 0.1)).toBe(0);
+  expect(strokePace(1, 0)).toBe(0);
+});
+
+it("runs the swim cycle as made at the surface, slow when still and fast when swimming underwater", () => {
+  expect(strokeTimeScale(0, 1)).toBe(1);
+  expect(strokeTimeScale(1, 0)).toBe(DIVER.idleStroke);
+  expect(strokeTimeScale(1, 1)).toBeCloseTo(DIVER.idleStroke + DIVER.stroke);
 });

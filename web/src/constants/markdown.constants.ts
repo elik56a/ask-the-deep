@@ -13,4 +13,4 @@ export const ANSWER_ELEMENTS = [
 
 /** A bare http(s) URL the model wrote as plain text: not already in a link, an autolink or code, and without the sentence's trailing punctuation. */
 export const BARE_URL =
-  /(?<![<(`\w/])https?:\/\/[\w\-.~:/?#@!$&'*+,;=%]*[\w\-~/#@$&*+=%]/g;
+  /(?<![<`\w/])(?<!\]\()https?:\/\/[\w\-.~:/?#@!$&'*+,;=%]*[\w\-~/#@$&*+=%]/g;

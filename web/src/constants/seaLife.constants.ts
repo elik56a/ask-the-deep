@@ -2,6 +2,7 @@ import {
   ALIEN_GLOW,
   DARK_FISH_GLOW,
   JELLY_GLOW,
+  OCTOCAT_GLOW,
   OCTOPUS_GLOW,
 } from "#/constants/seaScene.constants";
 import type { BedProp, LifeGroup } from "#/types/seaScene.types";
@@ -14,6 +15,45 @@ const ANY_HEADING = { jitter: 6 };
 
 /** Everything that swims or drifts in the water column, by depth (v3 prototype). */
 export const SEA_LIFE: LifeGroup[] = [
+  // GitHub's Octocat, a few spread down the dive on both sides and small ones far back.
+  {
+    model: "github",
+    count: 3,
+    length: 2.4,
+    speed: 0.8,
+    tint: { emissive: OCTOCAT_GLOW },
+    drift: {
+      x: 5,
+      y: { base: -40, step: -120 },
+      z: -7,
+      phase: { step: 1.7 },
+    },
+  },
+  {
+    model: "github",
+    count: 3,
+    length: 2.4,
+    speed: 0.8,
+    tint: { emissive: OCTOCAT_GLOW },
+    drift: {
+      x: -5,
+      y: { base: -100, step: -120 },
+      z: -7,
+      phase: { step: 2.1 },
+    },
+  },
+  {
+    model: "github",
+    count: 4,
+    length: { base: 0.8, jitter: 0.5 },
+    speed: 0.6,
+    drift: {
+      x: { base: -22, step: 44 / 3 },
+      y: { base: -15, step: -70 },
+      z: { base: -26, jitter: -6 },
+      phase: { step: 2.3 },
+    },
+  },
   {
     model: "sardines",
     count: 4,
@@ -180,6 +220,17 @@ const STAR_SCATTER = {
 
 /** Props on the sand, in the seabed's own coordinates. */
 export const BED_PROPS: BedProp[] = [
+  // Two Octocats either side of the chat.
+  {
+    model: "github",
+    length: 3,
+    speed: 0.8,
+    ground: true,
+    places: [
+      { x: 0, y: 0, z: -11, ry: 0, beside: 0.76 },
+      { x: 0, y: 0, z: -11, ry: 0, beside: -0.76 },
+    ],
+  },
   {
     model: "whale-fall",
     length: 20,
