@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SITE_URL: https://dad2ak3fgy80f.cloudfront.net
+      # Public by design; its secret half is /portfolio-chat/staging/TURNSTILE_SECRET_KEY in SSM.
+      VITE_TURNSTILE_SITE_KEY: 0x4AAAAAAFlxdwVX7x3SVASo
     steps:
       - uses: actions/checkout@v7
         with:
