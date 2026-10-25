@@ -35,3 +35,15 @@ export interface PreDiveCopy {
   descend: string;
   say: { start: string; ready: string };
 }
+
+/** Where the buddy check's clock stands: checks ticked off, and the countdown step. */
+export interface PreDiveClock {
+  ticks: number;
+  step: number;
+}
+
+/** A moment the clock moves to, `at` ms after the slate opens; the last one leaves. */
+export interface PreDiveBeat extends PreDiveClock {
+  at: number;
+  leave: boolean;
+}

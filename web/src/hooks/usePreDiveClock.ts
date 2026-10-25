@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  COUNT_MS,
-  FIRST_TICK_MS,
-  HOLD_MS,
-  SLATE_EXIT_MS,
-  TICK_MS,
-} from "#/constants/predive.constants";
+import { SLATE_EXIT_MS } from "#/constants/predive.constants";
+import type { PreDiveClock } from "#/types/predive.types";
+import { preDiveBeats } from "#/utils/predive.utils";
+
+const clearTimers = (timers: number[]) => {
+  for (const timer of timers) clearTimeout(timer);
+};
 
 /**
- * The buddy check's clock: it opens the dialog, ticks off `checks` one by one, counts down from
- * `count` and then leaves on its own. `descend` leaves at once. Leaving calls `onDescend` (the
- * diver jumps), drops the slate away, then calls `onGone`.
+ * The buddy check's clock: it opens the dialog, plays `preDiveBeats` and then leaves on its own.
+ * `descend` leaves at once. Leaving calls `onDescend` (the diver jumps), drops the slate away,
+ * then calls `onGone`.
  */
 export function usePreDiveClock(
   checks: number,
@@ -25,14 +25,13 @@ export function usePreDiveClock(
   actions.current = { onDescend, onGone };
   const [on, setOn] = useState(false);
   const [left, setLeft] = useState(false);
-  const [ticks, setTicks] = useState(0);
-  const [step, setStep] = useState(0);
+  const [clock, setClock] = useState<PreDiveClock>({ ticks: 0, step: 0 });
 
   const gone = useRef(false);
   const leave = useRef(() => {
     if (gone.current) return;
     gone.current = true;
-    for (const timer of timers.current) clearTimeout(timer);
+    clearTimers(timers.current);
     setOn(false);
     setLeft(true);
     actions.current.onDescend();
@@ -47,24 +46,15 @@ export function usePreDiveClock(
     const frame = requestAnimationFrame(() =>
       requestAnimationFrame(() => setOn(true)),
     );
-    const ready = FIRST_TICK_MS + checks * TICK_MS + HOLD_MS;
-    const plan: [number, () => void][] = [
-      ...Array.from({ length: checks }, (_, i): [number, () => void] => [
-        FIRST_TICK_MS + i * TICK_MS,
-        () => setTicks(i + 1),
-      ]),
-      ...Array.from({ length: count }, (_, k): [number, () => void] => [
-        ready + k * COUNT_MS,
-        () => setStep(k + 1),
-      ]),
-      [ready + count * COUNT_MS, leave.current],
-    ];
-    timers.current = plan.map(([ms, act]) => window.setTimeout(act, ms));
+    timers.current = preDiveBeats(checks, count).map(
+      ({ at, leave: last, ...next }) =>
+        window.setTimeout(() => (last ? leave.current() : setClock(next)), at),
+    );
     return () => {
       cancelAnimationFrame(frame);
-      for (const timer of timers.current) clearTimeout(timer);
+      clearTimers(timers.current);
     };
   }, [checks, count]);
 
-  return { dialog, go, on, left, ticks, step, descend: leave.current };
+  return { dialog, go, on, left, ...clock, descend: leave.current };
 }

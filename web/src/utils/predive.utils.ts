@@ -1,7 +1,14 @@
-import { PACE_ESTIMATE_MS } from "#/constants/predive.constants";
+import {
+  COUNT_MS,
+  FIRST_TICK_MS,
+  HOLD_MS,
+  PACE_ESTIMATE_MS,
+  TICK_MS,
+} from "#/constants/predive.constants";
 import type { StreamEvent } from "#/generated/events.gen";
 import type { PastMessage } from "#/types/chat.types";
 import type {
+  PreDiveBeat,
   PreDiveCheck,
   PreDiveCopy,
   PreDivePlan,
@@ -62,4 +69,22 @@ export function slateTitle(
 /** What the follow-up carries: the earlier messages, then the new question. */
 export function cargoRows(plan: PreDivePlan): PastMessage[] {
   return [...plan.prior, { role: "user", text: plan.question }];
+}
+
+/** The buddy check's timeline: a tick per check, a pause, one beat per count, then the leave. */
+export function preDiveBeats(checks: number, count: number): PreDiveBeat[] {
+  const ready = FIRST_TICK_MS + checks * TICK_MS + HOLD_MS;
+  const ticked = Array.from({ length: checks }, (_, i) => ({
+    at: FIRST_TICK_MS + i * TICK_MS,
+    ticks: i + 1,
+    step: 0,
+    leave: false,
+  }));
+  const counted = Array.from({ length: count + 1 }, (_, k) => ({
+    at: ready + k * COUNT_MS,
+    ticks: checks,
+    step: Math.min(k + 1, count),
+    leave: k === count,
+  }));
+  return [...ticked, ...counted];
 }

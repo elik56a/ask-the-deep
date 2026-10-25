@@ -1,9 +1,21 @@
 import { expect, it } from "vitest";
-import { PACE_ESTIMATE_MS, PREDIVE_COPY } from "#/constants/predive.constants";
+import {
+  COUNT_MS,
+  FIRST_TICK_MS,
+  HOLD_MS,
+  PACE_ESTIMATE_MS,
+  PREDIVE_COPY,
+  TICK_MS,
+} from "#/constants/predive.constants";
 import type { PreDivePlan } from "#/types/predive.types";
 import { formatMs } from "#/utils/format.utils";
 import { paceTimes } from "#/utils/pace.utils";
-import { cargoRows, preDiveChecks, slateTitle } from "#/utils/predive.utils";
+import {
+  cargoRows,
+  preDiveBeats,
+  preDiveChecks,
+  slateTitle,
+} from "#/utils/predive.utils";
 import { EVENT_SAMPLES, stream } from "../fixtures/eventSamples";
 
 const COPY = PREDIVE_COPY.en;
@@ -84,5 +96,32 @@ it("carries the earlier messages, then the new question", () => {
   expect(cargoRows({ ...slate, prior })).toEqual([
     ...prior,
     { role: "user", text: "Q?" },
+  ]);
+});
+
+it("ticks each check, counts down, then leaves once", () => {
+  const beats = preDiveBeats(2, 3);
+  expect(beats.map(({ ticks, step, leave }) => [ticks, step, leave])).toEqual([
+    [1, 0, false],
+    [2, 0, false],
+    [2, 1, false],
+    [2, 2, false],
+    [2, 3, false],
+    [2, 3, true],
+  ]);
+  const ready = FIRST_TICK_MS + 2 * TICK_MS + HOLD_MS;
+  expect(beats.map((beat) => beat.at)).toEqual([
+    FIRST_TICK_MS,
+    FIRST_TICK_MS + TICK_MS,
+    ready,
+    ready + COUNT_MS,
+    ready + 2 * COUNT_MS,
+    ready + 3 * COUNT_MS,
+  ]);
+});
+
+it("leaves straight after the hold when there is nothing to count", () => {
+  expect(preDiveBeats(0, 0)).toEqual([
+    { at: FIRST_TICK_MS + HOLD_MS, ticks: 0, step: 0, leave: true },
   ]);
 });
