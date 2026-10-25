@@ -1,0 +1,14 @@
+data: {"type":"start","messageId":"be832855aecf465a8afa608b58e73c90"}
+
+data: {"type":"data-event","data":{"request_id":"be832855aecf465a8afa608b58e73c90","seq":0,"t_ms":0,"event":{"type":"request.started","model":"gemini-3.5-flash-lite","provider":"google","rules_version":"v8"}}}
+
+data: {"type":"data-event","data":{"request_id":"be832855aecf465a8afa608b58e73c90","seq":1,"t_ms":20,"event":{"type":"guardrails.checked","checks":[{"name":"human_check","passed":false},{"name":"rate_limit","passed":true},{"name":"budget","passed":true},{"name":"not_empty","passed":true},{"name":"input_length","passed":true},{"name":"history_size","passed":true}]}}}
+
+data: {"type":"data-event","data":{"request_id":"be832855aecf465a8afa608b58e73c90","seq":2,"t_ms":20,"event":{"type":"error","code":"human_check_required","message":"Please confirm you're human, then ask again."}}}
+
+data: {"type":"data-event","data":{"request_id":"be832855aecf465a8afa608b58e73c90","seq":3,"t_ms":20,"event":{"type":"request.finished","outcome":"blocked"}}}
+
+data: {"type":"finish"}
+
+data: [DONE]
+
