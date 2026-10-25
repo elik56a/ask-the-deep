@@ -47,3 +47,11 @@ jobs:
       - run: scripts/deploy.sh portfolio-chat-staging-api portfolio-chat-staging-site-052407073487 E1JGECHQYXIDSU
       - name: Smoke test
         run: curl -fsS --retry 3 --retry-delay 5 --max-time 30 "$SITE_URL/api/health"
+      # The deployed site with a recorded answer stream: /api/chat is faked, so no model is called.
+      - name: E2E on staging
+        working-directory: web
+        env:
+          E2E_BASE_URL: ${{ env.SITE_URL }}
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test
