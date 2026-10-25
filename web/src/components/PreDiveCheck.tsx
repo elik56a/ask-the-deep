@@ -1,3 +1,4 @@
+import { CheckIcon, ChevronDown } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import {
   COUNT_FROM,
@@ -96,22 +97,11 @@ export function PreDiveCheck({
               className="group grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-3 border-ink/12 border-b border-dashed py-2 opacity-45 transition-opacity duration-300 ease-out data-on:opacity-100"
             >
               <span className="row-span-2 grid size-5 place-items-center rounded-md text-ink shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--color-ink)_32%,transparent)] transition-[background-color,box-shadow] duration-300 ease-out group-data-on:bg-ok group-data-on:shadow-none">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
+                <CheckIcon
                   aria-hidden="true"
-                  className="scale-40 opacity-0 transition-[opacity,scale] delay-100 duration-250 ease-out group-data-on:scale-100 group-data-on:opacity-100"
-                >
-                  <path
-                    d="M3 8.5l3.2 3.2L13 4.8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                  strokeWidth={3}
+                  className="size-3 scale-40 opacity-0 transition-[opacity,scale] delay-100 duration-250 ease-out group-data-on:scale-100 group-data-on:opacity-100"
+                />
               </span>
               <b className="font-semibold text-[0.9375rem] leading-[1.3]">
                 {check.name}
@@ -129,22 +119,10 @@ export function PreDiveCheck({
           <details className="group text-sm">
             <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-medium text-swell-deep [&::-webkit-details-marker]:hidden">
               {copy.cargo.summary}
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 16 16"
+              <ChevronDown
                 aria-hidden="true"
-                className="transition-transform duration-200 ease-out group-open:rotate-180"
-              >
-                <path
-                  d="M4 6l4 4 4-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+                className="size-3 transition-transform duration-200 ease-out group-open:rotate-180"
+              />
             </summary>
             <ol className="mt-2 flex flex-col gap-1.5 rounded-xl bg-ink/6 p-3">
               {cargoRows(plan).map((message, i) => (

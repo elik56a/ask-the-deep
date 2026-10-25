@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     dynamodb_table: str | None = None
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
-    rules_version: str = "v6"
+    rules_version: str = "v7"
     # Cosine similarity a passage needs to reach the model; set from measured
     # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
     retrieval_threshold: float = 0.57

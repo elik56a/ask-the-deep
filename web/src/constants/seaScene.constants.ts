@@ -77,8 +77,6 @@ export const EASE_RATE = {
 export const LIFT_EPSILON_PX = 0.5;
 // Scrolling this many zones down starts loading the deep models, in case no dive did.
 export const DEEP_LOAD_ZONE = 0.25;
-// Frames are at most this long, so a stall never jumps the scene.
-export const MAX_FRAME_S = 0.05;
 // Creatures animate only within this height of the camera.
 export const ANIMATE_RANGE = 70;
 // Past this height from the camera the fog has swallowed a model, so it is not drawn.

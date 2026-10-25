@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { SAND_SLACK_PX, SURFACE_SHARE } from "#/constants/sea.constants";
+import { inConsole } from "#/utils/scroll.utils";
 
 const atSand = () =>
   scrollY >=
@@ -29,10 +30,8 @@ export function useRevealScroll(
       prev = scrollY;
     };
     const onWheel = (event: WheelEvent) => {
-      const inChat =
-        event.target instanceof Element &&
-        event.target.closest("[data-console]");
-      if (event.deltaY > 0 && atSand() && !inChat) actions.current.onPush();
+      if (event.deltaY > 0 && atSand() && !inConsole(event.target))
+        actions.current.onPush();
     };
     addEventListener("scroll", onScroll, { passive: true });
     addEventListener("wheel", onWheel, { passive: true });

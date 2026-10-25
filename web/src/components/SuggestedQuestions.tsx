@@ -1,4 +1,4 @@
-import { ArrowIcon } from "#/components/ArrowIcon";
+import { ArrowRight } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { Lang } from "#/types/i18n.types";
@@ -50,7 +50,10 @@ export function SuggestedQuestions({
             >
               <span dir="auto">{question}</span>
               <span className="text-accent">
-                <ArrowIcon />
+                <ArrowRight
+                  aria-hidden="true"
+                  className="size-4.5 flex-none rtl:-scale-x-100"
+                />
               </span>
             </Button>
           </li>

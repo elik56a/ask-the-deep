@@ -1,3 +1,4 @@
+import { MessageCircle } from "lucide-react";
 import { Avatar } from "#/components/Avatar";
 import { CHAT_COPY } from "#/constants/chat.constants";
 import type { Lang } from "#/types/i18n.types";
@@ -22,20 +23,10 @@ export function ChatPill({ lang, onOpen }: ChatPillProps) {
       >
         <Avatar label={copy.agentAvatar} badge={false} live />
         {copy.openChat}
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <MessageCircle
           aria-hidden="true"
-          className="flex-none text-glow transition-transform duration-200 ease-out group-hover:scale-112"
-        >
-          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-        </svg>
+          className="size-3.75 flex-none text-glow transition-transform duration-200 ease-out group-hover:scale-112"
+        />
       </button>
     </section>
   );

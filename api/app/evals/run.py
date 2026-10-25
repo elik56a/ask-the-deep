@@ -63,6 +63,9 @@ QUICK = (
     "en-hi",
 )
 
+# The tool the pipeline runs on every question before the model (ADR 0020).
+_FIRST_SEARCH = "search_knowledge"
+
 
 class Run(BaseModel):
     """What the agent did for one case: the graded output of the eval task."""
@@ -136,11 +139,14 @@ def used_expected_tool(case: GoldenCase, run: Run) -> bool | None:
 
 
 def extra_tools(case: GoldenCase, run: Run) -> list[str]:
-    """Tools the case doesn't need; contact_info is fine before "no information"."""
+    """Tools the model chose that the case doesn't need; contact_info is fine
+    before "no information". The pipeline searches every question before the
+    model starts (ADR 0020), so that first search is not the model's choice."""
+    chosen = run.tools[1:] if run.tools[:1] == [_FIRST_SEARCH] else run.tools
     allowed = set(case.tools)
     if run.kind == "no_information":
         allowed.add("contact_info")
-    return sorted(set(run.tools) - allowed)
+    return sorted(set(chosen) - allowed)
 
 
 @dataclass

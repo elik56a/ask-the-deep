@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
+import { frameSeconds } from "#/utils/ease.utils";
 
 /**
  * Each number counts toward its new value instead of jumping, the way the server's numbers stream
@@ -22,7 +23,7 @@ export function useEased(targets: number[]): number[] {
     let frame = 0;
     let last = 0;
     const tick = (time: number) => {
-      const dt = last ? Math.min((time - last) / 1000, 0.05) : 0;
+      const dt = frameSeconds(time, last);
       last = time;
       const k = Math.min(1, dt * 7);
       let moving = false;
