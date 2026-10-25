@@ -1,41 +1,7 @@
 import { cn } from "cn";
+import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import type * as React from "react";
-
-// Inline icons: the project has no icon library.
-function CheckIcon(props: React.ComponentProps<"svg">) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M3 8.5l3.2 3.2L13 4.8" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon(props: React.ComponentProps<"svg">) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <path d="M6 4l4 4-4 4" />
-    </svg>
-  );
-}
 
 function DropdownMenu({
   ...props

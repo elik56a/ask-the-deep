@@ -1,5 +1,5 @@
+import { ArrowRight } from "lucide-react";
 import type { FormEvent } from "react";
-import { ArrowIcon } from "#/components/ArrowIcon";
 import { Button } from "#/components/ui/button";
 import { CHAT_COPY, MAX_QUESTION_CHARS } from "#/constants/chat.constants";
 import type { Lang } from "#/types/i18n.types";
@@ -45,7 +45,10 @@ export function ChatInput({ lang, disabled, onSend }: ChatInputProps) {
         aria-label={copy.send}
         className="size-11 rounded-xl"
       >
-        <ArrowIcon />
+        <ArrowRight
+          aria-hidden="true"
+          className="size-4.5 flex-none rtl:-scale-x-100"
+        />
       </Button>
     </form>
   );

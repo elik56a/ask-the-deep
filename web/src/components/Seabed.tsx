@@ -1,3 +1,4 @@
+import { ArrowUp } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { HOOD_COPY } from "#/constants/hood.constants";
 import {
@@ -147,7 +148,8 @@ export function Seabed({
       </dl>
       <div className="flex flex-wrap gap-2">
         <Button size="lg" onClick={onSurface} className="min-h-11 px-4.5">
-          {copy.surface} ↑
+          {copy.surface}
+          <ArrowUp aria-hidden="true" className="size-4" />
         </Button>
         <Button
           size="lg"

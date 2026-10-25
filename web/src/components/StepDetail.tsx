@@ -1,6 +1,6 @@
+import { Check, LoaderCircle, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { RetrievalGate } from "#/components/RetrievalGate";
-import { StepIcon } from "#/components/StepIcon";
 import { Badge } from "#/components/ui/badge";
 import { HOOD_COPY, WRITTEN_BARS } from "#/constants/hood.constants";
 import type { StreamEvent } from "#/generated/events.gen";
@@ -66,9 +66,11 @@ export function StepDetail({
               style={{ "--i": i } as CSSProperties}
               className="tick-in inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1.5 font-mono text-xs leading-none group-data-focus/card:text-[13px]"
             >
-              <span className={check.passed ? "text-ok" : "text-warn"}>
-                {check.passed ? "✓" : "✕"}
-              </span>
+              {check.passed ? (
+                <Check aria-hidden="true" className="size-3.5 text-ok" />
+              ) : (
+                <X aria-hidden="true" className="size-3.5 text-warn" />
+              )}
               {check.name}
             </li>
           ))}
@@ -91,9 +93,10 @@ export function StepDetail({
     case "llm.started":
       body = (
         <p className="flex items-center gap-2.5 text-accent text-sm">
-          <span className="grid size-4 place-items-center">
-            <StepIcon state="running" />
-          </span>
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-4 animate-spin motion-reduce:animate-none"
+          />
           <span>
             {thinking[0]}
             <code dir="ltr" className="font-medium font-mono text-sm">

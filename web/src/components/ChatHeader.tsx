@@ -1,3 +1,4 @@
+import { Ellipsis, Minus } from "lucide-react";
 import { Avatar } from "#/components/Avatar";
 import { Button } from "#/components/ui/button";
 import {
@@ -83,19 +84,7 @@ export function ChatHeader({
               onClick={onMinimize}
               className="size-10 rounded-[10px]"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                aria-hidden="true"
-              >
-                <path
-                  d="M3.5 8h9"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <Minus aria-hidden="true" className="size-4" />
             </Button>
           </>
         )}
@@ -108,16 +97,7 @@ export function ChatHeader({
                 aria-label={copy.menu}
                 className="size-10 rounded-[10px] aria-expanded:border-glow aria-expanded:text-glow"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                >
-                  <circle cx="3" cy="8" r="1.5" fill="currentColor" />
-                  <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-                  <circle cx="13" cy="8" r="1.5" fill="currentColor" />
-                </svg>
+                <Ellipsis aria-hidden="true" className="size-4.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
