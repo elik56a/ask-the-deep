@@ -363,8 +363,18 @@ export const DIVER = {
   hoverPitch: 0.12,
   hoverTurn: -0.8,
   hoverEpsilon: 0.001,
-  // Fins kick faster while diving.
+  // Fins kick faster in the giant stride.
   kick: 0.6,
+  // Underwater the swim cycle runs at `idleStroke` while he hangs still, up to `idleStroke + stroke`
+  // as the view moves at `strokeSpeed` units a second.
+  idleStroke: 0.35,
+  stroke: 1.6,
+  strokeSpeed: 12,
+  strokeRate: 4,
+  // Rising, he rolls over head up (and back going down) once the view moves faster than
+  // `flipSpeed` units a second.
+  flipSpeed: 1.5,
+  flipRate: 3,
 } as const;
 
 // The giant stride (pre-dive): the camera drops toward the waterline, the diver swims up close,

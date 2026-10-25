@@ -6,11 +6,15 @@ import {
   STRIDE,
 } from "#/constants/seaScene.constants";
 import type { Creature, Kit, StridePose } from "#/types/seaScene.types";
+import { smoothstep } from "#/utils/depth.utils";
 import {
   diverPose,
+  headsUp,
   heroPose,
   strideEntryS,
   stridePose,
+  strokePace,
+  strokeTimeScale,
 } from "#/utils/diver.utils";
 import { approach } from "#/utils/ease.utils";
 
@@ -31,7 +35,8 @@ interface StrideEffects {
 }
 
 /**
- * The diver: upright on the surface, head down underwater, and beside the chat once landed.
+ * The diver: upright on the surface, head down underwater (rolled over head up while the view
+ * rises), and beside the chat once landed.
  * Before a dive he swims up close (`ready`) and takes a giant stride (`jump`); the dive starts as
  * his head goes under, and he hands over to the head-down pose as the camera follows him down.
  */
@@ -46,6 +51,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       forward,
     ),
   );
+  const flipQ = new THREE.Quaternion();
   const hoverQ = new THREE.Quaternion();
   const hoverAt = new THREE.Euler();
   const baseQ = new THREE.Quaternion();
@@ -71,6 +77,10 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
   let jumpT: number | null = null;
   let onEntry: (() => void) | null = null;
   let trailIn = 0;
+  let lastCamY = Number.NaN;
+  let rising = false;
+  let riseK = 0;
+  let pace = 0;
 
   const turn = (pose: StridePose) =>
     strideQ.setFromEuler(strideAt.set(pose.pitch, pose.yaw, 0));
@@ -110,7 +120,19 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       const view = { t, aspect: camera.aspect, fov: camera.fov, side };
       const pose = diverPose({ ...view, camY, landK });
       base.set(pose.x, pose.y, pose.z);
-      baseQ.slerpQuaternions(restQ, diveQ, pose.ease);
+      const rise = camY - lastCamY;
+      lastCamY = camY;
+      rising = headsUp(rising, rise, dt);
+      riseK = quiet
+        ? Number(rising)
+        : approach(riseK, rising ? 1 : 0, DIVER.flipRate, dt);
+      pace = approach(pace, strokePace(rise, dt), DIVER.strokeRate, dt);
+      // Rising, the dive pose is rolled head up in the view's plane (his face stays towards the
+      // camera) before it blends to the surface, so he stays head up all the way there.
+      flipQ
+        .setFromAxisAngle(forward, Math.PI * smoothstep(riseK) * side)
+        .multiply(diveQ);
+      baseQ.slerpQuaternions(restQ, flipQ, pose.ease);
       if (pose.hover > 0) {
         hoverQ.setFromEuler(
           hoverAt.set(DIVER.hoverPitch, DIVER.hoverTurn * side, 0),
@@ -166,8 +188,12 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       }
       lamp.position.copy(root.position).add(lampOffset);
       lamp.intensity = DIVER_LAMP.intensity * pose.ease * LEGACY_LIGHT;
-      const kick = jumpT !== null ? 1 : pose.ease;
-      if (diver.action) diver.action.timeScale = 1 + kick * DIVER.kick;
+      if (diver.action) {
+        diver.action.timeScale =
+          jumpT !== null
+            ? 1 + DIVER.kick
+            : strokeTimeScale(pose.ease, smoothstep(pace));
+      }
       diver.mixer.update(dt);
     },
   };

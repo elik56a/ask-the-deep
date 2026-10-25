@@ -77,6 +77,24 @@ export function heroPose({
   };
 }
 
+/** Whether the diver heads up: he follows the view while it moves, and keeps his heading while it rests. */
+export function headsUp(was: boolean, rise: number, dt: number): boolean {
+  if (dt <= 0 || Math.abs(rise / dt) < DIVER.flipSpeed) return was;
+  return rise > 0;
+}
+
+/** 0 to 1: how hard he swims, from how fast the view moves. */
+export function strokePace(rise: number, dt: number): number {
+  if (!(dt > 0) || !Number.isFinite(rise)) return 0;
+  return clamp01(Math.abs(rise / dt) / DIVER.strokeSpeed);
+}
+
+/** The swim cycle's speed: as made at the surface, slow while he hangs still underwater, faster with `pace`. */
+export function strokeTimeScale(ease: number, pace: number): number {
+  const under = DIVER.idleStroke + pace * DIVER.stroke;
+  return 1 + (under - 1) * ease;
+}
+
 /** Seconds into the jump when the head breaks the water. */
 export function strideEntryS(): number {
   return STRIDE.crouchS + STRIDE.flightS * STRIDE.entryAt;
