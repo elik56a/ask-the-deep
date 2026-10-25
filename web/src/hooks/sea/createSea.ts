@@ -240,6 +240,8 @@ export function createSea(
   let shownVignette = -1;
   const foam = host.querySelector<HTMLElement>("[data-foam]");
   const vignette = host.querySelector<HTMLElement>("[data-vignette]");
+  // The dive has put the sand under its landing spot; `landing` only waits for the dust to settle.
+  let placed = false;
   let landing: number | null = null;
   let zoneName = "";
   let clock = 0;
@@ -350,7 +352,7 @@ export function createSea(
       LEGACY_LIGHT;
     rays.frame(zone, wet, t);
     drift.frame(t);
-    floor.frame(t, landK, camY, landing !== null);
+    floor.frame(t, landK, camY, placed);
     marks.frame(dt, t);
     if (landing !== null && camY <= landing + LANDING_DUST.within) {
       if (!quiet()) {
@@ -496,6 +498,7 @@ export function createSea(
         lampLevel = 0;
         marks.reset();
         landing = null;
+        placed = false;
         bubbles.clear();
         dust.clear();
         splash.clear();
@@ -530,6 +533,7 @@ export function createSea(
       seabed(px) {
         floor.bed.position.y = worldY(px) - SEABED.belowEye;
         landing = worldY(px);
+        placed = true;
         wake();
       },
       loadDeep,
