@@ -1,7 +1,8 @@
 name: Evals
 
 # Pushes and PRs run the quick set, only when something the evals measure
-# changes: the agent, prompts, retrieval, the knowledge files or the golden set.
+# changes: the agent, prompts, retrieval, the knowledge files or the golden set
+# (the push paths and the `changes` pattern list the same files).
 # Every night (and by hand) the full set runs; a failed run is GitHub's alert.
 on:
   push:
@@ -16,38 +17,52 @@ on:
       - api/pyproject.toml
       - data/knowledge/**
       - .github/workflows/evals.yml
+  # Every PR, so `eval gate` always reports and can be a required check (P4.6);
+  # `changes` decides whether the evals themselves run.
   pull_request:
-    paths:
-      - api/app/agent/**
-      - api/app/rag/**
-      - api/app/evals/**
-      - api/app/pipeline.py
-      - api/app/config.py
-      - api/evals/**
-      - api/pyproject.toml
-      - data/knowledge/**
-      - .github/workflows/evals.yml
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
-
-# One eval run at a time across all refs: they share the free tier's 100 embeddings a
-# minute, and a PR run still ingesting when its merge lands on main broke both. A newer
-# run waits rather than cancelling one already spending quota.
-concurrency:
-  group: evals
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      evals: ${{ steps.diff.outputs.evals }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          pattern='^(api/app/(agent|rag|evals)/|api/app/(pipeline|config)\.py$|api/evals/|api/pyproject\.toml$|data/knowledge/|\.github/workflows/evals\.yml$)'
+          if git diff --name-only "origin/$BASE...HEAD" | grep -qE "$pattern"; then
+            echo "evals=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "evals=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # Retrieval recall + the quick answer eval, with real model calls (P4.3).
-  # Secrets don't reach fork PRs, so those skip it.
+  # Secrets don't reach fork PRs, so those skip it (and fail the gate if they need it).
   evals:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: changes
+    if: >-
+      !cancelled() && (github.event_name != 'pull_request' ||
+      (needs.changes.outputs.evals == 'true' && github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # One eval run at a time across all refs: they share the free tier's 100 embeddings a
+    # minute, and a PR run still ingesting when its merge lands on main broke both. A newer
+    # run waits rather than cancelling one already spending quota.
+    concurrency:
+      group: evals
+      cancel-in-progress: false
     defaults:
       run:
         working-directory: api
@@ -85,3 +100,18 @@ jobs:
       - run: uv run python -m app.evals.run $SET
         env:
           SET: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && '--quick' || '' }}
+
+  # The one check a PR needs: green when nothing the evals measure changed, or when they passed.
+  gate:
+    name: eval gate
+    needs: [changes, evals]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          CHANGES: ${{ needs.changes.result }}
+          CHANGED: ${{ needs.changes.outputs.evals }}
+          EVALS: ${{ needs.evals.result }}
+        run: |
+          echo "changes=$CHANGES evals needed=$CHANGED evals=$EVALS"
+          test "$CHANGES" = success && { test "$CHANGED" != true || test "$EVALS" = success; }
