@@ -195,6 +195,9 @@ for (const lang of ["en", "he"] as const) {
       await page.getByRole("button", { name: chat.seabed }).click();
       await expect(console).toHaveAttribute("data-chat", "full");
 
+      // The ascent moves per frame; at the few frames a GPU-less CI runner draws it outlasts the
+      // timeout, so it snaps here (glideStep has unit tests).
+      await page.emulateMedia({ reducedMotion: "reduce" });
       await console.getByRole("button", { name: chat.surface }).click();
       await expect(page.locator("html")).not.toHaveAttribute("data-diving", {
         timeout: SEABED_MS,
