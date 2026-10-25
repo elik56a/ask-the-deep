@@ -18,6 +18,12 @@ describe("linkBareUrls", () => {
     );
   });
 
+  it("wraps a URL in parentheses after its name", () => {
+    expect(
+      linkBareUrls("garden-site (https://github.com/elik56a/garden-site),"),
+    ).toBe("garden-site (<https://github.com/elik56a/garden-site>),");
+  });
+
   it("leaves links, autolinks and code alone", () => {
     const text = "[me](https://x.dev) <https://y.dev> `https://z.dev`";
     expect(linkBareUrls(text)).toBe(text);
