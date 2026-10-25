@@ -45,7 +45,7 @@ export function StepCard({
     <article
       ref={card}
       data-focus={focus || undefined}
-      className={`step-enter group/card relative isolate flex min-w-0 flex-col gap-2 rounded-[14px] border border-[color-mix(in_oklab,var(--c)_30%,transparent)] bg-case/38 px-3.5 py-3 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-text)_14%,transparent)] backdrop-blur-sm transition-[background-color,border-color,box-shadow] duration-350 ease-out data-focus:gap-3 data-focus:rounded-[20px] data-focus:border-[color-mix(in_oklab,var(--c)_60%,transparent)] data-focus:bg-case/72 data-focus:px-5.5 data-focus:pt-5 data-focus:pb-5.5 data-focus:shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-text)_18%,transparent),0_0_60px_-18px_color-mix(in_oklab,var(--c)_55%,transparent)] ${STEP_TONE[step.kind]}`}
+      className={`step-enter group/card relative isolate flex min-w-0 flex-col gap-2 rounded-[14px] border border-[color-mix(in_oklab,var(--c)_30%,transparent)] bg-case/38 px-3.5 py-3 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-text)_14%,transparent)] backdrop-blur-sm transition-[background-color,border-color,box-shadow] duration-350 ease-out data-focus:gap-3 data-focus:rounded-[20px] data-focus:border-[color-mix(in_oklab,var(--c)_60%,transparent)] data-focus:bg-case/72 data-focus:px-5.5 data-focus:pt-5 data-focus:pb-5.5 data-focus:shadow-[inset_0_1px_0_color-mix(in_oklab,var(--color-text)_18%,transparent),0_0_60px_-18px_color-mix(in_oklab,var(--c)_55%,transparent)] data-focus:[&_[data-slot=badge]]:text-[13px] ${STEP_TONE[step.kind]}`}
     >
       <span
         aria-hidden="true"
@@ -106,7 +106,7 @@ export function StepCard({
         ))}
         <p
           dir="ltr"
-          className="text-start font-mono text-[11px] text-muted leading-[1.4] [overflow-wrap:anywhere]"
+          className="text-start font-mono text-muted text-xs leading-[1.4] [overflow-wrap:anywhere]"
         >
           {techLine(step.event)}
         </p>

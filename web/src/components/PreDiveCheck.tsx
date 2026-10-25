@@ -1,35 +1,25 @@
-import { useRef } from "react";
 import { Button } from "#/components/ui/button";
 import {
   COUNT_FROM,
   COUNT_MS,
-  HELM_RING_R,
   PREDIVE_COPY,
   REPLAY_COUNT_FROM,
 } from "#/constants/predive.constants";
-import { useHelm } from "#/hooks/useHelm";
 import { usePreDiveClock } from "#/hooks/usePreDiveClock";
 import type { Lang } from "#/types/i18n.types";
 import type { PreDiveCheck as Check, PreDivePlan } from "#/types/predive.types";
-import {
-  cargoRows,
-  helmTurn,
-  veilProgress,
-  veilTitle,
-} from "#/utils/predive.utils";
+import { cargoRows, slateTitle } from "#/utils/predive.utils";
 import { fill } from "#/utils/toolSteps.utils";
 
 interface PreDiveCheckProps {
   lang: Lang;
   plan: PreDivePlan;
   checks: Check[];
-  /** The dive starts now; the veil fades out over it, then `onGone`. */
+  /** The diver jumps now; the slate drops away, then `onGone`. */
   onDescend: () => void;
   onCancel: () => void;
   onGone: () => void;
 }
-
-const RING = 2 * Math.PI * HELM_RING_R;
 
 export function PreDiveCheck({
   lang,
@@ -40,102 +30,72 @@ export function PreDiveCheck({
   onGone,
 }: PreDiveCheckProps) {
   const copy = PREDIVE_COPY[lang];
-  const canvas = useRef<HTMLCanvasElement>(null);
   const n = checks.length;
   const count = plan.replay ? REPLAY_COUNT_FROM : COUNT_FROM;
-  const { dialog, go, on, ticks, step, spun, descend } = usePreDiveClock(
+  const { dialog, go, on, left, ticks, step, descend } = usePreDiveClock(
     n,
     count,
     onDescend,
     onGone,
   );
-  useHelm(canvas, helmTurn(ticks, step, n, count, spun));
   const counting = step > 0;
-  const progress = veilProgress(ticks, step, n, count);
 
   return (
     <dialog
       ref={dialog}
-      aria-labelledby="veil-title"
+      aria-labelledby="slate-title"
       data-on={on || undefined}
+      data-left={left || undefined}
       data-ready={counting || undefined}
       onCancel={(event) => {
         event.preventDefault();
-        if (on) onCancel();
+        if (!left) onCancel();
       }}
-      className="veil fixed inset-0 z-40 m-0 h-dvh max-h-none w-full max-w-none flex-col items-center overflow-y-auto border-0 px-[max(16px,env(safe-area-inset-left,0px))] pt-[calc(24px+env(safe-area-inset-top,0px))] pb-[calc(24px+env(safe-area-inset-bottom,0px))] text-text open:flex"
+      className="slate-veil fixed inset-0 z-40 m-0 size-full max-h-none max-w-none flex-col justify-end overflow-y-auto border-0 bg-transparent px-4 pt-[calc(24px+env(safe-area-inset-top,0px))] pb-[calc(16px+env(safe-area-inset-bottom,0px))] text-ink open:flex [@media(min-aspect-ratio:6/5)]:justify-center [@media(min-aspect-ratio:6/5)]:ps-[max(16px,6vw)]"
     >
-      <div className="veil-card my-auto flex w-[min(640px,100%)] flex-col items-center gap-4.5 text-center">
-        <div
+      <div className="slate relative mx-auto flex w-[min(520px,100%)] flex-col gap-3 px-5 pt-7 pb-5 [@media(min-aspect-ratio:6/5)]:gap-4 [@media(min-aspect-ratio:6/5)]:px-6 [@media(min-aspect-ratio:6/5)]:pt-8 [@media(min-aspect-ratio:6/5)]:pb-6 [@media(min-aspect-ratio:6/5)]:mx-0 [@media(min-aspect-ratio:6/5)]:w-[min(440px,40vw)]">
+        <span
           aria-hidden="true"
-          className="mb-0.5 flex flex-col items-center gap-2.5"
-        >
-          <div className="relative size-49">
-            <span className="absolute inset-[18%] rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glow)_26%,transparent),transparent)] blur-sm" />
-            <svg
-              aria-hidden="true"
-              viewBox="-70 -70 140 140"
-              className="absolute inset-0 size-full overflow-visible"
-            >
-              <circle
-                r={HELM_RING_R}
-                fill="none"
-                strokeWidth={2.5}
-                className="stroke-line"
-              />
-              <circle
-                r={HELM_RING_R}
-                fill="none"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                transform="rotate(-90)"
-                strokeDasharray={RING}
-                className="stroke-glow drop-shadow-[0_0_5px_color-mix(in_oklab,var(--color-glow)_70%,transparent)] motion-reduce:transition-none!"
-                style={{
-                  strokeDashoffset: RING * (1 - progress),
-                  transition: counting
-                    ? `stroke-dashoffset ${COUNT_MS}ms linear`
-                    : "stroke-dashoffset 400ms var(--ease-out)",
-                }}
-              />
-            </svg>
-            <canvas ref={canvas} className="absolute inset-1.5 size-46" />
-          </div>
-          <p className="inline-flex items-baseline gap-2 rounded-full border border-line bg-case/40 px-3 py-1.5 font-medium font-mono text-[10px] text-muted uppercase leading-none tracking-[0.12em]">
-            <b className="font-bold font-display font-stretch-expanded text-[1.0625rem] text-text tabular-nums leading-none tracking-normal">
-              {counting ? count - step + 1 : `${ticks}/${n}`}
-            </b>
-            <span>{counting ? copy.read.countdown : copy.read.checks}</span>
+          className="absolute start-1/2 top-3 size-3 -translate-x-1/2 rounded-full bg-ink/14 shadow-[inset_0_1px_2px_color-mix(in_oklab,var(--color-ink)_45%,transparent)] rtl:translate-x-1/2"
+        />
+        <div className="flex items-center justify-between gap-3 font-medium font-mono text-[11px] uppercase leading-none tracking-[0.12em]">
+          <p className="text-ink/72">
+            {fill(plan.replay ? copy.replayTag : copy.eyebrow, {
+              n: String(plan.dive),
+            })}
+          </p>
+          <p
+            aria-hidden="true"
+            className="rounded-full bg-ink px-2.5 py-1.5 text-foam tabular-nums"
+          >
+            {counting
+              ? `${copy.read.countdown} ${count - step + 1}`
+              : `${ticks}/${n} ${copy.read.checks}`}
           </p>
         </div>
-        <p className="font-mono text-[11px] text-glow uppercase leading-none tracking-[0.12em]">
-          {fill(plan.replay ? copy.replayTag : copy.eyebrow, {
-            n: String(plan.dive),
-          })}
-        </p>
         <h2
-          id="veil-title"
-          className="text-balance font-bold font-display font-stretch-expanded text-[clamp(1.5rem,3vw,2rem)] leading-[1.1] tracking-[-0.02em]"
+          id="slate-title"
+          className="font-[650] font-display font-stretch-expanded text-[1.25rem] leading-[1.15] tracking-[-0.015em]"
         >
-          {veilTitle(copy.title, plan)}
+          {slateTitle(copy.title, plan)}
         </h2>
         <q
           dir="auto"
-          className="max-w-[30ch] text-balance font-medium text-[clamp(1.25rem,2.6vw,1.625rem)] leading-[1.35] tracking-[-0.01em]"
+          className="slate-lines text-balance font-display font-medium text-[clamp(1.375rem,2.1vw,1.75rem)] leading-[1.3] tracking-[-0.015em]"
         >
           {plan.question}
         </q>
         <ul
           aria-label={copy.checksLabel}
-          className={`grid w-full gap-2 text-start max-[519px]:grid-cols-1 ${n === 3 ? "grid-cols-3" : "grid-cols-2"}`}
+          className="flex flex-col border-ink/12 border-t border-dashed [@media(max-aspect-ratio:6/5)]:grid [@media(max-aspect-ratio:6/5)]:grid-cols-2 [@media(max-aspect-ratio:6/5)]:gap-x-3"
         >
           {checks.map((check, i) => (
             <li
               key={check.name}
               data-on={i < ticks || undefined}
-              className="group grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 rounded-xl border border-line bg-text/5 px-3.5 py-2.75 opacity-45 transition-[opacity,border-color,background-color] duration-350 ease-out data-on:border-[color-mix(in_oklab,var(--color-ok)_40%,var(--color-line))] data-on:bg-ok/8 data-on:opacity-100"
+              className="group grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-3 border-ink/12 border-b border-dashed py-2 opacity-45 transition-opacity duration-300 ease-out data-on:opacity-100"
             >
-              <span className="row-span-2 grid size-5 place-items-center rounded-md text-on-accent shadow-[inset_0_0_0_1.5px_var(--color-line-strong)] transition-[background-color,box-shadow] duration-300 ease-out group-data-on:bg-ok group-data-on:shadow-none">
+              <span className="row-span-2 grid size-5 place-items-center rounded-md text-ink shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--color-ink)_32%,transparent)] transition-[background-color,box-shadow] duration-300 ease-out group-data-on:bg-ok group-data-on:shadow-none">
                 <svg
                   width="12"
                   height="12"
@@ -158,7 +118,7 @@ export function PreDiveCheck({
               </b>
               <span
                 dir="auto"
-                className="font-medium font-mono text-glow text-xs tabular-nums leading-[1.4]"
+                className="font-medium font-mono text-swell-deep text-xs tabular-nums leading-[1.5] [@media(max-aspect-ratio:6/5)]:hidden"
               >
                 {check.value}
               </span>
@@ -166,8 +126,8 @@ export function PreDiveCheck({
           ))}
         </ul>
         {plan.prior.length > 0 && !plan.replay && (
-          <details className="group w-full text-center text-sm">
-            <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 text-glow [&::-webkit-details-marker]:hidden">
+          <details className="group text-sm">
+            <summary className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 font-medium text-swell-deep [&::-webkit-details-marker]:hidden">
               {copy.cargo.summary}
               <svg
                 width="10"
@@ -186,15 +146,15 @@ export function PreDiveCheck({
                 />
               </svg>
             </summary>
-            <ol className="mt-2 flex flex-col gap-1.5 rounded-[14px] border border-line p-3.5 text-start">
+            <ol className="mt-2 flex flex-col gap-1.5 rounded-xl bg-ink/6 p-3">
               {cargoRows(plan).map((message, i) => (
                 <li
-                  // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed while the veil is open
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the list is fixed while the slate is open
                   key={i}
                   data-new={i === plan.prior.length || undefined}
-                  className="group/row grid grid-cols-[56px_minmax(0,1fr)] items-baseline gap-2.5 text-muted data-new:text-text"
+                  className="group/row grid grid-cols-[56px_minmax(0,1fr)] items-baseline gap-2.5 text-ink/72 data-new:font-medium data-new:text-ink"
                 >
-                  <span className="font-medium font-mono text-[11px] uppercase leading-[1.6] tracking-[0.08em] group-data-new/row:text-haze">
+                  <span className="font-medium font-mono text-[11px] uppercase leading-[1.6] tracking-[0.08em]">
                     {message.role === "user"
                       ? copy.cargo.you
                       : copy.cargo.agent}
@@ -206,19 +166,19 @@ export function PreDiveCheck({
               ))}
               <li
                 dir="ltr"
-                className="mt-1 border-line border-t border-dashed pt-2 font-medium font-mono text-glow text-xs leading-[1.4]"
+                className="mt-1 border-ink/15 border-t border-dashed pt-2 font-medium font-mono text-swell-deep text-xs leading-[1.4]"
               >
                 {fill(copy.cargo.wire, { n: String(plan.prior.length) })}
               </li>
             </ol>
           </details>
         )}
-        <div className="mt-1.5 flex flex-wrap justify-center gap-2 max-[519px]:w-full max-[519px]:*:flex-1">
+        <div className="mt-1 flex gap-2">
           <Button
             variant="outline"
             size="lg"
             onClick={onCancel}
-            className="min-h-13 px-5"
+            className="min-h-12 border-ink/25 px-5 text-ink hover:bg-ink/8 hover:text-ink focus-visible:border-swell-deep focus-visible:ring-swell-deep/40"
           >
             {copy.cancel}
           </Button>
@@ -226,9 +186,19 @@ export function PreDiveCheck({
             ref={go}
             size="lg"
             onClick={descend}
-            className="descend min-h-13 rounded-[14px] px-7 font-[650] font-display text-base leading-none tracking-[-0.01em] [font-stretch:112%]"
+            className="descend relative min-h-12 flex-1 overflow-hidden rounded-[14px] bg-ink px-7 font-[650] font-display text-base text-foam leading-none tracking-[-0.01em] [font-stretch:112%] hover:bg-ink/88 focus-visible:border-swell-deep focus-visible:ring-swell-deep/40"
           >
             {copy.descend}
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-0 bottom-0 h-1 origin-left bg-accent motion-reduce:hidden rtl:origin-right"
+              style={{
+                scale: counting ? "1 1" : "0 1",
+                transition: counting
+                  ? `scale ${count * COUNT_MS}ms linear`
+                  : "none",
+              }}
+            />
           </Button>
         </div>
       </div>

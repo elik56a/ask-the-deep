@@ -52,6 +52,8 @@ function Home() {
   // The dive on screen: the newest, or an earlier one picked with "Watch again"
   const [watching, setWatching] = useState<number | null>(null);
   const [stayFresh, setStayFresh] = useState<number | null>(null);
+  // Once the chat has stepped aside for a dive, it surfaces with an entrance whenever it returns.
+  const [returned, setReturned] = useState(false);
   const diving = mode !== "rest" && mode !== "intro";
   const revealed = mode === "reveal";
   const seaCanvas = useRef<HTMLCanvasElement>(null);
@@ -110,9 +112,9 @@ function Home() {
     },
   );
 
-  function startDive() {
+  function startDive(fresh = true) {
     scrollTo(0, 0);
-    sea.current?.reset();
+    if (fresh) sea.current?.reset();
     sea.current?.loadDeep();
     player.start();
     setMode("dive");
@@ -129,6 +131,7 @@ function Home() {
       return;
     }
     const prior = pastMessages(chat.messages);
+    setReturned(true);
     leaveConsole(() => {
       setWatching(null);
       setStayFresh(null);
@@ -140,6 +143,7 @@ function Home() {
   function replay(turn: ThreadTurn | null) {
     if (!turn?.answer) return;
     const question = messageText(turn.question);
+    setReturned(true);
     leaveConsole(() => {
       setWatching(turn.dive);
       setStayFresh(null);
@@ -156,9 +160,17 @@ function Home() {
     setMode("rest");
   }
 
+  // The question leaves as the diver jumps, so the server works while he is in the air; the dive
+  // starts as his head goes under.
   function descend() {
     if (plan && !plan.replay) chat.send(plan.question);
-    startDive();
+    const s = sea.current;
+    if (!s) {
+      startDive();
+      return;
+    }
+    s.reset();
+    s.jump(() => startDive(false));
   }
 
   function land() {
@@ -195,7 +207,7 @@ function Home() {
       </header>
       <section
         aria-label={PAGE_COPY[lang].title}
-        inert={mode === "dive" || mode === "reveal"}
+        inert={mode !== "rest" && mode !== "ascend"}
         className="relative h-svh transition-opacity duration-300 inert:opacity-0"
       >
         <SurfaceHero lang={lang} talked={asked} />
@@ -207,7 +219,7 @@ function Home() {
         data-chat={revealed ? chatState : undefined}
         // At the seabed: full at the bottom centre (a sheet on small screens), its height capped so
         // ~96px clears the report card; a pill or a compact side panel at the inline-end.
-        className={`${revealed ? "console-rise " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px),calc(100svh-var(--hud-end,0px)-40px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
+        className={`${revealed ? "console-rise " : returned && mode === "rest" ? "console-surface " : ""}fixed start-[max(16px,6vw)] bottom-[calc(max(5svh,16px)+env(safe-area-inset-bottom,0px))] z-15 flex max-h-[calc(100svh-var(--hero-end,140px)-max(5svh,16px)-24px)] w-[min(600px,calc(100%-32px))] flex-col gap-3 data-chat:bottom-[calc(16px+env(safe-area-inset-bottom,0px))] data-[chat=full]:end-0 data-[chat=full]:start-0 data-[chat=full]:mx-auto data-[chat=full]:max-h-[min(84svh,calc(74svh+48px),calc(100svh-var(--hud-end,0px)-40px))] data-[chat=full]:w-[min(720px,calc(100%-64px))] data-[chat=pill]:start-auto data-[chat=pill]:end-[max(16px,env(safe-area-inset-right,0px))] data-[chat=pill]:max-h-none data-[chat=pill]:w-auto lg:data-[chat=pill]:end-8 lg:data-[chat=side]:start-auto lg:data-[chat=side]:end-8 lg:data-[chat=side]:max-h-[min(80svh,calc(100svh-168px))] lg:data-[chat=side]:w-105 max-lg:data-[chat=full]:bottom-0 max-lg:data-[chat=full]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=full]:w-full max-lg:data-[chat=side]:start-0 max-lg:data-[chat=side]:end-0 max-lg:data-[chat=side]:bottom-0 max-lg:data-[chat=side]:max-h-[min(88svh,calc(74svh+96px))] max-lg:data-[chat=side]:w-full`}
       >
         <h2 id="reveal-title" tabIndex={-1} className="sr-only">
           {dive.back.title}

@@ -4,8 +4,9 @@ import type { ChatState } from "#/types/chat.types";
 import type { DiveMode, SeaControls } from "#/types/sea.types";
 
 /**
- * Keeps the sea in step with the page: lit and lifted on the sand with the full chat, shifted
- * beside the cards while they are read, the seabed at `bed`, and bubbles on the way up.
+ * Keeps the sea in step with the page: the diver close up for the buddy check, lit and lifted on
+ * the sand with the full chat, shifted beside the cards while they are read, the seabed at `bed`,
+ * and bubbles on the way up.
  */
 export function useSeaStage(
   sea: RefObject<SeaControls | null>,
@@ -18,6 +19,10 @@ export function useSeaStage(
     sea.current?.landed(revealed && chat === "full");
     sea.current?.shifted(mode === "dive" || (revealed && chat !== "full"));
   }, [sea, mode, revealed, chat]);
+
+  useEffect(() => {
+    sea.current?.ready(mode === "intro");
+  }, [sea, mode]);
 
   useEffect(() => {
     if (revealed && bed !== null) sea.current?.seabed(bed);

@@ -369,6 +369,72 @@ export const DIVER = {
   kick: 0.6,
 } as const;
 
+// The giant stride (pre-dive): the camera drops toward the waterline, the diver swims up close,
+// then leaps head first into the water and the dive starts as he goes under.
+export const STRIDE = {
+  // Lower on narrow screens, so the diver stands high in the frame above the slate.
+  camDrop: { wide: 1.3, narrow: 1.9 },
+  readyRate: 2.4,
+  // Close up, this far in front of the camera, at this share of the half width; head and
+  // shoulders clear of the water, turned three-quarters towards the slate.
+  heroDepth: 4.8,
+  heroShare: { wide: 0.4, narrow: 0 },
+  heroY: -0.3,
+  heroYaw: -0.7,
+  heroSwell: 0.35,
+  // Seconds: sinking into the swell, the arc through the air, the slide under.
+  crouchS: 0.3,
+  flightS: 0.7,
+  sinkS: 0.8,
+  crouch: 0.45,
+  rise: 1.7,
+  // The leap carries this far towards the middle and away from the camera.
+  reachX: -1.2,
+  reachZ: -2.6,
+  sink: 2.4,
+  // The arc's highest point, as a share of the flight.
+  peakAt: 0.4,
+  // The share of the flight when the head breaks the water and the dive starts.
+  entryAt: 0.62,
+  // If frames stall, the dive starts this long after the head should have gone under.
+  entryGraceMs: 250,
+  // Heading at take-off: facing the water ahead, away from the camera.
+  leapYaw: -2.7,
+  // Bubbles trail from the diver while he slides under.
+  trailEvery: 0.04,
+  trail: { count: 3, spread: 0.6, rise: 2.2, sideways: 0.4 },
+} as const;
+// The entry: spray thrown up and falling back, foam rings spreading on the swell.
+export const SPRAY = {
+  pool: 160,
+  size: 0.45,
+  gravity: -9,
+  count: 110,
+  spread: 0.9,
+  rise: 6.5,
+  sideways: 3.2,
+} as const;
+export const SPLASH_RINGS = {
+  inner: 0.82,
+  delays: [0, 0.18, 0.4],
+  lifeS: 1.5,
+  from: 0.4,
+  to: 3.4,
+  opacity: 0.85,
+  // The white water left where he went in, under the rings.
+  patchSize: 2.2,
+  lift: 0.03,
+} as const;
+// Going under: froth rises up the view as the water closes over the lens.
+export const PLUNGE = {
+  durationMs: 900,
+  peak: 0.5,
+  peakAt: 0.3,
+  fromY: "150%",
+  peakY: "45%",
+  toY: "-10%",
+} as const;
+
 export const SWIM = {
   bob: 0.8,
   bobRate: 1.7,

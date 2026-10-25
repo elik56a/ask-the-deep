@@ -3,14 +3,14 @@ import {
   COUNT_MS,
   FIRST_TICK_MS,
   HOLD_MS,
+  SLATE_EXIT_MS,
   TICK_MS,
-  VEIL_FADE_MS,
 } from "#/constants/predive.constants";
 
 /**
- * The pre-dive check's clock: it opens the dialog, ticks off `checks` one by one, counts down from
- * `count` and then leaves on its own. `descend` leaves at once. Leaving calls `onDescend`, fades the
- * veil out over the dive, then calls `onGone`.
+ * The buddy check's clock: it opens the dialog, ticks off `checks` one by one, counts down from
+ * `count` and then leaves on its own. `descend` leaves at once. Leaving calls `onDescend` (the
+ * diver jumps), drops the slate away, then calls `onGone`.
  */
 export function usePreDiveClock(
   checks: number,
@@ -24,9 +24,9 @@ export function usePreDiveClock(
   const actions = useRef({ onDescend, onGone });
   actions.current = { onDescend, onGone };
   const [on, setOn] = useState(false);
+  const [left, setLeft] = useState(false);
   const [ticks, setTicks] = useState(0);
   const [step, setStep] = useState(0);
-  const [spun, setSpun] = useState(false);
 
   const gone = useRef(false);
   const leave = useRef(() => {
@@ -34,9 +34,10 @@ export function usePreDiveClock(
     gone.current = true;
     for (const timer of timers.current) clearTimeout(timer);
     setOn(false);
+    setLeft(true);
     actions.current.onDescend();
     timers.current = [
-      window.setTimeout(() => actions.current.onGone(), VEIL_FADE_MS),
+      window.setTimeout(() => actions.current.onGone(), SLATE_EXIT_MS),
     ];
   });
 
@@ -65,10 +66,5 @@ export function usePreDiveClock(
     };
   }, [checks, count]);
 
-  const descend = () => {
-    setSpun(true);
-    leave.current();
-  };
-
-  return { dialog, go, on, ticks, step, spun, descend };
+  return { dialog, go, on, left, ticks, step, descend: leave.current };
 }

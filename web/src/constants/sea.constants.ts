@@ -65,6 +65,9 @@ export const FOLLOW_GAIN = 2.2;
 export const RUSH_GAIN = 6;
 export const ASCENT_SLOW_PX = 1200;
 export const ASCENT_SLOW_GAIN = 1.2;
+// The ascent never crawls slower than this (px per second), so its last stretch lands instead
+// of trailing off: from where scrolling up hands over, the chat is back in under half a second.
+export const ASCENT_MIN_SPEED = 1500;
 // The diver breathes out bubbles on the way up.
 export const ASCENT_BUBBLES = { everyMs: 200, count: 3 } as const;
 // Scrolling up from the seabed into this top share of the first screen surfaces.

@@ -30,19 +30,16 @@ export function RetrievalGate({
             key={passage.chunk_id}
             onPointerEnter={() => onFocusChunk(passage.chunk_id)}
             onPointerLeave={() => onFocusChunk(null)}
-            className={`-mx-2 grid grid-cols-[minmax(0,1fr)_minmax(80px,36%)_40px] items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors duration-150 ${focusChunk === passage.chunk_id ? "bg-accent/15" : ""}`}
+            className={`-mx-2 grid grid-cols-[minmax(0,1fr)_minmax(80px,36%)_48px] items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors duration-150 ${focusChunk === passage.chunk_id ? "bg-accent/15" : ""}`}
           >
-            <div className="min-w-0 text-[13px] leading-[1.3]">
+            <div className="min-w-0 text-[13px] leading-[1.3] group-data-focus/card:text-[0.9375rem]">
               <p
                 dir="auto"
                 className={passage.above_threshold ? "" : "text-muted"}
               >
                 {passage.breadcrumb}
               </p>
-              <p
-                dir="ltr"
-                className="truncate font-mono text-[11px] text-muted"
-              >
+              <p dir="ltr" className="truncate font-mono text-muted text-xs">
                 {passage.chunk_id}
               </p>
             </div>
@@ -69,14 +66,14 @@ export function RetrievalGate({
               />
             </div>
             <p
-              className={`text-end font-medium font-mono text-xs tabular-nums leading-none ${passage.above_threshold ? "" : "text-warn"}`}
+              className={`text-end font-medium font-mono text-xs tabular-nums leading-none group-data-focus/card:font-semibold group-data-focus/card:text-[0.9375rem] ${passage.above_threshold ? "" : "text-warn"}`}
             >
               {passage.score.toFixed(2)}
             </p>
           </li>
         ))}
       </ol>
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted text-xs">
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted text-xs group-data-focus/card:text-[13px]">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-[3px] bg-accent" />
           {fill(copy.reachModel, { n: String(passed) })}

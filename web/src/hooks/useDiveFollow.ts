@@ -8,6 +8,7 @@ import {
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
 import {
   ASCEND_SPEED,
+  ASCENT_MIN_SPEED,
   ASCENT_SLOW_GAIN,
   ASCENT_SLOW_PX,
   DIVER_LINE,
@@ -60,15 +61,25 @@ export function useDiveFollow(
     let glideY = scrollY;
     let last = 0;
     let frame = 0;
-    const glide = (to: number, speed: number, dt: number, gain: number) => {
+    const glide = (
+      to: number,
+      speed: number,
+      dt: number,
+      gain: number,
+      minSpeed = 0,
+    ) => {
       if (Math.abs(scrollY - glideY) > GLIDE_SLACK_PX) glideY = scrollY;
       const gap = to - glideY;
       if (Math.abs(gap) < 0.5) return;
+      const eased = Math.min(
+        Math.abs(gap) * Math.min(1, dt * gain),
+        speed * dt,
+      );
       glideY +=
         reduced.matches || performance.now() < snapUntil.current
           ? gap
           : Math.sign(gap) *
-            Math.min(Math.abs(gap) * Math.min(1, dt * gain), speed * dt);
+            Math.min(Math.max(eased, minSpeed * dt), Math.abs(gap));
       scrollTo(0, glideY);
     };
     const tick = (now: number) => {
@@ -82,6 +93,7 @@ export function useDiveFollow(
           ASCEND_SPEED,
           dt,
           scrollY < ASCENT_SLOW_PX ? ASCENT_SLOW_GAIN : FOLLOW_GAIN,
+          ASCENT_MIN_SPEED,
         );
         if (scrollY < 2) {
           latest.current.onSurfaced();

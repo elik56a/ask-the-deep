@@ -184,6 +184,15 @@ export interface LanternFrame {
   opacity: number;
 }
 
+/** The diver's place and attitude during the giant stride: heading `yaw`, then `pitch` head first. */
+export interface StridePose {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  pitch: number;
+}
+
 export interface DiverPose {
   x: number;
   y: number;

@@ -27,9 +27,11 @@ import {
   LOG_SHIFT,
   LURE,
   MAX_FRAME_S,
+  PLUNGE,
   SEABED,
   SPLASH,
   STREAM_BUBBLES,
+  STRIDE,
   SURFACING,
   UNDER_Y,
   WAVES,
@@ -50,6 +52,7 @@ import {
   worldY,
   zoneLabel,
 } from "#/utils/depth.utils";
+import { diveEase } from "#/utils/diver.utils";
 import { approach, clamp01 } from "#/utils/ease.utils";
 import { waveAt } from "#/utils/wave.utils";
 import { diverRig } from "./diver";
@@ -75,6 +78,7 @@ import { seabed } from "./seabed";
 import { shafts } from "./shafts";
 import { skyDome, skyUniforms } from "./sky";
 import { spawner } from "./spawn";
+import { splashRig } from "./splash";
 import { waterPalette } from "./water";
 import { divePx } from "./zone";
 
@@ -170,7 +174,14 @@ export function createSea(
   const torches = torchLights(kit);
   const boat = boatRig(kit);
   const sub = subRig(kit);
-  const diver = diverRig(kit);
+  const splash = splashRig(kit);
+  const diver = diverRig(kit, {
+    entry: (at) => splash.start(at, quiet()),
+    trail: (at) => {
+      const b = STRIDE.trail;
+      bubbles.emit(b.count, at, b.spread, b.rise, b.sideways);
+    },
+  });
   const creatures: Creature[] = [];
   const others: Creature[] = [];
   const bedProps: Creature[] = [];
@@ -263,7 +274,7 @@ export function createSea(
   }
 
   // Landed: the view lifts so the seabed shows above the chat; rereading looks like the way down.
-  function aim(dt: number, t: number, under: boolean): void {
+  function aim(dt: number, t: number, eye: number, under: boolean): void {
     const ease = (from: number, to: number, rate: number) =>
       quiet() ? to : approach(from, to, rate, dt);
     pointer.x = approach(pointer.x, pointer.tx, EASE_RATE.pointer, dt);
@@ -296,10 +307,10 @@ export function createSea(
     const bob = under
       ? 0
       : waveAt(WAVES, CAMERA.bobAt.x, CAMERA.bobAt.z, t).h * CAMERA.bob;
-    camera.position.set(pointer.x * CAMERA.sway, camY + bob, CAMERA.z);
+    camera.position.set(pointer.x * CAMERA.sway, eye + bob, CAMERA.z);
     camera.lookAt(
       pointer.x * CAMERA.lookSway,
-      camY -
+      eye -
         (under ? CAMERA.lookDropUnder : CAMERA.lookDropAbove) -
         pointer.y * CAMERA.lookTilt,
       CAMERA.lookZ,
@@ -333,7 +344,8 @@ export function createSea(
     }
     boat.frame(t, camY, under);
     sub.frame(t, camY);
-    diver.frame({ camY, t, dt: still, camera, landK });
+    diver.frame({ camY, t, dt: still, camera, landK, quiet: quiet() });
+    splash.frame(still, t);
     lureLight.intensity =
       (LURE.intensity + Math.sin(t * LURE.flickerRate) * LURE.flicker) *
       LEGACY_LIGHT;
@@ -377,6 +389,24 @@ export function createSea(
     );
   }
 
+  // Going under: froth rises up the view as the water closes over the lens.
+  function plunge(): void {
+    const p = PLUNGE;
+    foam?.animate(
+      [
+        { opacity: 0, transform: `translateY(${p.fromY})`, easing: EASE_OUT },
+        {
+          opacity: p.peak,
+          transform: `translateY(${p.peakY})`,
+          offset: p.peakAt,
+          easing: EASE_OUT,
+        },
+        { opacity: 0, transform: `translateY(${p.toY})` },
+      ],
+      { duration: p.durationMs },
+    );
+  }
+
   function draw(dt: number): void {
     const t = clock;
     time.value = t;
@@ -384,9 +414,16 @@ export function createSea(
     setZone(px);
     camY = px < 0 ? surfaceEye(scrollY, px) : worldY(px);
     const zone = Math.max(0, px / ZONE_PX);
-    const under = camY < UNDER_Y;
+    // Ready to jump, the camera comes down to the diver; following him under, it hands back.
+    const drop =
+      camera.aspect > DIVER.wideAspect
+        ? STRIDE.camDrop.wide
+        : STRIDE.camDrop.narrow;
+    const eye = camY - drop * diver.close() * (1 - diveEase(camY));
+    const under = eye < UNDER_Y;
     if (under && !wasUnder && !quiet()) {
-      splashAt.set(0, camY + SPLASH.dy, SPLASH.z);
+      plunge();
+      splashAt.set(0, eye + SPLASH.dy, SPLASH.z);
       bubbles.emit(
         SPLASH.count,
         splashAt,
@@ -398,10 +435,10 @@ export function createSea(
     // Only a real ascent breaks the surface; the water closing (a new dive, Watch again) is not one.
     if (!under && wasUnder && !quiet() && waterRef.current) surface();
     wasUnder = under;
-    const wetTo = clamp01((WET.dryY - camY) / WET.band);
+    const wetTo = clamp01((WET.dryY - eye) / WET.band);
     wet = quiet() ? wetTo : approach(wet, wetTo, WET.rate, dt);
     if (zone > DEEP_LOAD_ZONE) loadDeep();
-    aim(dt, t, under);
+    aim(dt, t, eye, under);
     shade(zone, under, dt);
     animate(dt, t, zone, under);
     gl.render(scene, camera);
@@ -462,6 +499,7 @@ export function createSea(
         landing = null;
         bubbles.clear();
         dust.clear();
+        splash.clear();
         floor.bed.position.y = restBed;
         wake();
       },
@@ -496,6 +534,14 @@ export function createSea(
         wake();
       },
       loadDeep,
+      ready(on) {
+        diver.ready(on);
+        wake();
+      },
+      jump(entered) {
+        diver.jump(entered, quiet());
+        wake();
+      },
     },
     dispose() {
       disposed = true;

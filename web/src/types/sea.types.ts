@@ -38,6 +38,10 @@ export interface SeaControls {
   shifted: (on: boolean) => void;
   /** Starts loading the deep models and the seabed props, once. */
   loadDeep: () => void;
+  /** Before a dive: the diver swims up close and the camera comes down to the water. */
+  ready: (on: boolean) => void;
+  /** The giant stride; `entered` runs as his head goes under (at once without motion). */
+  jump: (entered: () => void) => void;
 }
 
 export type DiveMode = "rest" | "intro" | "dive" | "reveal" | "ascend";

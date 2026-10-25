@@ -103,16 +103,16 @@ for (const lang of ["en", "he"] as const) {
       await open(page, lang);
       await ask(page, lang);
       await expect(page.getByRole("dialog")).toBeVisible();
-      await expectAccessible(page, "veil");
+      await expectAccessible(page, "slate");
     });
 
     test("Escape cancels the dive", async ({ page }) => {
       await open(page, lang);
       await ask(page, lang);
-      const veil = page.getByRole("dialog");
-      await expect(veil).toBeVisible();
+      const slate = page.getByRole("dialog");
+      await expect(slate).toBeVisible();
       await page.keyboard.press("Escape");
-      await expect(veil).toBeHidden();
+      await expect(slate).toBeHidden();
       await expect(
         page.getByRole("textbox", { name: chat.inputLabel }),
       ).toBeVisible();
@@ -123,7 +123,7 @@ for (const lang of ["en", "he"] as const) {
     }) => {
       await open(page, lang);
       await ask(page, lang);
-      // The veil descends by itself after its countdown, so the click may find it gone.
+      // The diver jumps by himself after the countdown, so the click may find the slate gone.
       await page
         .getByRole("dialog")
         .getByRole("button", { name: PREDIVE_COPY[lang].descend })

@@ -64,7 +64,7 @@ export function StepDetail({
             <li
               key={check.name}
               style={{ "--i": i } as CSSProperties}
-              className="tick-in inline-flex items-center gap-1.5 rounded-md border border-line px-1.75 py-1.25 font-mono text-xs leading-none"
+              className="tick-in inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1.5 font-mono text-xs leading-none group-data-focus/card:text-[13px]"
             >
               <span className={check.passed ? "text-ok" : "text-warn"}>
                 {check.passed ? "✓" : "✕"}
@@ -96,7 +96,7 @@ export function StepDetail({
           </span>
           <span>
             {thinking[0]}
-            <code dir="ltr" className="font-medium font-mono text-[13px]">
+            <code dir="ltr" className="font-medium font-mono text-sm">
               {model}
             </code>
             {thinking[1]}
@@ -107,12 +107,15 @@ export function StepDetail({
     case "llm.completed":
       body = (
         <>
-          <p className="text-[0.9375rem]">
+          <p className="text-[0.9375rem] group-data-focus/card:text-[1.0625rem]">
             {event.decision === "tools" ? (
               <>
                 {copy.decidedTools}{" "}
                 <strong className="font-semibold text-accent">
-                  <code dir="ltr" className="font-medium font-mono text-[13px]">
+                  <code
+                    dir="ltr"
+                    className="font-mono font-semibold text-sm group-data-focus/card:text-base"
+                  >
                     {toolList(event.tools)}
                   </code>
                 </strong>
@@ -145,21 +148,34 @@ export function StepDetail({
       );
       break;
     case "tool.called":
-      if (Object.keys(event.args).length === 0) break;
+      // The call as the server ran it: the most important line of the step.
       body = (
-        <dl className="overflow-x-auto rounded-lg bg-case/50 px-2.5 py-2 text-[13px]">
-          {Object.entries(event.args).map(([key, value]) => (
-            <div key={key} className="flex gap-2">
-              <dt className="text-muted">{key}:</dt>
-              <dd dir="auto" className="font-mono">{`"${value}"`}</dd>
-            </div>
+        <code
+          dir="ltr"
+          className="block rounded-lg bg-case/60 px-3 py-2.5 text-start font-mono text-[15px] leading-normal [overflow-wrap:anywhere] group-data-focus/card:px-4 group-data-focus/card:py-3 group-data-focus/card:text-lg"
+        >
+          <span className="font-semibold text-(--c)">{event.tool}</span>
+          <span className="text-muted">(</span>
+          {Object.entries(event.args).map(([key, value], i) => (
+            <span key={key}>
+              {i > 0 && <span className="text-muted">, </span>}
+              <span className="text-muted">{key}=</span>
+              <bdi className="text-text">{`"${value}"`}</bdi>
+            </span>
           ))}
-        </dl>
+          <span className="text-muted">)</span>
+        </code>
       );
       break;
     case "tool.completed":
       body = (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="font-mono text-(--c) text-base leading-none"
+          >
+            ↳
+          </span>
           {event.ok && <Badge variant="ok">{copy.ok}</Badge>}
           <Badge variant={event.ok ? "metric" : "warn"}>
             {fill(copy.results, { n: String(event.result_count) })}
@@ -213,7 +229,10 @@ export function StepDetail({
       const answered = event.action === "answer";
       body = (
         <>
-          <p dir="auto" className="text-[0.9375rem]">
+          <p
+            dir="auto"
+            className="text-[0.9375rem] group-data-focus/card:text-[1.0625rem]"
+          >
             {event.reason}
           </p>
           <div className="flex flex-wrap gap-1.5">
