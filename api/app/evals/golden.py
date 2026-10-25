@@ -22,6 +22,10 @@ CaseType = Literal[
 Kind = Literal["answered", "no_information", "smalltalk"]
 
 
+# Tools whose answers come from live data, not passages, so their cases cite none.
+_LIVE_TOOLS = {"github_activity"}
+
+
 class GoldenCase(BaseModel):
     """One question and the answer it should get."""
 
@@ -40,8 +44,9 @@ class GoldenCase(BaseModel):
     def _consistent(self) -> "GoldenCase":
         if not self.kinds:
             raise ValueError(f"{self.id}: no correct answer kind")
+        live = bool(self.tools) and set(self.tools) <= _LIVE_TOOLS
         if self.type in ("answerable", "ambiguous") and not (
-            self.facts and self.chunks
+            self.facts and (self.chunks or live)
         ):
             raise ValueError(f"{self.id}: an answerable case needs facts and chunks")
         if self.type in ("trap", "off_topic", "injection") and self.chunks:

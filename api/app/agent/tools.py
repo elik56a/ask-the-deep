@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 from pydantic_ai import RunContext, Tool, ToolReturn
 
-from app.agent.github import GitHubActivity
+from app.agent.github import GitHubActivity, Repo
 from app.config import Settings
 from app.rag.corpus import Chunk
 from app.rag.retrieval import Hit, Retriever
@@ -168,23 +168,37 @@ async def get_project(ctx: RunContext[AgentDeps], name: str) -> ToolReturn:
     )
 
 
-async def github_activity(ctx: RunContext[AgentDeps]) -> ToolReturn:
-    """Eliyahu's most recently updated public GitHub repositories (live data)."""
-    repos = await ctx.deps.github.recent_repos()
+def format_repos(repos: list[Repo]) -> str:
+    """The repos as the model reads them, one line each. GitHub text is written
+    by anyone, so it is tagged as data like the passages."""
+    lines = [
+        f"- [{r.name}]({r.html_url}) ({r.language or 'n/a'}), "
+        f"last push {r.pushed_at[:10]}: {r.description or 'no description'}"
+        for r in repos
+    ]
+    return f"<github>\n{chr(10).join(lines)}\n</github>"
+
+
+async def github_activity(
+    ctx: RunContext[AgentDeps], count: int | None = None
+) -> ToolReturn:
+    """Eliyahu's most recently updated public GitHub repositories (live data).
+
+    Args:
+        count: How many repositories the visitor asked for; leave it out otherwise.
+    """
+    settings = ctx.deps.settings
+    asked = settings.github_repo_count if count is None else count
+    wanted = min(max(asked, 1), settings.github_max_repos)
+    repos = await ctx.deps.github.recent_repos(wanted)
     if repos is None:
         return ToolReturn(
             return_value="GitHub is unavailable right now.",
             metadata=ToolMeta(ok=False, count=0),
         )
     ctx.deps.successful_tools += 1
-    lines = [
-        f"- {r.name} ({r.language or 'n/a'}), last push {r.pushed_at[:10]}: "
-        f"{r.description or 'no description'} {r.html_url}"
-        for r in repos
-    ]
     return ToolReturn(
-        # GitHub text is written by anyone; tagged as data like the passages.
-        return_value=f"<github>\n{chr(10).join(lines)}\n</github>",
+        return_value=format_repos(repos),
         metadata=ToolMeta(ok=True, count=len(repos)),
     )
 

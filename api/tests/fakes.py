@@ -96,7 +96,7 @@ def fake_github(
         handler or (lambda _: httpx.Response(200, json=REPOS))
     )
     http = httpx.AsyncClient(base_url=GITHUB_API, transport=transport)
-    return GitHubActivity(http, "elik56a", cache_seconds=600)
+    return GitHubActivity(http, "elik56a", cache_seconds=600, max_repos=30)
 
 
 def make_deps(retriever: StubRetriever, settings: Settings | None = None) -> AgentDeps:

@@ -43,7 +43,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_tracing(settings)
     async with (
         create_pool(settings) as pool,
-        github_client(settings.github_timeout_s) as http,
+        github_client(settings.github_timeout_s, settings.github_token) as http,
         httpx.AsyncClient(timeout=settings.turnstile_timeout_s) as cloudflare,
     ):
         _turnstile = Turnstile(
@@ -52,7 +52,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         _services = Services(
             retriever=await HybridRetriever.load(pool, query_embedder(settings)),
             github=GitHubActivity(
-                http, settings.github_username, settings.github_cache_seconds
+                http,
+                settings.github_username,
+                settings.github_cache_seconds,
+                settings.github_max_repos,
             ),
             limiter=rate_limiter(settings),
             budget=budget(settings),

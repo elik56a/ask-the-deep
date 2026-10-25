@@ -31,6 +31,7 @@ from pydantic_evals.reporting import EvaluationReport, ReportCase
 
 from app.agent.github import GitHubActivity, github_client
 from app.agent.judge import judge, judge_prompt
+from app.agent.tools import format_repos
 from app.config import Settings, get_settings
 from app.control.budget import NoBudget
 from app.control.rate_limit import NoRateLimit
@@ -178,6 +179,7 @@ class Judged(Evaluator[GoldenCase, Run, None]):
 
     settings: Settings
     passages: dict[str, str]
+    github: GitHubActivity
 
     async def evaluate(
         self, ctx: EvaluatorContext[GoldenCase, Run, None]
@@ -186,6 +188,11 @@ class Judged(Evaluator[GoldenCase, Run, None]):
         if run.kind == "error":
             return {}
         sources = {i: self.passages[i] for i in run.retrieved if i in self.passages}
+        if "github_activity" in run.tools:
+            # The same cached repos the agent read, so the judge sees what it saw.
+            repos = await self.github.recent_repos(self.settings.github_max_repos)
+            if repos:
+                sources["github_activity"] = format_repos(repos)
         if "contact_info" in run.tools:
             sources["contact_info"] = "\n".join(
                 f"{name}: {url}" for name, url in self.settings.contact_links.items()
@@ -238,7 +245,7 @@ async def evaluate(
     dataset = Dataset[GoldenCase, Run, None](
         name="golden",
         cases=[Case(name=c.id, inputs=c) for c in cases],
-        evaluators=[CodeChecks(), Judged(settings, passages)],
+        evaluators=[CodeChecks(), Judged(settings, passages, services.github)],
     )
 
     async def task(case: GoldenCase) -> Run:
@@ -330,12 +337,15 @@ async def main(args: argparse.Namespace) -> int:
     cases = _pick(load_golden(), args)
     async with (
         create_pool(settings) as pool,
-        github_client(settings.github_timeout_s) as http,
+        github_client(settings.github_timeout_s, settings.github_token) as http,
     ):
         services = Services(
             retriever=await HybridRetriever.load(pool, query_embedder(settings)),
             github=GitHubActivity(
-                http, settings.github_username, settings.github_cache_seconds
+                http,
+                settings.github_username,
+                settings.github_cache_seconds,
+                settings.github_max_repos,
             ),
             limiter=NoRateLimit(),
             budget=NoBudget(),

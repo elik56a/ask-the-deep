@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     dynamodb_table: str | None = None
     dynamodb_endpoint: str | None = None
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"
-    rules_version: str = "v7"
+    rules_version: str = "v8"
     # Cosine similarity a passage needs to reach the model; set from measured
     # scores, between off-topic (max 0.53) and right passages (min 0.62). ADR 0012.
     retrieval_threshold: float = 0.57
@@ -60,8 +60,15 @@ class Settings(BaseSettings):
     agent_max_tool_calls: int = 4
     github_username: str = "elik56a"
     github_timeout_s: float = 3.0
-    # Unauthenticated GitHub allows 60 calls/hour; caching keeps us far below it.
+    # Unauthenticated GitHub allows 60 calls/hour per IP, shared by everyone on
+    # that IP (Lambda's included); caching keeps us below it, and a token
+    # (any read-only one) raises it to 5,000.
     github_cache_seconds: int = 600
+    github_token: SecretStr | None = None
+    # Repos the agent lists when the visitor names no number, and the most it
+    # will list; GitHub is read once at the most and cached.
+    github_repo_count: int = 5
+    github_max_repos: int = 30
     contact_links: dict[str, str] = {
         "LinkedIn": "https://www.linkedin.com/in/elikri",
         "GitHub": "https://github.com/elik56a",
