@@ -93,6 +93,19 @@ body {
   @apply bg-page font-sans text-text antialiased;
 }
 
+/* The prerendered page is English: another language stays hidden until React has swapped the
+   text (LANG_PENDING_ATTR), and shows anyway after 2 s should the scripts never run. */
+html[data-lang-pending] body {
+  visibility: hidden;
+  animation: lang-reveal 0s 2s forwards;
+}
+
+@keyframes lang-reveal {
+  to {
+    visibility: visible;
+  }
+}
+
 /* Frosted glass for the small chrome on the water (brand, language, credits). */
 @utility glass {
   background: color-mix(in oklab, var(--color-surface) 64%, transparent);

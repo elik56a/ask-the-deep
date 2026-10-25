@@ -220,16 +220,13 @@ const STAR_SCATTER = {
 
 /** Props on the sand, in the seabed's own coordinates. */
 export const BED_PROPS: BedProp[] = [
-  // Two Octocats either side of the chat.
+  // One Octocat beside the chat, across from the diver, who lands on the other side.
   {
     model: "github",
     length: 3,
     speed: 0.8,
     ground: true,
-    places: [
-      { x: 0, y: 0, z: -11, ry: 0, beside: 0.76 },
-      { x: 0, y: 0, z: -11, ry: 0, beside: -0.76 },
-    ],
+    places: [{ x: 0, y: 0, z: -11, ry: 0, beside: -0.76 }],
   },
   {
     model: "whale-fall",

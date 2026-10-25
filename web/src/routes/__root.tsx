@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { LANG_BOOT_SCRIPT } from "#/constants/i18n.constants";
 import {
   OG_IMAGE,
   PERSON_JSON_LD,
@@ -37,6 +38,7 @@ export const Route = createRootRoute({
       { name: "twitter:image:alt", content: OG_IMAGE.alt },
       { "script:ld+json": PERSON_JSON_LD },
     ],
+    scripts: [{ children: LANG_BOOT_SCRIPT }],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "canonical", href: `${SITE_URL}/` },
@@ -51,7 +53,8 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr">
+    // LANG_BOOT_SCRIPT may change lang and dir before React hydrates.
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

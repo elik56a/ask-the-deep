@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DEFAULT_LANG,
   LANG_DIR,
+  LANG_PENDING_ATTR,
   LANG_STORAGE_KEY,
   OTHER_LANG,
 } from "#/constants/i18n.constants";
@@ -18,7 +19,10 @@ const showInUrl = (lang: Lang) =>
 
 /** The page language: `?lang=` first, then the visitor's last choice; the URL follows the switch. */
 export function useLang() {
-  const [lang, setLang] = useState<Lang>(DEFAULT_LANG);
+  // Unset until read after mount, so the first render matches the prerendered English
+  // without undoing the direction LANG_BOOT_SCRIPT already set.
+  const [chosen, setLang] = useState<Lang>();
+  const lang = chosen ?? DEFAULT_LANG;
 
   useEffect(() => {
     const first =
@@ -30,9 +34,12 @@ export function useLang() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = LANG_DIR[lang];
-  }, [lang]);
+    if (!chosen) return;
+    const root = document.documentElement;
+    root.lang = chosen;
+    root.dir = LANG_DIR[chosen];
+    root.removeAttribute(LANG_PENDING_ATTR);
+  }, [chosen]);
 
   const toggle = useCallback(() => {
     const next = OTHER_LANG[lang];

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { CHAT_COPY } from "#/constants/chat.constants";
+import { PROCESS_STORAGE_KEY } from "#/constants/hood.constants";
 import { LANG_DIR, LANG_STORAGE_KEY } from "#/constants/i18n.constants";
 import { PREDIVE_COPY } from "#/constants/predive.constants";
 import { DIVE_COPY } from "#/constants/sea.constants";
@@ -10,6 +11,11 @@ import type { Lang } from "#/types/i18n.types";
 // The captured stream of the offline test model: the page plays a real dive, no API or model is called.
 const STREAM = readFileSync(
   new URL("../fixtures/chat-stream.sse", import.meta.url),
+  "utf8",
+);
+// A real run the API blocked at its guardrails (no session); `blocked` turns it into another guardrail's refusal.
+const BLOCKED = readFileSync(
+  new URL("../fixtures/chat-blocked.sse", import.meta.url),
   "utf8",
 );
 const ANSWER = "offline test model";
@@ -21,10 +27,29 @@ const HYDRATE_MS = 60_000;
 const SEABED_MS = 30_000;
 const DESCEND_MS = 5_000;
 
-async function open(page: Page, lang: Lang) {
+function blocked(check: string, code: string) {
+  return BLOCKED.replace(
+    '"human_check","passed":false',
+    '"human_check","passed":true',
+  )
+    .replace(`"${check}","passed":true`, `"${check}","passed":false`)
+    .replace(/"code":"\w+","message":"[^"]*"/, `"code":"${code}","message":""`);
+}
+
+interface OpenOptions {
+  stream?: string;
+  atSurface?: boolean;
+}
+
+async function open(
+  page: Page,
+  lang: Lang,
+  { stream = STREAM, atSurface = false }: OpenOptions = {},
+) {
   await page.addInitScript(
-    ({ lang, langKey, sessionKey, expiresAt }) => {
+    ({ lang, langKey, sessionKey, processKey, expiresAt, atSurface }) => {
       localStorage.setItem(langKey, JSON.stringify(lang));
+      if (atSurface) localStorage.setItem(processKey, "false");
       sessionStorage.setItem(
         sessionKey,
         JSON.stringify({ token: "e2e", expiresAt }),
@@ -34,7 +59,9 @@ async function open(page: Page, lang: Lang) {
       lang,
       langKey: LANG_STORAGE_KEY,
       sessionKey: SESSION_STORAGE_KEY,
+      processKey: PROCESS_STORAGE_KEY,
       expiresAt: Date.now() + SESSION_TTL_MS,
+      atSurface,
     },
   );
   await page.route("**/api/chat", (route) =>
@@ -43,7 +70,7 @@ async function open(page: Page, lang: Lang) {
         "content-type": "text/event-stream",
         "x-vercel-ai-ui-message-stream": "v1",
       },
-      body: STREAM,
+      body: stream,
     }),
   );
   await page.goto("/");
@@ -85,6 +112,22 @@ async function ask(page: Page, lang: Lang) {
   await input.press("Enter");
 }
 
+async function jump(page: Page, lang: Lang) {
+  // The diver jumps by himself after the countdown, so the click may find the slate gone.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: PREDIVE_COPY[lang].descend })
+    .click({ timeout: DESCEND_MS })
+    .catch(() => {});
+}
+
+async function skip(page: Page, lang: Lang) {
+  await page
+    .getByRole("region", { name: DIVE_COPY[lang].playback.label })
+    .getByRole("button", { name: DIVE_COPY[lang].playback.skip })
+    .click();
+}
+
 for (const lang of ["en", "he"] as const) {
   const chat = CHAT_COPY[lang];
   const dive = DIVE_COPY[lang];
@@ -123,12 +166,7 @@ for (const lang of ["en", "he"] as const) {
     }) => {
       await open(page, lang);
       await ask(page, lang);
-      // The diver jumps by himself after the countdown, so the click may find the slate gone.
-      await page
-        .getByRole("dialog")
-        .getByRole("button", { name: PREDIVE_COPY[lang].descend })
-        .click({ timeout: DESCEND_MS })
-        .catch(() => {});
+      await jump(page, lang);
 
       const playback = page.getByRole("region", { name: dive.playback.label });
       await expect(playback).toBeVisible();
@@ -162,6 +200,79 @@ for (const lang of ["en", "he"] as const) {
         timeout: SEABED_MS,
       });
       await expect(page.getByText(ANSWER)).toBeVisible();
+    });
+
+    test("a rate-limited dive is called off and says why", async ({ page }) => {
+      await open(page, lang, { stream: blocked("rate_limit", "rate_limited") });
+      await ask(page, lang);
+      await jump(page, lang);
+      await expect(page.getByText(dive.steps.calledOff)).toBeVisible({
+        timeout: SEABED_MS,
+      });
+      await expect(
+        page.getByRole("alert").filter({ hasText: chat.errors.rate_limited }),
+      ).toBeVisible({ timeout: SEABED_MS });
+      await expectAccessible(page, "called off");
+    });
+
+    test("at the surface: budget exhausted, then a server error", async ({
+      page,
+    }) => {
+      await open(page, lang, {
+        stream: blocked("budget", "budget_exhausted"),
+        atSurface: true,
+      });
+      await ask(page, lang);
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: chat.errors.budget_exhausted }),
+      ).toBeVisible();
+
+      await page.unroute("**/api/chat");
+      await page.route("**/api/chat", (route) =>
+        route.fulfill({ status: 500, body: "" }),
+      );
+      await ask(page, lang);
+      await expect(
+        page.getByRole("alert").filter({ hasText: chat.genericError }),
+      ).toBeVisible();
+      await expectAccessible(page, "errors");
+    });
+
+    test("reduced motion skips the leap and still lands", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await open(page, lang);
+      await ask(page, lang);
+      await jump(page, lang);
+      await skip(page, lang);
+      await expect(page.getByText(ANSWER)).toBeVisible({ timeout: SEABED_MS });
+      await expectAccessible(page, "reduced motion");
+    });
+
+    test("without WebGL the gradient sea follows the dive", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        const getContext = HTMLCanvasElement.prototype.getContext;
+        // @ts-expect-error -- the overloads can't be matched by one wrapper; it only filters WebGL out.
+        HTMLCanvasElement.prototype.getContext = function (kind, options) {
+          return String(kind).includes("webgl")
+            ? null
+            : getContext.call(this, kind, options);
+        };
+      });
+      await open(page, lang);
+      const sea = page.locator("[data-zone]");
+      await expect(sea).toHaveAttribute("data-gl", "off");
+      await ask(page, lang);
+      await jump(page, lang);
+      await expect(sea).not.toHaveAttribute("data-zone", "surface", {
+        timeout: SEABED_MS,
+      });
+      await skip(page, lang);
+      await expect(page.getByText(ANSWER)).toBeVisible({ timeout: SEABED_MS });
     });
   });
 }
