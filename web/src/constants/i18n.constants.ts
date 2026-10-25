@@ -4,6 +4,9 @@ export const DEFAULT_LANG: Lang = "en";
 
 export const LANG_STORAGE_KEY = "portfolio-chat:lang";
 
+// `?lang=he` opens the page in Hebrew and is kept in step with the switch, so a link carries its language.
+export const LANG_PARAM = "lang";
+
 export const LANG_DIR: Record<Lang, Dir> = { en: "ltr", he: "rtl" };
 
 export const OTHER_LANG: Record<Lang, Lang> = { en: "he", he: "en" };
