@@ -44,10 +44,19 @@ class ToolMeta:
     passage_ids: list[str] = field(default_factory=list)
 
 
+def _link(chunk: Chunk) -> str:
+    url = chunk.metadata.get("url")
+    return f"\nLink: {url}" if url else ""
+
+
 def format_passages(chunks: list[Chunk]) -> str:
-    """Wrap passages in tags, so the model treats them as data, not instructions."""
+    """Wrap passages in tags, so the model treats them as data, not instructions.
+
+    A project's link lives in its front matter, not its text; without it here,
+    a "send me the link" question sends the model searching until it gives up.
+    """
     body = "\n\n".join(
-        f'<passage id="{c.chunk_id}">\n{c.breadcrumb}\n{c.text}\n</passage>'
+        f'<passage id="{c.chunk_id}">\n{c.breadcrumb}\n{c.text}{_link(c)}\n</passage>'
         for c in chunks
     )
     return f"<passages>\n{body}\n</passages>"

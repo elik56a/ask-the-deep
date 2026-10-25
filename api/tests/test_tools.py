@@ -98,6 +98,7 @@ async def test_get_project_makes_its_passages_citable() -> None:
     deps = make_deps(RETRIEVER)
     result = await get_project(_ctx(deps), "devconverter")
     assert 'id="devconverter"' in str(result.return_value)
+    assert "Link: https://devconverter.dev" in str(result.return_value)
     assert "devconverter" in deps.seen
     assert _meta(result).passage_ids == ["devconverter"]
 
