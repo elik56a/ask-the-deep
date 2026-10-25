@@ -70,15 +70,15 @@ export function ServerPanel({
     <aside
       ref={panel}
       aria-label={hud.label}
-      className={`glass fixed end-8 top-[calc(12px+env(safe-area-inset-top,0px))] z-16 flex w-140 flex-col gap-3 rounded-[20px] px-4 pt-3 pb-3.5 max-lg:start-[max(16px,env(safe-area-inset-left,0px))] max-lg:end-[max(16px,env(safe-area-inset-right,0px))] max-lg:w-auto max-lg:gap-2.5 max-lg:px-3 max-lg:py-2.5 ${covered ? "max-lg:hidden" : ""}`}
+      className={`glass fixed end-8 top-[calc(12px+env(safe-area-inset-top,0px))] z-16 flex w-140 flex-col gap-3 rounded-[20px] px-4 pt-3 pb-3.5 max-lg:start-[max(16px,env(safe-area-inset-left,0px))] max-lg:end-[max(16px,env(safe-area-inset-right,0px))] max-lg:w-auto max-lg:gap-2.5 max-lg:px-3 max-lg:py-2.5 max-lg:short:flex-row max-lg:short:items-center max-lg:short:py-1.5 ${covered ? "max-lg:hidden" : ""}`}
     >
-      <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 max-lg:grid-cols-[48px_minmax(0,1fr)_auto]">
+      <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 max-lg:grid-cols-[48px_minmax(0,1fr)_auto] max-lg:short:flex-none max-[359px]:grid-cols-[minmax(0,1fr)_auto]">
         <canvas
           ref={canvas}
-          className="h-10.5 w-14 rounded-xl bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glow)_16%,transparent),transparent)] max-lg:h-9 max-lg:w-12"
+          className="h-10.5 w-14 rounded-xl bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-glow)_16%,transparent),transparent)] max-lg:h-9 max-lg:w-12 max-[359px]:hidden"
         />
         <div className="flex min-w-0 flex-col gap-2">
-          <p className="whitespace-nowrap font-mono text-[11px] text-glow uppercase leading-none tracking-[0.12em]">
+          <p className="whitespace-nowrap font-mono text-[11px] text-glow uppercase leading-none tracking-[0.12em] max-lg:short:hidden">
             {hud.from}
           </p>
           <p className="inline-flex items-center gap-2 font-medium text-sm leading-none">
@@ -94,14 +94,14 @@ export function ServerPanel({
           className="flex flex-col items-end gap-1.5 font-medium font-mono text-[1.75rem] tabular-nums leading-none tracking-[-0.02em] max-lg:text-xl"
         >
           <span>{(clock / 1000).toFixed(3)} s</span>
-          <small className="font-mono text-[10px] text-muted uppercase tracking-[0.1em]">
+          <small className="font-mono text-[10px] text-muted uppercase tracking-[0.1em] max-lg:short:hidden">
             {hud.serverTime}
           </small>
         </p>
       </div>
       <dl
         dir="ltr"
-        className="flex justify-between border-line border-t pt-3 max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:border-0 max-lg:p-0"
+        className="flex justify-between border-line border-t pt-3 max-lg:grid max-lg:grid-cols-2 max-lg:gap-1.5 max-lg:border-0 max-lg:p-0 max-lg:short:flex-1 max-lg:short:grid-cols-4"
       >
         {stats.map(([label, wide, value, target]) => (
           <div

@@ -28,7 +28,7 @@ interface ChatHeaderProps {
 }
 
 const ITEM =
-  "min-h-10 gap-2.5 rounded-[10px] px-2.5 py-2 text-sm text-text focus:bg-text/7";
+  "min-h-10 gap-2.5 rounded-[10px] px-2.5 py-2 pointer-coarse:min-h-11 text-sm text-text focus:bg-text/7";
 
 /**
  * One header row: the agent, Surface (at the seabed), and a ⋯ menu for the rarely used controls.
@@ -63,7 +63,7 @@ export function ChatHeader({
           <Button
             variant="outline"
             onClick={onSurface}
-            className="min-h-10 px-3.5"
+            className="min-h-10 px-3.5 pointer-coarse:min-h-11"
           >
             {copy.surface}
           </Button>
@@ -73,7 +73,7 @@ export function ChatHeader({
             <Button
               variant="outline"
               onClick={onLand}
-              className="me-auto min-h-10 px-3.5"
+              className="me-auto min-h-10 px-3.5 pointer-coarse:min-h-11"
             >
               {copy.seabed}
             </Button>
@@ -82,7 +82,7 @@ export function ChatHeader({
               size="icon"
               aria-label={copy.minimize}
               onClick={onMinimize}
-              className="size-10 rounded-[10px]"
+              className="size-10 rounded-[10px] pointer-coarse:size-11"
             >
               <Minus aria-hidden="true" className="size-4" />
             </Button>
@@ -95,7 +95,7 @@ export function ChatHeader({
                 variant="outline"
                 size="icon"
                 aria-label={copy.menu}
-                className="size-10 rounded-[10px] aria-expanded:border-glow aria-expanded:text-glow"
+                className="size-10 rounded-[10px] pointer-coarse:size-11 aria-expanded:border-glow aria-expanded:text-glow"
               >
                 <Ellipsis aria-hidden="true" className="size-4.5" />
               </Button>

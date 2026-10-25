@@ -1,5 +1,11 @@
 import { SURFACE_Y, WATERLINE_Y } from "#/constants/sea.constants";
-import { CAMERA, DIVER, STRIDE, WAVES } from "#/constants/seaScene.constants";
+import {
+  CAMERA,
+  DIVER,
+  LOG_SHIFT,
+  STRIDE,
+  WAVES,
+} from "#/constants/seaScene.constants";
 import type { DiverPose, StridePose } from "#/types/seaScene.types";
 import { smoothstep } from "#/utils/depth.utils";
 import { clamp01 } from "#/utils/ease.utils";
@@ -15,10 +21,32 @@ interface View {
   side: number;
   /** 0 to 1 while landing on the sand. */
   landK: number;
+  /** The view's width in CSS px. */
+  width: number;
 }
 
+const halfHeight = (fov: number, depth: number) =>
+  Math.tan(((fov / 2) * Math.PI) / 180) * depth;
+
 const halfWidth = (fov: number, aspect: number, depth: number) =>
-  Math.tan(((fov / 2) * Math.PI) / 180) * depth * aspect;
+  halfHeight(fov, depth) * aspect;
+
+/** Underwater: where he swims across from the camera and how far below it. */
+function divePlace(fov: number, aspect: number, width: number, side: number) {
+  if (width >= LOG_SHIFT.minWidth) {
+    return {
+      x: aspect > DIVER.wideAspect ? DIVER.diveX * side : 0,
+      below: DIVER.below,
+      scale: 1,
+    };
+  }
+  const halfH = halfHeight(fov, CAMERA.z - DIVER.diveZ);
+  return {
+    x: -side * halfH * aspect * (1 - (2 * DIVER.laneInset) / width),
+    below: halfH * (2 * DIVER.laneAt - 1),
+    scale: DIVER.laneScale,
+  };
+}
 
 /** How far the camera has gone from the surface to the waterline: 0 above, 1 under. */
 export function diveEase(camY: number): number {
@@ -27,7 +55,8 @@ export function diveEase(camY: number): number {
 
 /**
  * Where the diver is: floating on the swell at the surface, riding low in the frame
- * underwater (below the step cards), and beside the chat once landed.
+ * underwater (in the depth rail's gutter while the step cards fill the view), and beside the
+ * chat once landed.
  */
 export function diverPose({
   camY,
@@ -36,6 +65,7 @@ export function diverPose({
   fov,
   side,
   landK,
+  width,
 }: View): DiverPose {
   const ease = diveEase(camY);
   const halfW = halfWidth(fov, aspect, DIVER.frameDepth);
@@ -44,15 +74,16 @@ export function diverPose({
     side * halfW * (wide ? DIVER.restShare.wide : DIVER.restShare.narrow);
   const restY =
     DIVER.restY + waveAt(WAVES, restX, DIVER.restSwellZ, t).h * DIVER.restSwell;
-  const diveX = wide ? DIVER.diveX * side : 0;
+  const dive = divePlace(fov, aspect, width, side);
   const hover = landK > DIVER.hoverEpsilon && wide ? landK : 0;
-  const x = restX + (diveX - restX) * ease;
+  const x = restX + (dive.x - restX) * ease;
   return {
     x: x + (side * halfW * DIVER.hoverShare - x) * hover,
-    y: restY + (camY - DIVER.below - restY) * ease,
+    y: restY + (camY - dive.below - restY) * ease,
     z: DIVER.restZ + (DIVER.diveZ - DIVER.restZ) * ease,
     ease,
     hover,
+    scale: 1 + (dive.scale - 1) * ease,
   };
 }
 

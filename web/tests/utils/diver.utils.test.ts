@@ -12,7 +12,7 @@ import {
   strokeTimeScale,
 } from "#/utils/diver.utils";
 
-const view = { t: 0, aspect: 16 / 9, fov: 55, side: 1, landK: 0 };
+const view = { t: 0, aspect: 16 / 9, fov: 55, side: 1, landK: 0, width: 1440 };
 
 it("floats at rest on the reading side at the surface", () => {
   const pose = diverPose({ ...view, camY: SURFACE_Y });
@@ -31,6 +31,24 @@ it("rides below the camera underwater", () => {
   expect(pose.ease).toBe(1);
   expect(pose.y).toBeCloseTo(camY - DIVER.below);
   expect(pose.x).toBeCloseTo(DIVER.diveX);
+});
+
+it("rides the depth rail's gutter while the step cards fill the view", () => {
+  const camY = WATERLINE_Y - 100;
+  const phone = { ...view, camY, aspect: 390 / 844, fov: 70, width: 390 };
+  const pose = diverPose(phone);
+  const halfH = Math.tan((35 * Math.PI) / 180) * (CAMERA.z - DIVER.diveZ);
+  const halfW = halfH * phone.aspect;
+  // Centred `laneInset` px from the start edge, above the middle of the view.
+  expect(pose.x).toBeCloseTo(-halfW + (halfW * 2 * DIVER.laneInset) / 390);
+  expect(pose.y).toBeGreaterThan(camY);
+  expect(pose.scale).toBe(DIVER.laneScale);
+  expect(diverPose({ ...phone, side: -1 }).x).toBeCloseTo(-pose.x);
+});
+
+it("keeps his size at the surface and on wide screens", () => {
+  expect(diverPose({ ...view, camY: SURFACE_Y, width: 390 }).scale).toBe(1);
+  expect(diverPose({ ...view, camY: WATERLINE_Y - 100 }).scale).toBe(1);
 });
 
 it("hovers beside the chat only on wide screens", () => {

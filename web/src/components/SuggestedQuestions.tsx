@@ -44,7 +44,7 @@ export function SuggestedQuestions({
               onClick={() => onPick(question)}
               className={
                 asked
-                  ? "h-auto min-h-8 gap-1.5 rounded-full border-line bg-text/6 py-1 ps-3 pe-2 font-medium text-[0.8125rem] hover:border-accent hover:bg-accent/14 [&_svg]:size-3.25"
+                  ? "h-auto min-h-8 gap-1.5 rounded-full pointer-coarse:min-h-11 border-line bg-text/6 py-1 ps-3 pe-2 font-medium text-[0.8125rem] hover:border-accent hover:bg-accent/14 [&_svg]:size-3.25"
                   : "h-auto min-h-12 w-full justify-between gap-3 whitespace-normal rounded-[14px] border-line bg-text/6 px-3.5 py-3 text-start font-medium text-[0.9375rem] hover:border-accent hover:bg-accent/14"
               }
             >

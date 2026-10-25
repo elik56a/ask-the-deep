@@ -96,7 +96,7 @@ export function ThreadTurn({
               <Button
                 variant="link"
                 onClick={() => onWatch(turn)}
-                className="-my-1.5 h-8 px-1.5 font-sans text-[0.8125rem] text-glow hover:text-text hover:no-underline"
+                className="-my-1.5 h-8 px-1.5 pointer-coarse:h-11 font-sans text-[0.8125rem] text-glow hover:text-text hover:no-underline"
               >
                 {copy.watchAgain}
               </Button>

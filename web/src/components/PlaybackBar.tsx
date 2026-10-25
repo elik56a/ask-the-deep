@@ -37,24 +37,21 @@ export function PlaybackBar({
   return (
     <section
       aria-label={copy.label}
-      className="glass fixed inset-x-0 bottom-[calc(20px+env(safe-area-inset-bottom,0px))] z-18 mx-auto flex w-[min(760px,calc(100%-32px))] flex-col gap-2 overflow-hidden rounded-[18px] px-3.5 pt-3"
+      className="glass pointer-events-auto flex w-[min(760px,calc(100%-32px))] flex-col gap-2 overflow-hidden rounded-[18px] px-3.5 pt-3"
     >
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-md bg-haze px-1.75 py-1.25 font-mono font-semibold text-[11px] text-on-accent uppercase leading-none tracking-widest">
           {fill(copy.dive, { n: String(dive) })}
         </span>
-        <span
-          dir="auto"
-          className="min-w-0 flex-[1_1_200px] truncate font-medium"
-        >
+        <span dir="auto" className="min-w-0 flex-1 truncate font-medium">
           {question}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
           <Button
             variant="outline"
             aria-pressed={paused}
             onClick={() => onPause(!paused)}
-            className="min-h-9 px-3"
+            className="min-h-9 px-3 pointer-coarse:min-h-11"
           >
             {paused ? copy.resume : copy.pause}
           </Button>
@@ -66,13 +63,16 @@ export function PlaybackBar({
                 variant={value === speed ? "secondary" : "ghost"}
                 aria-pressed={value === speed}
                 onClick={() => onSpeed(value)}
-                className="min-h-8 px-2.5 font-mono tabular-nums"
+                className="min-h-8 px-2.5 font-mono tabular-nums pointer-coarse:min-h-10 max-sm:px-2"
               >
                 {value}×
               </Button>
             ))}
           </fieldset>
-          <Button onClick={onSkip} className="min-h-9 px-3">
+          <Button
+            onClick={onSkip}
+            className="min-h-9 px-3 pointer-coarse:min-h-11 max-sm:flex-auto"
+          >
             {copy.skip}
           </Button>
         </div>

@@ -9,6 +9,8 @@
 
 /* One palette, set by depth (ADR 0010): shadcn's `dark:` styles always apply, whatever the OS says. */
 @custom-variant dark (&:where(:root, :root *));
+/* A landscape phone: too short for the stacked server panel above the step cards. */
+@custom-variant short (@media (max-height: 520px));
 
 /* shadcn/ui names mapped onto our tokens. `muted` and `accent` mean something else here
    (muted text, brand blue), so components using them are restyled when added. */
