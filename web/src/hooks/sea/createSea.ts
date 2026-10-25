@@ -26,7 +26,6 @@ import {
   LIFT_EPSILON_PX,
   LOG_SHIFT,
   LURE,
-  MAX_FRAME_S,
   PLUNGE,
   SEABED,
   SPLASH,
@@ -53,7 +52,7 @@ import {
   zoneLabel,
 } from "#/utils/depth.utils";
 import { diveEase } from "#/utils/diver.utils";
-import { approach, clamp01 } from "#/utils/ease.utils";
+import { approach, clamp01, frameSeconds } from "#/utils/ease.utils";
 import { waveAt } from "#/utils/wave.utils";
 import { diverRig } from "./diver";
 import { glowTexture } from "./glow";
@@ -446,7 +445,7 @@ export function createSea(
 
   function tick(now: number): void {
     frame = 0;
-    const dt = last ? Math.min((now - last) / 1000, MAX_FRAME_S) : 0;
+    const dt = frameSeconds(now, last);
     last = now;
     if (!quiet()) clock += dt;
     draw(dt);

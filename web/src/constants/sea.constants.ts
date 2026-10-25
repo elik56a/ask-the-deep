@@ -106,7 +106,6 @@ export const BUDDY = {
   busyPace: 2.6,
   restPace: 0.6,
   paceRate: 3,
-  maxFrameS: 0.05,
   turn: -0.4,
   sway: 0.18,
   swayRate: 0.7,

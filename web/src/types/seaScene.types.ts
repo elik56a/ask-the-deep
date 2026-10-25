@@ -215,3 +215,15 @@ export interface BedSlot {
   place: Place;
   i: number;
 }
+
+/** The buddy fish's swing off its side view and its bob, for one moment of its swim. */
+export interface BuddyPose {
+  turn: number;
+  bob: number;
+}
+
+/** A width and height, as three.js vectors give them. */
+export interface Extent {
+  x: number;
+  y: number;
+}

@@ -15,3 +15,5 @@ export const SAY_AFTER_WORDS = 4;
 // The chat steps aside before the pre-dive check, and slides in on each state change at the seabed.
 export const CONSOLE_LEAVE = { ms: 200, dropPx: 8 } as const;
 export const CONSOLE_SWAP = { ms: 320, risePx: 10 } as const;
+// Frames are at most this long (s), so a stall never jumps a scene or a glide.
+export const MAX_FRAME_S = 0.05;

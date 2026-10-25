@@ -1,3 +1,5 @@
+import { MAX_FRAME_S } from "#/constants/motion.constants";
+
 /** Moves `from` towards `to` at `rate` per second, frame-rate independent enough for UI motion. */
 export function approach(
   from: number,
@@ -26,4 +28,9 @@ export function easeOutCubic(k: number): number {
 /** `x` held to [0, 1]. */
 export function clamp01(x: number): number {
   return Math.min(Math.max(x, 0), 1);
+}
+
+/** Seconds since the last frame, capped; the first frame moves nothing. */
+export function frameSeconds(now: number, last: number): number {
+  return last ? Math.min((now - last) / 1000, MAX_FRAME_S) : 0;
 }
