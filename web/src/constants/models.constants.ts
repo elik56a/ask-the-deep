@@ -31,12 +31,13 @@ export const MODEL_URL: Record<ModelId, string> = {
   "coral-soft": "/models/coral-soft.glb",
   seahorse: "/models/seahorse.glb",
   seadragon: "/models/seadragon.glb",
+  github: "/models/github.glb",
 };
 
 // The sea loads zone by zone (ADR 0019): the first view, near the surface, mid-water, then the seabed.
 export const MODEL_WAVES: ModelId[][] = [
   ["diver", "sardines", "fish", "jelly"],
-  ["boat", "turtle", "dolphin", "manta"],
+  ["boat", "turtle", "dolphin", "manta", "github"],
   [
     "shark",
     "hammerheads",
@@ -225,5 +226,11 @@ export const MODEL_CREDITS: ModelCredit[] = [
     title: "Leafy seadragon",
     author: "ZorDob",
     source: `${SKETCHFAB}leafy-seadragon-0e5d20921f6947218edb32c60473743b`,
+  },
+  {
+    id: "github",
+    title: "Github_kitten",
+    author: "m.adityamondal2003",
+    source: `${SKETCHFAB}github-kitten-83d5a6d1a12b4427bbfd662fbc478f8d`,
   },
 ];

@@ -535,6 +535,8 @@ export const SUB = {
 export const JELLY_GLOW = [0x2fd3c4, 0x6f88ff, 0xff7a55];
 export const DARK_FISH_GLOW = 0x0c3a4a;
 export const OCTOPUS_GLOW = 0x4fa8c8;
+// The Octocats glow faintly, so they read in the dark water.
+export const OCTOCAT_GLOW = 0x2a5670;
 export const ALIEN_GLOW = 0x1d6f7a;
 
 // Bounds of a posed model are sampled from about this many vertices per mesh.

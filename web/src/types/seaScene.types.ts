@@ -76,6 +76,8 @@ export interface Pose {
 
 export interface Creature {
   root: Three.Group;
+  /** On the sand, held at this share across the view (see `Place.beside`). */
+  beside?: number;
   /** Its meshes, hidden out of range; lights stay on so the shaders never recompile. */
   meshes: Three.Mesh[];
   mixer: Three.AnimationMixer;
@@ -141,6 +143,9 @@ export interface Place {
   ry: Spread;
   /** Alternates the side of x between members. */
   mirror?: boolean;
+  /** Instead of x and y: this far across the view from its centre (1 = the edge), on the diver's
+   * side (negative: across from him), kept there on the sand every frame and turned to the camera. */
+  beside?: number;
 }
 
 /** A prop on the seabed, set at each place `count` times. */
