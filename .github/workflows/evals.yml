@@ -31,9 +31,12 @@ on:
     - cron: "0 3 * * *"
   workflow_dispatch:
 
+# One eval run at a time across all refs: they share the free tier's 100 embeddings a
+# minute, and a PR run still ingesting when its merge lands on main broke both. A newer
+# run waits rather than cancelling one already spending quota.
 concurrency:
-  group: evals-${{ github.ref }}
-  cancel-in-progress: true
+  group: evals
+  cancel-in-progress: false
 
 permissions:
   contents: read
