@@ -80,6 +80,12 @@ export const GLIDE_SLACK_PX = 3;
 export const RESYNC_PX = 8;
 // After a skip the view snaps to the newest step while the log settles.
 export const SNAP_MS = 800;
+// The glide is there once it is this close (px); the follow stops rushing within `SETTLED_PX`.
+export const GLIDE_DONE_PX = 0.5;
+export const SETTLED_PX = 2;
+// Keys that scroll the page; Shift turns the space bar up and the others off.
+export const SCROLL_DOWN_KEYS = ["ArrowDown", "PageDown", "End"];
+export const SCROLL_UP_KEYS = ["ArrowUp", "PageUp", "Home"];
 
 // Landed (the sand with the full chat): the 3D view lifts this share of the screen so the seabed
 // shows above the chat, the fog thins by this share, and the lander's lights come up.

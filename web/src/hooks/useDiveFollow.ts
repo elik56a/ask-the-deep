@@ -6,24 +6,23 @@ import {
   useState,
 } from "react";
 import { REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
-import {
-  ASCEND_SPEED,
-  ASCENT_MIN_SPEED,
-  ASCENT_SLOW_GAIN,
-  ASCENT_SLOW_PX,
-  DIVER_LINE,
-  FOLLOW_GAIN,
-  FOLLOW_SPEED,
-  GLIDE_SLACK_PX,
-  RESYNC_PX,
-  RUSH_GAIN,
-  RUSH_SPEED,
-  SNAP_MS,
-} from "#/constants/sea.constants";
+import { GLIDE_SLACK_PX, SETTLED_PX, SNAP_MS } from "#/constants/sea.constants";
+import type { Glide, ScrollDirection } from "#/types/scroll.types";
 import type { DiveMode } from "#/types/sea.types";
+import { frameSeconds } from "#/utils/ease.utils";
+import {
+  ascentGlide,
+  diverLineY,
+  followGlide,
+  glideStep,
+  inConsole,
+  keyDirection,
+  scrollIntent,
+} from "#/utils/scroll.utils";
 
-const UP_KEYS = ["ArrowUp", "PageUp", "Home"];
-const DOWN_KEYS = ["ArrowDown", "PageDown", "End", " "];
+const pageTop = (el: HTMLElement | null) =>
+  el ? el.getBoundingClientRect().top + scrollY : 0;
+const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
 
 /**
  * Glides the page so the latest step sits at the diver line (P5.22), with a
@@ -33,7 +32,7 @@ const DOWN_KEYS = ["ArrowDown", "PageDown", "End", " "];
  * scrolling up pauses, and scrolling back down to the step resumes. In
  * "ascend" it glides to the top and calls `onSurfaced`. Uses `scrollTo`,
  * never `scrollIntoView`.
- * Scrolling inside the chat (`[data-console]`) is not scrolling the dive; any other scroll by the
+ * Scrolling inside the chat is not scrolling the dive; any other scroll by the
  * visitor also calls `onUserScroll`.
  */
 export function useDiveFollow(
@@ -61,68 +60,51 @@ export function useDiveFollow(
     let glideY = scrollY;
     let last = 0;
     let frame = 0;
-    const glide = (
-      to: number,
-      speed: number,
-      dt: number,
-      gain: number,
-      minSpeed = 0,
-    ) => {
+
+    const glide = (to: Glide, dt: number) => {
       if (Math.abs(scrollY - glideY) > GLIDE_SLACK_PX) glideY = scrollY;
-      const gap = to - glideY;
-      if (Math.abs(gap) < 0.5) return;
-      const eased = Math.min(
-        Math.abs(gap) * Math.min(1, dt * gain),
-        speed * dt,
-      );
-      glideY +=
-        reduced.matches || performance.now() < snapUntil.current
-          ? gap
-          : Math.sign(gap) *
-            Math.min(Math.max(eased, minSpeed * dt), Math.abs(gap));
-      scrollTo(0, glideY);
+      const snap = reduced.matches || performance.now() < snapUntil.current;
+      const next = glideStep(glideY, to, dt, snap);
+      if (next === glideY) return;
+      glideY = next;
+      scrollTo(0, next);
     };
-    const tick = (now: number) => {
-      const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
-      last = now;
+
+    /** Returns true once at the surface. */
+    const ascend = (dt: number) => {
+      glide(ascentGlide(scrollY), dt);
+      if (scrollY >= SETTLED_PX) return false;
+      latest.current.onSurfaced();
+      return true;
+    };
+
+    const follow = (dt: number) => {
       const { target: step, following: on } = latest.current;
-      const water = waterRef.current;
+      if (step === null || !waterRef.current) return;
+      const to = Math.min(
+        diverLineY(pageTop(waterRef.current), step, innerHeight),
+        maxScroll(),
+      );
+      limit.current = mode === "dive" ? to : null;
+      // A scroll past the step by the visitor (the scrollbar, a fast flick) snaps back and is following again; the glide's own moves never do.
+      const byVisitor = !on || Math.abs(scrollY - glideY) > GLIDE_SLACK_PX;
+      if (mode === "dive" && byVisitor && scrollY > to) {
+        scrollTo(0, to);
+        glideY = to;
+        setFollowing(true);
+      }
+      if (!on) return;
+      glide(followGlide(to, rushing.current), dt);
+      if (Math.abs(scrollY - to) < SETTLED_PX) rushing.current = false;
+    };
+
+    const tick = (now: number) => {
+      const dt = frameSeconds(now, last);
+      last = now;
       if (mode === "ascend") {
-        glide(
-          0,
-          ASCEND_SPEED,
-          dt,
-          scrollY < ASCENT_SLOW_PX ? ASCENT_SLOW_GAIN : FOLLOW_GAIN,
-          ASCENT_MIN_SPEED,
-        );
-        if (scrollY < 2) {
-          latest.current.onSurfaced();
-          return;
-        }
-      } else if (step !== null && water) {
-        const top = water.getBoundingClientRect().top + scrollY;
-        const max = document.documentElement.scrollHeight - innerHeight;
-        const to = Math.min(top + step - innerHeight * DIVER_LINE, max);
-        limit.current = mode === "dive" ? to : null;
-        // A scroll past the step by the visitor (the scrollbar, a fast flick) snaps back and is following again; the glide's own moves never do.
-        const byVisitor = !on || Math.abs(scrollY - glideY) > GLIDE_SLACK_PX;
-        if (mode === "dive" && byVisitor && scrollY > to) {
-          scrollTo(0, to);
-          glideY = to;
-          setFollowing(true);
-        }
-        if (!on) {
-          frame = requestAnimationFrame(tick);
-          return;
-        }
-        const rush = rushing.current;
-        glide(
-          to,
-          rush ? RUSH_SPEED : FOLLOW_SPEED,
-          dt,
-          rush ? RUSH_GAIN : FOLLOW_GAIN,
-        );
-        if (Math.abs(scrollY - to) < 2) rushing.current = false;
+        if (ascend(dt)) return;
+      } else {
+        follow(dt);
       }
       frame = requestAnimationFrame(tick);
     };
@@ -132,39 +114,31 @@ export function useDiveFollow(
 
   useEffect(() => {
     if (mode !== "dive" && mode !== "reveal") return;
-    const pause = () => {
-      setFollowing(false);
-      latest.current.onUserScroll?.();
-    };
-    // At the seabed any scroll pauses; during the dive only scrolling up does, and scrolling down stops at the step.
-    const scrolled = (event: Event, down: boolean) => {
-      const inChat =
-        event.target instanceof Element &&
-        event.target.closest("[data-console]");
-      if (inChat) return;
-      const stop = limit.current;
-      if (mode === "reveal" || !down) pause();
-      else if (stop !== null && scrollY >= stop - RESYNC_PX) {
+    const scrolled = (event: Event, direction: ScrollDirection | null) => {
+      if (!direction || inConsole(event.target)) return;
+      const intent = scrollIntent(mode, direction, scrollY, limit.current);
+      if (intent === "pause") {
+        setFollowing(false);
+        latest.current.onUserScroll?.();
+      } else if (intent === "hold") {
         event.preventDefault();
         setFollowing(true);
       }
     };
-    const onWheel = (event: WheelEvent) => scrolled(event, event.deltaY > 0);
+    const onWheel = (event: WheelEvent) =>
+      scrolled(event, event.deltaY > 0 ? "down" : "up");
     let touchY = 0;
     const onTouchStart = (event: TouchEvent) => {
       touchY = event.touches[0]?.clientY ?? 0;
     };
     const onTouchMove = (event: TouchEvent) => {
       const y = event.touches[0]?.clientY ?? touchY;
-      scrolled(event, y < touchY);
+      scrolled(event, y < touchY ? "down" : "up");
       touchY = y;
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.target !== document.body) return;
-      const down = DOWN_KEYS.includes(event.key) && !event.shiftKey;
-      if (down || UP_KEYS.includes(event.key) || event.key === " ") {
-        scrolled(event, down);
-      }
+      scrolled(event, keyDirection(event.key, event.shiftKey));
     };
     addEventListener("wheel", onWheel, { passive: false });
     addEventListener("touchstart", onTouchStart, { passive: true });
@@ -191,10 +165,8 @@ export function useDiveFollow(
   const look = useCallback(
     (stepTop: number) => {
       setFollowing(false);
-      const water = waterRef.current;
-      const top = water ? water.getBoundingClientRect().top + scrollY : 0;
       scrollTo({
-        top: top + stepTop - innerHeight * DIVER_LINE,
+        top: diverLineY(pageTop(waterRef.current), stepTop, innerHeight),
         behavior: matchMedia(REDUCED_MOTION_QUERY).matches ? "auto" : "smooth",
       });
     },
