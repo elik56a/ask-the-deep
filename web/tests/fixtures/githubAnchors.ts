@@ -65,12 +65,29 @@ export const GITHUB_ANCHORS: Record<string, string[]> = {
     "eliyahus-early-projects",
     "how-to-contact-eliyahu",
   ],
+  "projects/archorizon.md": [
+    "archorizon",
+    "what-archorizon-is",
+    "how-archorizon-works",
+    "the-geometry-engine-in-archorizon",
+    "disciplines-and-layers-in-archorizon",
+    "how-archorizon-is-built",
+  ],
   "projects/devconverter.md": [
     "devconverterdev",
     "what-devconverterdev-is",
     "tools-on-devconverterdev",
     "privacy-on-devconverterdev",
     "how-devconverterdev-is-built",
+  ],
+  "projects/neatpeek.md": [
+    "neatpeek",
+    "what-neatpeek-is",
+    "how-neatpeek-works",
+    "ai-in-neatpeek",
+    "rechecking-designs-in-neatpeek",
+    "teams-and-billing-in-neatpeek",
+    "how-neatpeek-is-built",
   ],
   "projects/portfolio-chat.md": [
     "portfolio-chat-agent",
@@ -83,6 +100,13 @@ export const GITHUB_ANCHORS: Record<string, string[]> = {
     "cost-and-safety-in-the-portfolio-chat-agent",
     "languages-of-the-portfolio-chat-agent",
     "design-decisions-in-the-portfolio-chat-agent",
+  ],
+  "projects/sales-system.md": [
+    "sales-system",
+    "what-the-sales-system-is",
+    "architecture-of-the-sales-system",
+    "reliability-patterns-in-the-sales-system",
+    "operations-and-testing-of-the-sales-system",
   ],
   "skills/overview.md": [
     "skills",
