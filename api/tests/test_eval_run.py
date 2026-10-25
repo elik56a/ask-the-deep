@@ -186,14 +186,23 @@ def test_an_answer_must_come_from_an_expected_tool() -> None:
 
 
 def test_flags_tools_the_case_does_not_need() -> None:
-    assert extra_tools(HI, Run(kind="smalltalk", tools=["search_knowledge"])) == [
-        "search_knowledge"
-    ]
+    searched_again = Run(
+        kind="smalltalk", tools=["search_knowledge", "search_knowledge"]
+    )
+    assert extra_tools(HI, searched_again) == ["search_knowledge"]
     refusal = Run(kind="no_information", tools=["contact_info"])
     assert extra_tools(HI, refusal) == []
     assert extra_tools(CASE, Run(kind="answered", tools=["contact_info"])) == [
         "contact_info"
     ]
+
+
+def test_the_pipelines_own_first_search_is_not_extra() -> None:
+    assert extra_tools(HI, Run(kind="smalltalk", tools=["search_knowledge"])) == []
+    first_then_github = Run(
+        kind="smalltalk", tools=["search_knowledge", "github_activity"]
+    )
+    assert extra_tools(HI, first_then_github) == ["github_activity"]
 
 
 async def test_a_guessed_trap_blocks_the_run() -> None:
