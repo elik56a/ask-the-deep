@@ -206,6 +206,8 @@ export interface DiverPose {
   ease: number;
   /** How far the diver has turned to hover beside the chat. */
   hover: number;
+  /** His size against the model's: smaller in the depth rail's gutter. */
+  scale: number;
 }
 
 /** Member `i` of a group that comes `count` times. */

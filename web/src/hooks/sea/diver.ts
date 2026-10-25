@@ -42,15 +42,20 @@ interface StrideEffects {
  */
 export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
   const restQ = new THREE.Quaternion();
-  const up = new THREE.Vector3(...DIVER.diveUp).normalize();
   const forward = new THREE.Vector3(0, 0, 1);
-  const diveQ = new THREE.Quaternion().setFromRotationMatrix(
-    new THREE.Matrix4().makeBasis(
-      new THREE.Vector3().crossVectors(up, forward),
-      up,
-      forward,
-    ),
-  );
+  // The head-down lean, mirrored in RTL like the rest of the scene.
+  const diveAttitude = (side: number) => {
+    const [x, y, z] = DIVER.diveUp;
+    const up = new THREE.Vector3(x * side, y, z).normalize();
+    return new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(
+        new THREE.Vector3().crossVectors(up, forward),
+        up,
+        forward,
+      ),
+    );
+  };
+  const diveQ = { ltr: diveAttitude(1), rtl: diveAttitude(-1) };
   const flipQ = new THREE.Quaternion();
   const hoverQ = new THREE.Quaternion();
   const hoverAt = new THREE.Euler();
@@ -118,7 +123,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       if (!diver) return;
       const side = document.documentElement.dir === "rtl" ? -1 : 1;
       const view = { t, aspect: camera.aspect, fov: camera.fov, side };
-      const pose = diverPose({ ...view, camY, landK });
+      const pose = diverPose({ ...view, camY, landK, width: innerWidth });
       base.set(pose.x, pose.y, pose.z);
       const rise = camY - lastCamY;
       lastCamY = camY;
@@ -131,7 +136,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       // camera) before it blends to the surface, so he stays head up all the way there.
       flipQ
         .setFromAxisAngle(forward, Math.PI * smoothstep(riseK) * side)
-        .multiply(diveQ);
+        .multiply(side > 0 ? diveQ.ltr : diveQ.rtl);
       baseQ.slerpQuaternions(restQ, flipQ, pose.ease);
       if (pose.hover > 0) {
         hoverQ.setFromEuler(
@@ -186,6 +191,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
           root.quaternion.copy(baseQ);
         }
       }
+      root.scale.setScalar(pose.scale);
       lamp.position.copy(root.position).add(lampOffset);
       lamp.intensity = DIVER_LAMP.intensity * pose.ease * LEGACY_LIGHT;
       if (diver.action) {

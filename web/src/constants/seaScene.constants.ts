@@ -354,6 +354,12 @@ export const DIVER = {
   // Wide screens: underwater the diver keeps left of centre, clear of the step cards.
   diveX: -1.4,
   below: 2.1,
+  // Below `LOG_SHIFT.minWidth` the step cards fill the view, so underwater he rides the depth
+  // rail's gutter instead: centred `laneInset` px in from the start edge, at `laneAt` of the
+  // view's height, just under the depth tag, at `laneScale` so he fits the gutter.
+  laneInset: 34,
+  laneAt: 0.4,
+  laneScale: 0.6,
   restZ: -1,
   diveZ: -3,
   // Head-down attitude while diving: the body's up axis.
