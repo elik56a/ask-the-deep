@@ -108,7 +108,7 @@ A passage is one `##` section of a file. A section over 400 tokens is split, and
 
 ### Embeddings and ingestion
 
-`uv run python -m app.rag.ingest` reads the files, cuts them into passages, hashes each one, and embeds **only the passages that changed**. Running it twice with no edits makes no embedding calls. Embeddings are `gemini-embedding-001` at 768 dimensions ([ADR 0011](docs/adr/0011-embeddings-and-recall.md)). Publishing to the live database is a deliberate local command, never a side effect of a deploy ([ADR 0004](docs/adr/0004-local-knowledge-base.md)).
+`uv run python -m app.rag.ingest` reads the files, cuts them into passages, hashes each one, and embeds **only the passages that changed**. Running it twice with no edits makes no embedding calls. Embeddings are `gemini-embedding-001` at 768 dimensions ([ADR 0011](docs/adr/0011-embeddings-and-recall.md)). Publishing to the live database is a deliberate local command, never a side effect of a deploy ([ADR 0004](docs/adr/0004-local-knowledge-base.md)): `scripts/ingest.sh` runs it with `api/.env` and prints which database it writes to.
 
 ### Hybrid retrieval
 
