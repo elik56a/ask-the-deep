@@ -204,6 +204,8 @@ export interface DiveCopy {
   /** The depth tag's air reading above the water; `{t}` is °C. */
   air: string;
   follow: string;
+  /** Over the follow button when the visitor has scrolled up to the surface mid-dive. */
+  stillBelow: string;
   /** At the seabed: the heading focus lands on, and what a screen reader hears by outcome. */
   back: { title: string; answered: string; empty: string };
   surface: string;
