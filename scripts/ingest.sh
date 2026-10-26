@@ -1,9 +1,9 @@
 #!/bin/sh
 # Ingests data/knowledge/ into a database; only changed passages are embedded.
 # No argument: DATABASE_URL from api/.env (local Postgres by default).
-# "staging": STAGING_DATABASE_URL from api/.env (Neon).
+# An environment name: <ENV>_DATABASE_URL from api/.env (Neon), e.g. STAGING_DATABASE_URL.
 # In a git worktree without its own api/.env, the main checkout's api/.env is used.
-# Usage: scripts/ingest.sh [staging]
+# Usage: scripts/ingest.sh [staging|prod]
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
 env="$root/api/.env"
@@ -23,9 +23,10 @@ for line in open(sys.argv[1]):
 ' "$env" "$1"
 }
 
-if [ "${1:-}" = staging ]; then
-  DATABASE_URL=$(env_value STAGING_DATABASE_URL)
-  [ -n "$DATABASE_URL" ] || { echo "no STAGING_DATABASE_URL in $env" >&2; exit 1; }
+if [ -n "${1:-}" ]; then
+  key="$(echo "$1" | tr '[:lower:]' '[:upper:]')_DATABASE_URL"
+  DATABASE_URL=$(env_value "$key")
+  [ -n "$DATABASE_URL" ] || { echo "no $key in $env" >&2; exit 1; }
   export DATABASE_URL
 fi
 
