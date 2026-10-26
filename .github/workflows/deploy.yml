@@ -1,17 +1,14 @@
 name: Deploy
 
-# After CI passes on main, deploy that commit to staging. No AWS keys are
-# stored: GitHub's OIDC token assumes a role that only main may use (infra/).
+# After CI passes on main, deploy that commit to staging and test it there; prod
+# then waits for a reviewer to approve the `prod` environment. No AWS keys are
+# stored: GitHub's OIDC token assumes each environment's deploy role (infra/).
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main]
   workflow_dispatch:
-
-concurrency:
-  group: deploy-staging
-  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -21,9 +18,13 @@ jobs:
   staging:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    # Per job, so a prod deploy waiting for approval never holds up staging.
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
     env:
-      SITE_URL: https://dad2ak3fgy80f.cloudfront.net
-      # Public by design; its secret half is /portfolio-chat/staging/TURNSTILE_SECRET_KEY in SSM.
+      SITE_URL: https://staging.eliyahukriel.dev
+      # Public by design; its secret half is /portfolio-chat/<env>/TURNSTILE_SECRET_KEY in SSM.
       VITE_TURNSTILE_SITE_KEY: 0x4AAAAAAFlxdwVX7x3SVASo
     steps:
       - uses: actions/checkout@v7
@@ -57,3 +58,41 @@ jobs:
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm exec playwright test
+
+  prod:
+    needs: staging
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://eliyahukriel.dev
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    env:
+      SITE_URL: https://eliyahukriel.dev
+      VITE_TURNSTILE_SITE_KEY: 0x4AAAAAAFlxdwVX7x3SVASo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::052407073487:role/portfolio-chat-prod-deploy
+          aws-region: eu-central-1
+      # TODO(P5.14): the prod distribution id, known once `terraform apply` creates it.
+      - run: scripts/deploy.sh portfolio-chat-prod-api portfolio-chat-prod-site-052407073487 PROD_DISTRIBUTION_ID
+      - name: Smoke test
+        run: curl -fsS --retry 3 --retry-delay 5 --max-time 30 "$SITE_URL/api/health"

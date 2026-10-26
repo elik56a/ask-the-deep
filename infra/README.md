@@ -46,7 +46,7 @@ The API writes structured JSON logs. Metric filters turn them into CloudWatch me
 
 ## Environments
 
-Environments are Terraform **workspaces**. The workspace name sets the resource names (`portfolio-chat-<env>`), the SSM prefix (`/portfolio-chat/<env>/`) and the custom domain (`staging` → `eliyahukriel.dev`; others use the `cloudfront.net` address). State is shared in a versioned S3 bucket with native locking, so CI and a laptop see the same state.
+Environments are Terraform **workspaces**. The workspace name sets the resource names (`portfolio-chat-<env>`), the SSM prefix (`/portfolio-chat/<env>/`) and the custom domain (`staging` → `staging.eliyahukriel.dev`, `prod` → `eliyahukriel.dev`; others use the `cloudfront.net` address). Every merge to `main` deploys staging and runs the end-to-end tests there; prod deploys the same commit only after a reviewer approves the `prod` GitHub environment, and only that environment's jobs can assume the prod deploy role. State is shared in a versioned S3 bucket with native locking, so CI and a laptop see the same state.
 
 ## Applying
 

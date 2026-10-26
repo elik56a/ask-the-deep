@@ -98,10 +98,13 @@ provider "aws" {
 
 locals {
   # Custom domain per environment (DNS at Cloudflare); none = cloudfront.net only.
-  domain     = lookup({ staging = "eliyahukriel.dev" }, terraform.workspace, "")
-  name       = "portfolio-chat-${terraform.workspace}"
-  ssm_prefix = "/portfolio-chat/${terraform.workspace}"
-  secrets    = ["DATABASE_URL", "GOOGLE_API_KEY", "OPENAI_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
+  domain = lookup({ staging = "staging.eliyahukriel.dev", prod = "eliyahukriel.dev" }, terraform.workspace, "")
+  # Staging deploys on every push to main; prod only from a job in the `prod` GitHub
+  # environment, which waits for a reviewer to approve it.
+  deploy_subject = terraform.workspace == "prod" ? "environment:prod" : "ref:refs/heads/main"
+  name           = "portfolio-chat-${terraform.workspace}"
+  ssm_prefix     = "/portfolio-chat/${terraform.workspace}"
+  secrets        = ["DATABASE_URL", "GOOGLE_API_KEY", "OPENAI_API_KEY", "TURNSTILE_SECRET_KEY", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "IP_HASH_SALT", "SESSION_SECRET"]
 }
 
 data "aws_caller_identity" "me" {}
@@ -492,7 +495,7 @@ resource "aws_cloudwatch_metric_alarm" "api" {
   depends_on          = [aws_cloudwatch_log_metric_filter.api]
 }
 
-# CI deploy role: GitHub Actions on main may update this environment's code
+# CI deploy role: GitHub Actions (main for staging, the approved `prod` environment for prod) may update this environment's code
 # and site, nothing else. The OIDC provider is one per account, created once
 # by hand (aws iam create-open-id-connect-provider).
 data "aws_iam_openid_connect_provider" "github" {
@@ -510,7 +513,7 @@ resource "aws_iam_role" "deploy" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "${var.github_subject}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = "${var.github_subject}:${local.deploy_subject}"
         }
       }
     }]
