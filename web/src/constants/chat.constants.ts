@@ -89,7 +89,10 @@ export const CHAT_COPY: Record<Lang, ChatCopy> = {
     threadLabel: "השיחה",
     agentAvatar: "סוכן ה-AI של אליהו",
     sourcesUsed: "המקורות שהתשובה נשענת עליהם",
-    meta: { dive: "צלילה", stats: "{t} · {calls} קריאות למודל · {cost}" },
+    meta: {
+      dive: "צלילה",
+      stats: "\u2068{t}\u2069 · {calls} קריאות למודל · \u2068{cost}\u2069",
+    },
     watchAgain: "לצפות שוב ↺",
     newConversation: "שיחה חדשה",
     pending: "הסוכן עונה על פני המים…",

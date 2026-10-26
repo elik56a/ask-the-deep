@@ -27,6 +27,7 @@ export type ModelId =
 
 export interface ModelCreditsCopy {
   summary: string;
+  close: string;
   by: string;
   /** Before the licence link, after it. */
   license: [string, string];

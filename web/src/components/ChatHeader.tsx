@@ -10,6 +10,7 @@ import {
 } from "#/components/ui/dropdown-menu";
 import { Switch } from "#/components/ui/switch";
 import { CHAT_COPY } from "#/constants/chat.constants";
+import { LANG_DIR } from "#/constants/i18n.constants";
 import type { ChatState } from "#/types/chat.types";
 import type { Lang } from "#/types/i18n.types";
 
@@ -89,7 +90,7 @@ export function ChatHeader({
           </>
         )}
         {talked ? (
-          <DropdownMenu>
+          <DropdownMenu dir={LANG_DIR[lang]}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -113,17 +114,14 @@ export function ChatHeader({
               <DropdownMenuCheckboxItem
                 checked={stayAtSurface}
                 onCheckedChange={onStayAtSurface}
-                onSelect={(event) => event.preventDefault()}
                 className={`${ITEM} pe-2.5 [&>[data-slot=dropdown-menu-checkbox-item-indicator]]:hidden`}
               >
-                <span
+                <Switch
+                  checked={stayAtSurface}
+                  tabIndex={-1}
                   aria-hidden="true"
-                  className={`relative h-4.5 w-8 flex-none rounded-full transition-colors duration-200 ${stayAtSurface ? "bg-glow" : "bg-line-strong"}`}
-                >
-                  <span
-                    className={`absolute start-0.5 top-0.5 size-3.5 rounded-full transition-transform duration-200 ease-out ${stayAtSurface ? "translate-x-3.5 bg-on-accent rtl:-translate-x-3.5" : "bg-text"}`}
-                  />
-                </span>
+                  className="pointer-events-none"
+                />
                 <span>
                   {copy.stayAtSurface}
                   <small className="block text-muted text-xs">

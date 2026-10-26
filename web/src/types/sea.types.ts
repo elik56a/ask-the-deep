@@ -40,6 +40,11 @@ export interface SeaControls {
   loadDeep: () => void;
   /** Before a dive: the diver swims up close and the camera comes down to the water. */
   ready: (on: boolean) => void;
+  /**
+   * The page follows the dive down: the diver stays head down, since a rise then is the page
+   * snapping back from a scroll past the latest step (a touch flick's momentum), not an ascent.
+   */
+  follow: (on: boolean) => void;
   /** The giant stride; `entered` runs as his head goes under (at once without motion). */
   jump: (entered: () => void) => void;
 }

@@ -238,6 +238,10 @@ export function boatRig(kit: Kit) {
     },
     frame(t: number, camY: number, under: boolean): void {
       boat.visible = !under || camY > BOAT.hideBelow;
+      // The chat sits at the inline start, so in RTL the boat moves to the other side of it.
+      const side = document.documentElement.dir === "rtl" ? -1 : 1;
+      boat.position.x = BOAT.position[0] * side;
+      boat.rotation.y = BOAT.heading * side;
       const swell = waveAt(WAVES, boat.position.x, boat.position.z, t);
       boat.position.y = swell.h * BOAT.bob + BOAT.draft;
       boat.rotation.x = Math.atan(swell.dz) * BOAT.tilt;

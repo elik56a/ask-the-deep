@@ -572,6 +572,10 @@ export function createSea(
         diver.ready(on);
         wake();
       },
+      follow(on) {
+        diver.hold(on);
+        wake();
+      },
       jump(entered) {
         diver.jump(entered, quiet());
         wake();
