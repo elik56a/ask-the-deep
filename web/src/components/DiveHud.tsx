@@ -5,6 +5,7 @@ import { PlaybackBar } from "#/components/PlaybackBar";
 import { ServerPanel } from "#/components/ServerPanel";
 import { Button } from "#/components/ui/button";
 import { DIVE_COPY } from "#/constants/sea.constants";
+import { useDiveDepth } from "#/hooks/useDiveDepth";
 import type { Lang } from "#/types/i18n.types";
 import type { DiveMode } from "#/types/sea.types";
 import type { ShownDive } from "#/types/shownDive.types";
@@ -35,6 +36,7 @@ export function DiveHud({
 }: DiveHudProps) {
   const { player, shown, trace } = view;
   const dive = DIVE_COPY[lang];
+  const atSurface = useDiveDepth(waterRef).meters === 0;
   return (
     <>
       <ServerPanel
@@ -49,14 +51,25 @@ export function DiveHud({
       <DepthTag lang={lang} waterRef={waterRef} />
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(20px+env(safe-area-inset-bottom,0px))] z-18 flex flex-col items-center gap-3">
         {mode === "dive" && !following && (
-          <Button
-            variant="outline"
-            onClick={onFollow}
-            className="glass follow-glow pointer-events-auto min-h-11 rounded-full px-4"
+          <div
+            className={
+              atSurface
+                ? "glass console-surface pointer-events-auto flex flex-col items-center gap-3.5 rounded-[18px] px-6 py-5"
+                : "contents"
+            }
           >
-            {dive.follow}
-            <ArrowDown aria-hidden="true" className="size-4" />
-          </Button>
+            {atSurface && (
+              <p className="font-medium text-lg">{dive.stillBelow}</p>
+            )}
+            <Button
+              variant="outline"
+              onClick={onFollow}
+              className={`glass follow-glow pointer-events-auto rounded-full ${atSurface ? "min-h-12 px-6 text-base" : "min-h-11 px-4"}`}
+            >
+              {dive.follow}
+              <ArrowDown aria-hidden="true" className="size-4" />
+            </Button>
+          </div>
         )}
         {mode === "dive" && player.playing && (
           <PlaybackBar

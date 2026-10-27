@@ -75,7 +75,8 @@
   --font-sans:
     "Archivo Variable", "Heebo Variable", "Segoe UI", system-ui, sans-serif;
   --font-display: var(--font-sans);
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono:
+    "IBM Plex Mono", "Heebo Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
   --text-title: 1.75rem;
   --text-display: 2.5rem;
@@ -201,6 +202,19 @@ html[data-lang-pending] body {
   transform-origin: left;
   animation: bar-fill 1.1s var(--ease-out) both;
   animation-delay: calc(var(--i) * 160ms + 400ms);
+}
+
+/* Plex Mono has no Hebrew: its labels fall to Heebo, and letter-spaced Hebrew falls apart. */
+[dir="rtl"] .font-mono {
+  letter-spacing: normal;
+}
+
+/* Tailwind v4 dropped the pointer from buttons. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 [dir="rtl"] .bar-fill {

@@ -40,6 +40,11 @@ export interface SeaControls {
   loadDeep: () => void;
   /** Before a dive: the diver swims up close and the camera comes down to the water. */
   ready: (on: boolean) => void;
+  /**
+   * The page follows the dive down: the diver stays head down, since a rise then is the page
+   * snapping back from a scroll past the latest step (a touch flick's momentum), not an ascent.
+   */
+  follow: (on: boolean) => void;
   /** The giant stride; `entered` runs as his head goes under (at once without motion). */
   jump: (entered: () => void) => void;
 }
@@ -199,6 +204,8 @@ export interface DiveCopy {
   /** The depth tag's air reading above the water; `{t}` is °C. */
   air: string;
   follow: string;
+  /** Over the follow button when the visitor has scrolled up to the surface mid-dive. */
+  stillBelow: string;
   /** At the seabed: the heading focus lands on, and what a screen reader hears by outcome. */
   back: { title: string; answered: string; empty: string };
   surface: string;

@@ -319,6 +319,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
     },
     air: "{t} °C air",
     follow: "Follow the dive",
+    stillBelow: "The agent is still answering below",
     back: {
       title: "Back from the seabed",
       answered: "Back from the seabed. The answer is ready.",
@@ -458,6 +459,7 @@ export const DIVE_COPY: Record<Lang, DiveCopy> = {
     },
     air: "{t} °C באוויר",
     follow: "לעקוב אחרי הצלילה",
+    stillBelow: "הסוכן עדיין עונה למטה",
     back: {
       title: "חזרנו מהקרקעית",
       answered: "חזרנו מהקרקעית. התשובה מוכנה.",

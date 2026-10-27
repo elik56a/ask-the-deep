@@ -69,11 +69,13 @@ export const MODEL_LICENSE = {
 export const MODEL_CREDITS_COPY: Record<Lang, ModelCreditsCopy> = {
   en: {
     summary: "3D model credits",
+    close: "Close credits",
     by: "by",
     license: ["Licensed ", " unless marked CC0, resized for the web."],
   },
   he: {
     summary: "קרדיטים למודלים בתלת־ממד",
+    close: "סגירת הקרדיטים",
     by: "מאת",
     license: ["ברישיון ", " אלא אם מסומן CC0, מוקטנים לרשת."],
   },

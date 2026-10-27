@@ -78,7 +78,7 @@ function Home() {
     mode === "dive",
     view.written.words,
   );
-  useSeaStage(sea, mode, chatState, onSand ? bed : null);
+  useSeaStage(sea, mode, chatState, onSand ? bed : null, follow.following);
   useRevealTimer(
     mode === "dive",
     (ended && !player.playing) || chat.failed,

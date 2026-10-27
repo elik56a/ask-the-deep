@@ -84,6 +84,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
   let trailIn = 0;
   let lastCamY = Number.NaN;
   let rising = false;
+  let held = false;
   let riseK = 0;
   let pace = 0;
 
@@ -96,6 +97,10 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
     },
     ready(on: boolean): void {
       readyOn = on;
+    },
+    /** Keeps him head down while the page follows the dive: its rises are snaps back, not ascents. */
+    hold(on: boolean): void {
+      held = on;
     },
     /** Leaps in, calling `entered` as the head goes under; at once without the diver or motion. */
     jump(entered: () => void, quiet: boolean): void {
@@ -127,7 +132,7 @@ export function diverRig({ THREE, scene }: Kit, effects: StrideEffects) {
       base.set(pose.x, pose.y, pose.z);
       const rise = camY - lastCamY;
       lastCamY = camY;
-      rising = headsUp(rising, rise, dt);
+      rising = !held && headsUp(rising, rise, dt);
       riseK = quiet
         ? Number(rising)
         : approach(riseK, rising ? 1 : 0, DIVER.flipRate, dt);
