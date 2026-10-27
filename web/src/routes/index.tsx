@@ -174,7 +174,7 @@ function Home() {
         <Chat
           lang={lang}
           messages={chat.messages}
-          canSend={Boolean(session.token) && !chat.busy}
+          canSend={!chat.busy && !session.failed}
           failed={chat.failed}
           onSend={ask}
           focusChunk={focusChunk}
