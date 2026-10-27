@@ -17,18 +17,28 @@ export function useChatSession(
 ) {
   const tokenRef = useRef(token);
   const rejectedRef = useRef(onSessionRejected);
+  const waitingRef = useRef<((token: string) => void)[]>([]);
   useEffect(() => {
     tokenRef.current = token;
     rejectedRef.current = onSessionRejected;
+    if (token)
+      for (const resolve of waitingRef.current.splice(0)) resolve(token);
   }, [token, onSessionRejected]);
 
+  // A question asked before the human check finishes waits here for the token, so a cold API
+  // start doesn't hold the chat closed.
   const [transport] = useState(
     () =>
       new DefaultChatTransport<ChatMessage>({
         api: API_CHAT_URL,
-        prepareSendMessagesRequest: ({ messages }) => ({
-          body: chatRequestBody(messages, tokenRef.current ?? ""),
-        }),
+        prepareSendMessagesRequest: async ({ messages }) => {
+          const token =
+            tokenRef.current ??
+            (await new Promise<string>((resolve) =>
+              waitingRef.current.push(resolve),
+            ));
+          return { body: chatRequestBody(messages, token) };
+        },
       }),
   );
 
