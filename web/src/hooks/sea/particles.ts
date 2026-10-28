@@ -1,5 +1,10 @@
 import type * as Three from "three";
-import { PARTICLE_FIELD, SNOW, SPECKS } from "#/constants/seaScene.constants";
+import {
+  LITE,
+  PARTICLE_FIELD,
+  SNOW,
+  SPECKS,
+} from "#/constants/seaScene.constants";
 import type { Kit } from "#/types/seaScene.types";
 import { oscillate } from "#/utils/ease.utils";
 
@@ -55,17 +60,19 @@ function field(
 
 /** Marine snow drifting in the water, and glowing specks deeper down. */
 export function particles(kit: Kit) {
-  const { color } = kit;
+  const { color, lite } = kit;
+  const thin = (f: Field): Field =>
+    lite ? { ...f, count: Math.round(f.count * LITE.particles) } : f;
   const snow = field(
     kit,
-    SNOW,
+    thin(SNOW),
     [color("--color-foam"), color("--color-shaft")],
     false,
   );
   const glow = color("--color-glow");
   const specks = field(
     kit,
-    SPECKS,
+    thin(SPECKS),
     [glow, color("--color-peri"), glow, color("--color-coral")],
     true,
   );

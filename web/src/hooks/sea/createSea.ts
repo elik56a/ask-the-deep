@@ -2,7 +2,11 @@ import type { RefObject } from "react";
 import type * as Three from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { MODEL_WAVES } from "#/constants/models.constants";
-import { EASE_OUT, REDUCED_MOTION_QUERY } from "#/constants/motion.constants";
+import {
+  COARSE_POINTER_QUERY,
+  EASE_OUT,
+  REDUCED_MOTION_QUERY,
+} from "#/constants/motion.constants";
 import {
   FOG_KEYS,
   LAND_FOG_CUT,
@@ -24,6 +28,7 @@ import {
   LANDING_DUST,
   LEGACY_LIGHT,
   LIFT_EPSILON_PX,
+  LITE,
   LOG_SHIFT,
   LURE,
   PLUNGE,
@@ -85,19 +90,21 @@ import { divePx } from "./zone";
 function renderer(
   THREE: Addons["THREE"],
   canvas: HTMLCanvasElement,
+  lite: boolean,
 ): Three.WebGLRenderer | null {
   // Probe first: three logs errors to the console when it cannot get a context.
   if (!document.createElement("canvas").getContext("webgl2")) return null;
   try {
     const r = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: !lite,
       powerPreference: "high-performance",
     });
     r.outputColorSpace = THREE.LinearSRGBColorSpace;
     // Reading a shader's log waits for it to compile, which stalls the page on every new material.
     r.debug.checkShaderErrors = import.meta.env.DEV;
-    r.setPixelRatio(Math.min(devicePixelRatio, SEA_MAX_PIXEL_RATIO));
+    const maxRatio = lite ? LITE.pixelRatio : SEA_MAX_PIXEL_RATIO;
+    r.setPixelRatio(Math.min(devicePixelRatio, maxRatio));
     return r;
   } catch {
     return null;
@@ -114,7 +121,8 @@ export function createSea(
   // The palette and lights were tuned without colour management and with r128's falloff.
   THREE.ColorManagement.enabled = false;
   legacyFalloff(THREE);
-  const made = renderer(THREE, canvas);
+  const lite = matchMedia(COARSE_POINTER_QUERY).matches;
+  const made = renderer(THREE, canvas, lite);
   if (!made) return null;
   const gl = made;
 
@@ -144,6 +152,7 @@ export function createSea(
     keep,
     color,
     glow: glowTexture(THREE, keep),
+    lite,
   };
 
   const time = { value: 0 };
@@ -478,6 +487,10 @@ export function createSea(
 
   function tick(now: number): void {
     frame = 0;
+    if (lite && last && now - last < LITE.frameMs) {
+      wake();
+      return;
+    }
     const dt = frameSeconds(now, last);
     last = now;
     if (!quiet()) clock += dt;

@@ -3,6 +3,9 @@ export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 // Touch skips autofocus, or the keyboard would open over the hero.
 export const FINE_POINTER_QUERY = "(pointer: fine)";
 
+// Phones and tablets get the lighter sea (LITE in seaScene.constants.ts).
+export const COARSE_POINTER_QUERY = "(pointer: coarse)";
+
 // The UI's ease-out (`--ease-out` in styles.css), for Web Animations.
 export const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 // Step cards (P5.39): the log re-lays out by sliding, a folding title shrinks into place, its body brightens.

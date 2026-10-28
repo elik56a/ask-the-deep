@@ -5,6 +5,7 @@ import {
   ANIMATE_RANGE,
   BOAT,
   LEGACY_LIGHT,
+  LITE,
   OTHER_DIVERS,
   SUB,
   VISIBLE_RANGE,
@@ -87,7 +88,7 @@ export function placeLife(
 ): Creature[] {
   return members(SEA_LIFE).flatMap(({ group, i }) => {
     const gltf = loaded[group.model];
-    if (!gltf) return [];
+    if (!gltf || (kit.lite && i % LITE.lifeEvery)) return [];
     const c = spawn(gltf, spreadAt(group.length, i, random()), group, i);
     if (group.path) c.path = pathOf(group.path, i);
     if (group.drift) c.drift = driftOf(group.drift, i);
