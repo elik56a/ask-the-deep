@@ -194,13 +194,14 @@ resource "random_password" "origin_verify" {
   special = false
 }
 
+# CPU scales with memory: 1769 MB is one full vCPU, which cuts the cold start.
 resource "aws_lambda_function" "api" {
   function_name                  = "${local.name}-api"
   role                           = aws_iam_role.api.arn
   runtime                        = "python3.12"
   architectures                  = ["arm64"]
   handler                        = "run.sh"
-  memory_size                    = 512
+  memory_size                    = 1769
   timeout                        = 30
   reserved_concurrent_executions = var.lambda_concurrency
   filename                       = data.archive_file.placeholder.output_path
@@ -234,6 +235,29 @@ resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE"
   invoke_mode        = "RESPONSE_STREAM"
+}
+
+# Prod only: a ping every 5 minutes keeps one Lambda started, so a visitor rarely
+# waits for a cold start. It lands on the API's no-op route (WARM_PATH in app/main.py).
+
+resource "aws_cloudwatch_event_rule" "warm" {
+  count               = terraform.workspace == "prod" ? 1 : 0
+  name                = "${local.name}-warm"
+  schedule_expression = "rate(5 minutes)"
+}
+
+resource "aws_cloudwatch_event_target" "warm" {
+  count = length(aws_cloudwatch_event_rule.warm)
+  rule  = aws_cloudwatch_event_rule.warm[0].name
+  arn   = aws_lambda_function.api.arn
+}
+
+resource "aws_lambda_permission" "warm" {
+  count         = length(aws_cloudwatch_event_rule.warm)
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.warm[0].arn
 }
 
 # Counters and rate limit

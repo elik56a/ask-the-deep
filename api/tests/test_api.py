@@ -94,6 +94,15 @@ def test_refuses_requests_that_skip_cloudfront() -> None:
         del app.dependency_overrides[get_settings]
 
 
+def test_warm_ping_needs_no_cloudfront_header() -> None:
+    secret = Settings(origin_verify_secret=SecretStr("s3cret"))
+    app.dependency_overrides[get_settings] = lambda: secret
+    try:
+        assert client.post("/events", json={"source": "aws.events"}).status_code == 204
+    finally:
+        del app.dependency_overrides[get_settings]
+
+
 def _session(turnstile_token: str) -> tuple[int, dict[str, str | int]]:
     response = client.post("/api/session", json={"turnstile_token": turnstile_token})
     return response.status_code, response.json()

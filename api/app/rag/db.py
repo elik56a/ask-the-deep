@@ -35,6 +35,8 @@ def create_pool(settings: Settings) -> Pool:
             "options": f"-c statement_timeout={round(settings.db_timeout_s * 1000)}",
         },
         configure=configure_connection,
+        # A warm Lambda outlives Neon's idle suspend, which drops pooled connections.
+        check=AsyncConnectionPool.check_connection,
     )
 
 
