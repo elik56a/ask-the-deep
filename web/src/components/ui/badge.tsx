@@ -18,11 +18,11 @@ const badgeVariants = cva(
         ghost: "hover:bg-sunk hover:text-muted-foreground",
         // Panel metrics: numbers and ids, kept left-to-right inside Hebrew text.
         metric:
-          "h-auto rounded-md px-2 py-1.5 font-medium font-mono text-xs tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-muted",
-        ok: "h-auto rounded-md px-2 py-1.5 font-medium font-mono text-xs tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-ok",
-        warn: "h-auto rounded-md px-2 py-1.5 font-medium font-mono text-xs tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-warn/16 text-warn",
+          "h-auto max-w-full whitespace-normal [overflow-wrap:anywhere] rounded-md px-2 py-1 font-medium font-mono text-xs tabular-nums leading-tight [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-muted",
+        ok: "h-auto max-w-full whitespace-normal [overflow-wrap:anywhere] rounded-md px-2 py-1 font-medium font-mono text-xs tabular-nums leading-tight [direction:ltr] [unicode-bidi:isolate] bg-text/9 text-ok",
+        warn: "h-auto max-w-full whitespace-normal [overflow-wrap:anywhere] rounded-md px-2 py-1 font-medium font-mono text-xs tabular-nums leading-tight [direction:ltr] [unicode-bidi:isolate] bg-warn/16 text-warn",
         // A fact worth noticing, such as the history a follow-up carries.
-        hi: "h-auto rounded-md px-2 py-1.5 font-medium font-mono text-xs tabular-nums leading-none [direction:ltr] [unicode-bidi:isolate] bg-haze text-on-accent",
+        hi: "h-auto max-w-full whitespace-normal [overflow-wrap:anywhere] rounded-md px-2 py-1 font-medium font-mono text-xs tabular-nums leading-tight [direction:ltr] [unicode-bidi:isolate] bg-haze text-on-accent",
         link: "text-primary underline-offset-4 hover:underline",
       },
     },
