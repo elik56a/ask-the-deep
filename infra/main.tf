@@ -66,7 +66,7 @@ variable "embedding_model" {
 
 variable "github_subject" {
   type        = string
-  default     = "repo:elik56a@44751346/portfolio-chat@1424784352"
+  default     = "repo:elik56a@44751346/ask-the-deep@1424784352"
   description = <<-EOT
     The only repo whose main branch may deploy, as GitHub's OIDC subject prefix.
     The repo uses immutable subjects (owner and repo ids), so a renamed or

@@ -1,4 +1,4 @@
-# Portfolio Chat Agent
+# Ask the Deep
 
 Personal portfolio with a transparent RAG chat agent. Spec: [System Specification](https://claude.ai/artifact/TrVTLh2UgxXrebhpkkrtkp). Task tracker: [TASKS.md](TASKS.md) — update task status as work lands.
 

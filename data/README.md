@@ -11,7 +11,7 @@ knowledge/
   profile.md        who Eliyahu is, career path, approach, current focus
   boundaries.md     topics the agent won't discuss, and where to send those questions
   experience/       one file per role: phytech, 019-mobile, givers, idf-lotem
-  projects/         one file per project: portfolio-chat, devconverter
+  projects/         one file per project: ask-the-deep, devconverter
   skills/           overview.md
 ```
 

@@ -107,7 +107,7 @@ def verify_origin(
 
 
 app = FastAPI(
-    title="Portfolio chat API",
+    title="Ask the Deep API",
     lifespan=lifespan,
     dependencies=[Depends(verify_origin)],
 )
