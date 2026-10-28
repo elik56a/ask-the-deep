@@ -47,7 +47,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::052407073487:role/portfolio-chat-staging-deploy
           aws-region: eu-central-1
-      - run: scripts/deploy.sh portfolio-chat-staging-api portfolio-chat-staging-site-052407073487 E1JGECHQYXIDSU
+      - run: scripts/deploy.sh portfolio-chat-staging-api portfolio-chat-staging-site-052407073487 E1JGECHQYXIDSU portfolio-chat-staging-artifacts-052407073487
       - name: Smoke test
         run: curl -fsS --retry 3 --retry-delay 5 --max-time 30 "$SITE_URL/api/health"
       # The deployed site with a recorded answer stream: /api/chat is faked, so no model is called.
@@ -92,6 +92,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::052407073487:role/portfolio-chat-prod-deploy
           aws-region: eu-central-1
-      - run: scripts/deploy.sh portfolio-chat-prod-api portfolio-chat-prod-site-052407073487 E1MLN83EK7AILJ
+      - run: scripts/deploy.sh portfolio-chat-prod-api portfolio-chat-prod-site-052407073487 E1MLN83EK7AILJ portfolio-chat-prod-artifacts-052407073487
       - name: Smoke test
         run: curl -fsS --retry 3 --retry-delay 5 --max-time 30 "$SITE_URL/api/health"

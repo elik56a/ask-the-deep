@@ -123,6 +123,20 @@ resource "aws_s3_bucket_public_access_block" "site" {
   restrict_public_buckets = true
 }
 
+# The API zip goes up through here: with its compiled bytecode it is over
+# Lambda's 50 MB direct-upload limit.
+resource "aws_s3_bucket" "artifacts" {
+  bucket = "${local.name}-artifacts-${data.aws_caller_identity.me.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket                  = aws_s3_bucket.artifacts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${local.name}-site"
   origin_access_control_origin_type = "s3"
@@ -566,6 +580,12 @@ resource "aws_iam_role_policy" "deploy" {
         Resource = "${aws_s3_bucket.site.arn}/*"
       },
       {
+        # Lambda reads the zip with the caller's permissions.
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:GetObject"]
+        Resource = "${aws_s3_bucket.artifacts.arn}/*"
+      },
+      {
         Effect   = "Allow"
         Action   = ["cloudfront:CreateInvalidation"]
         Resource = aws_cloudfront_distribution.cdn.arn
@@ -584,6 +604,10 @@ output "site_url" {
 
 output "site_bucket" {
   value = aws_s3_bucket.site.bucket
+}
+
+output "artifacts_bucket" {
+  value = aws_s3_bucket.artifacts.bucket
 }
 
 output "distribution_id" {
