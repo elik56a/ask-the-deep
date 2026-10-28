@@ -162,6 +162,17 @@ export const SHAFTS = {
   swayRate: 0.25,
 } as const;
 
+// The lighter sea on touch devices: fewer pixels, frames, vertices, specks and creatures.
+export const LITE = {
+  pixelRatio: 1.25,
+  // 30 fps, with slack for requestAnimationFrame's timing jitter.
+  frameMs: 28,
+  oceanSegments: 140,
+  particles: 0.4,
+  // Keep every nth member of each group, so the dive keeps life at every depth.
+  lifeEvery: 2,
+} as const;
+
 // Marine snow and glowing specks: counts, height range, size and drift.
 export const SNOW = { count: 2000, from: -340, to: -10, size: 0.22 } as const;
 export const SPECKS = { count: 900, from: -340, to: -90, size: 0.6 } as const;

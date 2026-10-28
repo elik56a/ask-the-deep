@@ -66,7 +66,7 @@ variable "embedding_model" {
 
 variable "github_subject" {
   type        = string
-  default     = "repo:elik56a@44751346/portfolio-chat@1424784352"
+  default     = "repo:elik56a@44751346/ask-the-deep@1424784352"
   description = <<-EOT
     The only repo whose main branch may deploy, as GitHub's OIDC subject prefix.
     The repo uses immutable subjects (owner and repo ids), so a renamed or
@@ -117,6 +117,20 @@ resource "aws_s3_bucket" "site" {
 
 resource "aws_s3_bucket_public_access_block" "site" {
   bucket                  = aws_s3_bucket.site.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# The API zip goes up through here: with its compiled bytecode it is over
+# Lambda's 50 MB direct-upload limit.
+resource "aws_s3_bucket" "artifacts" {
+  bucket = "${local.name}-artifacts-${data.aws_caller_identity.me.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket                  = aws_s3_bucket.artifacts.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -194,13 +208,14 @@ resource "random_password" "origin_verify" {
   special = false
 }
 
+# CPU scales with memory: 1769 MB is one full vCPU, which cuts the cold start.
 resource "aws_lambda_function" "api" {
   function_name                  = "${local.name}-api"
   role                           = aws_iam_role.api.arn
   runtime                        = "python3.12"
   architectures                  = ["arm64"]
   handler                        = "run.sh"
-  memory_size                    = 512
+  memory_size                    = 1769
   timeout                        = 30
   reserved_concurrent_executions = var.lambda_concurrency
   filename                       = data.archive_file.placeholder.output_path
@@ -234,6 +249,29 @@ resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE"
   invoke_mode        = "RESPONSE_STREAM"
+}
+
+# Prod only: a ping every 5 minutes keeps one Lambda started, so a visitor rarely
+# waits for a cold start. It lands on the API's no-op route (WARM_PATH in app/main.py).
+
+resource "aws_cloudwatch_event_rule" "warm" {
+  count               = terraform.workspace == "prod" ? 1 : 0
+  name                = "${local.name}-warm"
+  schedule_expression = "rate(5 minutes)"
+}
+
+resource "aws_cloudwatch_event_target" "warm" {
+  count = length(aws_cloudwatch_event_rule.warm)
+  rule  = aws_cloudwatch_event_rule.warm[0].name
+  arn   = aws_lambda_function.api.arn
+}
+
+resource "aws_lambda_permission" "warm" {
+  count         = length(aws_cloudwatch_event_rule.warm)
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.warm[0].arn
 }
 
 # Counters and rate limit
@@ -542,6 +580,12 @@ resource "aws_iam_role_policy" "deploy" {
         Resource = "${aws_s3_bucket.site.arn}/*"
       },
       {
+        # Lambda reads the zip with the caller's permissions.
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:GetObject"]
+        Resource = "${aws_s3_bucket.artifacts.arn}/*"
+      },
+      {
         Effect   = "Allow"
         Action   = ["cloudfront:CreateInvalidation"]
         Resource = aws_cloudfront_distribution.cdn.arn
@@ -560,6 +604,10 @@ output "site_url" {
 
 output "site_bucket" {
   value = aws_s3_bucket.site.bucket
+}
+
+output "artifacts_bucket" {
+  value = aws_s3_bucket.artifacts.bucket
 }
 
 output "distribution_id" {

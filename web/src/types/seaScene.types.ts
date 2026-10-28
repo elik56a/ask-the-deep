@@ -17,6 +17,8 @@ export interface Kit {
   /** A colour from the page's design tokens. */
   color: (token: string) => Three.Color;
   glow: Three.Texture;
+  /** A touch device: build the lighter sea (LITE). */
+  lite: boolean;
 }
 
 export type SkyUniforms = Record<

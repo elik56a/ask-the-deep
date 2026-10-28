@@ -2,7 +2,7 @@
   <img src="web/public/og.png" alt="Ask about me: my AI agent answers from my own notes. Ask, and watch every step on the way down." width="720">
 </p>
 
-# Portfolio Chat Agent
+# Ask the Deep
 
 **[eliyahukriel.dev](https://eliyahukriel.dev)**
 

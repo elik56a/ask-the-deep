@@ -1,10 +1,10 @@
 #!/bin/sh
 # Builds and deploys one environment: the API as a Lambda zip, the site to S3.
-# Usage: scripts/deploy.sh <lambda-function> <site-bucket> <distribution-id>
+# Usage: scripts/deploy.sh <lambda-function> <site-bucket> <distribution-id> <artifacts-bucket>
 # Infrastructure changes are applied by hand with Terraform, not here.
 set -eu
 export AWS_REGION="${AWS_REGION:-eu-central-1}"
-function=$1 bucket=$2 distribution=$3
+function=$1 bucket=$2 distribution=$3 artifacts=$4
 root=$(cd "$(dirname "$0")/.." && pwd)
 build=$(mktemp -d)
 trap 'rm -rf "$build"' EXIT
@@ -14,12 +14,19 @@ trap 'rm -rf "$build"' EXIT
 uv pip install --quiet --target "$build/api" --python-platform aarch64-manylinux_2_28 \
   --python-version 3.12 --only-binary :all: -r "$build/requirements.txt"
 cp -R "$root/api/app" "$root/api/run.sh" "$build/api/"
-# boto3 ships with Lambda's Python runtime; leaving it out keeps the zip under
-# the 50 MB direct-upload limit.
-(cd "$build/api" && zip -qr "$build/api.zip" . -x '*__pycache__*' \
+# Lambda's code folder is read-only, so Python can't cache bytecode there: without
+# it, every cold start recompiles every library (imports about 3x slower).
+uv run --no-project --python 3.12 python -m compileall -q -f -j 0 \
+  --invalidation-mode unchecked-hash "$build/api" >/dev/null
+# boto3 ships with Lambda's Python runtime; leaving it and the libraries' tests out
+# keeps the code under Lambda's 250 MB unzipped limit.
+(cd "$build/api" && zip -qr "$build/api.zip" . -x '*/tests/*' \
   'boto3/*' 'boto3-*' 'botocore/*' 'botocore-*' 's3transfer/*' 's3transfer-*')
 echo "api.zip: $(du -h "$build/api.zip" | cut -f1)"
-aws lambda update-function-code --function-name "$function" --zip-file "fileb://$build/api.zip" >/dev/null
+# Over the 50 MB direct-upload limit, so the zip goes through S3.
+aws s3 cp --quiet "$build/api.zip" "s3://$artifacts/api.zip"
+aws lambda update-function-code --function-name "$function" \
+  --s3-bucket "$artifacts" --s3-key api.zip >/dev/null
 aws lambda wait function-updated-v2 --function-name "$function"
 
 # Site: prerendered pages to S3, then drop CloudFront's cached copies. Hashed bundles never

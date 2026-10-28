@@ -143,7 +143,7 @@
   type: answerable
   kinds: [answered]
   facts: [It answers only from verified passages, Passages below a relevance threshold never reach the model, Cited sources are checked against what the tools returned]
-  chunks: [projects/portfolio-chat.md#how-the-portfolio-chat-agent-works, projects/portfolio-chat.md#what-the-portfolio-chat-agent-is]
+  chunks: [projects/ask-the-deep.md#how-ask-the-deep-works, projects/ask-the-deep.md#what-ask-the-deep-is]
   tools: [search_knowledge, get_project, list_projects]
 
 # --- answerable, Hebrew ----------------------------------------------------
@@ -381,8 +381,8 @@
   language: he
   type: ambiguous
   kinds: [answered]
-  facts: ["Names DevConverter.dev or the portfolio chat agent (or both), or asks which project"]
-  chunks: [projects/devconverter.md#what-devconverter-dev-is, projects/portfolio-chat.md#what-the-portfolio-chat-agent-is]
+  facts: ["Names DevConverter.dev or Ask the Deep (or both), or asks which project"]
+  chunks: [projects/devconverter.md#what-devconverter-dev-is, projects/ask-the-deep.md#what-ask-the-deep-is]
   tools: [list_projects, get_project, search_knowledge]
 
 # --- off-topic ---------------------------------------------------------------

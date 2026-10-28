@@ -30,6 +30,8 @@ from app.tracing import configure_tracing, flush_traces
 
 _services: Services | None = None
 _turnstile: Turnstile | None = None
+# Where the Lambda Web Adapter posts non-HTTP events, here the warm-up schedule.
+WARM_PATH = "/events"
 
 
 @asynccontextmanager
@@ -95,6 +97,8 @@ def verify_origin(
     request: Request, settings: Annotated[Settings, Depends(get_settings)]
 ) -> None:
     """Refuse requests that skip CloudFront, so its IP header can be trusted."""
+    if request.url.path == WARM_PATH:
+        return
     secret = settings.origin_verify_secret
     if secret and not hmac.compare_digest(
         request.headers.get("x-origin-verify", ""), secret.get_secret_value()
@@ -103,7 +107,7 @@ def verify_origin(
 
 
 app = FastAPI(
-    title="Portfolio chat API",
+    title="Ask the Deep API",
     lifespan=lifespan,
     dependencies=[Depends(verify_origin)],
 )
@@ -142,6 +146,14 @@ class SessionResponse(BaseModel):
 def health(services: Annotated[Services, Depends(get_services)]) -> dict[str, str]:
     """Liveness check, plus which version of the knowledge base is loaded."""
     return {"status": "ok", "corpus_version": services.retriever.corpus_version}
+
+
+@app.post(WARM_PATH, status_code=204)
+def warm() -> None:
+    """Answers the scheduled ping that keeps one Lambda started between visitors.
+
+    It touches nothing, so Neon can still sleep while nobody asks anything.
+    """
 
 
 @app.get("/api/stats")

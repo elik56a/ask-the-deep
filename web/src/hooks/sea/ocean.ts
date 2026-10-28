@@ -1,5 +1,5 @@
 import type * as Three from "three";
-import { OCEAN_PLANE, WAVES } from "#/constants/seaScene.constants";
+import { LITE, OCEAN_PLANE, WAVES } from "#/constants/seaScene.constants";
 import {
   OCEAN_FRAGMENT,
   OCEAN_VERTEX,
@@ -11,13 +11,14 @@ import { waveGlsl } from "#/utils/wave.utils";
 export type Ocean = Three.Mesh<Three.PlaneGeometry, Three.ShaderMaterial>;
 
 /** The swell, seen from above and from below; `uUnder` follows the water colour. */
-export function ocean({ THREE, keep }: Kit, sky: SkyUniforms): Ocean {
+export function ocean({ THREE, keep, lite }: Kit, sky: SkyUniforms): Ocean {
+  const segments = lite ? LITE.oceanSegments : OCEAN_PLANE.segments;
   const geometry = keep(
     new THREE.PlaneGeometry(
       OCEAN_PLANE.size,
       OCEAN_PLANE.size,
-      OCEAN_PLANE.segments,
-      OCEAN_PLANE.segments,
+      segments,
+      segments,
     ),
   );
   geometry.rotateX(-Math.PI / 2);

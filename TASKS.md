@@ -1,4 +1,4 @@
-# Portfolio Chat Agent — Task Tracker
+# Ask the Deep — Task Tracker
 
 Source: [System Specification: Portfolio with a Transparent Chat Agent](https://claude.ai/artifact/TrVTLh2UgxXrebhpkkrtkp) (rev 23, 2026-10-18)
 

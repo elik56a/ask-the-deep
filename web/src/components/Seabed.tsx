@@ -47,7 +47,7 @@ export function Seabed({
   const { width: W, height: H, pad, labelGap, labelRise } = PROFILE_CHART;
 
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-case/46 px-3.5 py-3.5 backdrop-blur-sm">
+    <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-case/46 px-3.5 py-3.5 backdrop-blur-sm pointer-coarse:bg-case/78 pointer-coarse:backdrop-blur-none">
       {traceLanded(trace) ? (
         <figure dir="ltr" className="flex flex-col gap-2">
           <svg

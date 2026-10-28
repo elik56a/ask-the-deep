@@ -67,7 +67,7 @@ export function Chat({
         hidden={state === "pill"}
         aria-label={copy.agentLabel}
         data-state={state ?? undefined}
-        className="flex min-h-0 flex-col gap-3.5 rounded-3xl border border-accent/34 bg-surface/94 p-4.5 shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-accent)_8%,transparent),0_30px_80px_-24px_var(--color-case)] backdrop-blur-lg data-state:border-accent/60 data-state:shadow-[0_0_0_6px_color-mix(in_oklab,var(--color-accent)_10%,transparent),0_0_80px_-20px_color-mix(in_oklab,var(--color-accent)_40%,transparent),0_30px_80px_-24px_var(--color-case)] max-lg:data-state:rounded-b-none max-lg:data-state:rounded-t-[22px] max-lg:data-state:border-b-0 max-lg:data-state:pb-[calc(14px+env(safe-area-inset-bottom,0px))]"
+        className="flex min-h-0 flex-col gap-3.5 rounded-3xl border border-accent/34 bg-surface/94 p-4.5 shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-accent)_8%,transparent),0_30px_80px_-24px_var(--color-case)] backdrop-blur-lg pointer-coarse:backdrop-blur-none data-state:border-accent/60 data-state:shadow-[0_0_0_6px_color-mix(in_oklab,var(--color-accent)_10%,transparent),0_0_80px_-20px_color-mix(in_oklab,var(--color-accent)_40%,transparent),0_30px_80px_-24px_var(--color-case)] max-lg:data-state:rounded-b-none max-lg:data-state:rounded-t-[22px] max-lg:data-state:border-b-0 max-lg:data-state:pb-[calc(14px+env(safe-area-inset-bottom,0px))]"
       >
         {turns.length === 0 && (
           <h2 className="font-bold font-display font-stretch-expanded text-2xl leading-[1.1] tracking-[-0.02em]">

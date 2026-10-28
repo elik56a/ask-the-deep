@@ -34,7 +34,7 @@
   expected: [profile.md#education]
 - question: How does this chat agent work?
   language: en
-  expected: [projects/portfolio-chat.md#how-the-portfolio-chat-agent-works]
+  expected: [projects/ask-the-deep.md#how-ask-the-deep-works]
 
 - question: באיזו חברה אליהו עובד היום?
   language: he
